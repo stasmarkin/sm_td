@@ -137,11 +137,11 @@ There are only two execution flow for `on_smtd_action` function:
 - init → init_undo → tap 
 - init → hold → release (note there is no init_undo here, so you must handle undo in hold action)
 
-For better understanding of the execution flow, please check the following example:
+For better understanding of the execution flow, please check the following example.
 Let's say you want to tap, tap, hold, and tap again some custom key `CKC`. Here is your finger movements:
 
-— `↓CKC` 50ms `↑CKC` (first tap finished) 50ms 
-— `↓CKC` 50ms `↑CKC` (second tap finished) 50ms 
+- `↓CKC` 50ms `↑CKC` (first tap finished) 50ms 
+- `↓CKC` 50ms `↑CKC` (second tap finished) 50ms 
 - `↓CKC` 200ms (holding long enough for hold action) `↑CKC` 50ms 
 - `↓CKC` 50ms `↑CKC` (third tap finished)
 
