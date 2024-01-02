@@ -28,6 +28,7 @@ Core concept of this library is to interpret hold action in different situations
 - API is not stable yet, but it is usable
 #### v0.2.1 
 - comprehensive documentation
+- reddit post
 #### v0.3.0 and further v0.x
 - feature requests
 - bug fixes
@@ -37,6 +38,7 @@ Core concept of this library is to interpret hold action in different situations
 - memory optimizations (on storing active states)
 - memory optimizations (on state machine stack size)
 - bunch of useful macros
+- split into header and source files
 #### v1.1.0
 - better 3 finger roll interpretation
 
