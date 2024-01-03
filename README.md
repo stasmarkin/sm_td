@@ -131,7 +131,7 @@ void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
   This is the time in ms between two macro taps to consider them as a sequence of taps.
 
 
-- `a` (default is 50)
+- `SMTD_GLOBAL_RELEASE_TERM` (default is 50)
 
   This is the time in ms to consider two keys released within that period as a hold action for the first key and a tap action for second.
   If two keys has bigger time between their releases, they will be considered as a tap action for both keys.
