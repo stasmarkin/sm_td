@@ -147,7 +147,7 @@ void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
   Default behavior of sm_td library is to call tap action every time it's considered as a tap. This option allows to aggregate taps and call tap action only once after all taps are finished (same as original QMK Tap Dance).
 
 
-If you want to tweak some of these options, you can make such definitions in your `config.h` file, eg `#define SMTD_RELEASE_TERM 75`. 
+If you want to tweak some of these options, you can make such definitions in your `config.h` file, eg `#define SMTD_GLOBAL_RELEASE_TERM 75`. 
 
 8. (optional) Add configuration per key #TODO
 
