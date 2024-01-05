@@ -25,7 +25,7 @@ Please, see [wiki](https://github.com/stasmarkin/sm_td/wiki) for comprehensive d
 ## Roadmap
 #### `v0.1.0`
 - initial release and testing some basic functionality
-#### `v0.2.0 `
+#### `v0.2.0`
 - public beta test
 - API is not stable yet, but it is usable
 #### `v0.2.1`
