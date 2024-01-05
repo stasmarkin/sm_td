@@ -20,7 +20,7 @@ Core concept of this library is to interpret hold action in different situations
 - when you release two keys almost simultaneously, it is a hold action for a key that was pressed first (this is the main difference from QMK tap dance)
 - when you press third key while pressing other two. The first key in that sequence will be interpreted as being held.
 
-Please, see [wiki](./wiki) for comprehensive documentation.
+Please, see [wiki](https://github.com/stasmarkin/sm_td/wiki) for comprehensive documentation.
 
 ## Roadmap
 #### `v0.1.0`
@@ -51,7 +51,7 @@ Please, see [wiki](./wiki) for comprehensive documentation.
 #### `v1.1.0`
 - better 3 finger roll interpretation
 
-See [upgrade instructions](./wiki/1.1:-Upgrade-instructions./wiki/1.1:-Upgrade-instructions) if already using sm_td library.
+See [upgrade instructions](https://github.com/stasmarkin/sm_td/wiki/1.1:-Upgrade-instructions) if already using sm_td library.
 
 ## Installation
 1. Clone `sm_td.h` repository into your `keymaps/your_keymap` folder (next to your keymap.c)
@@ -78,10 +78,10 @@ smtd_state smtd_states[] = {
 size_t smtd_states_size = sizeof(smtd_states) / sizeof(smtd_states[0]);
 ```
 6. Describe your custom keycodes in `on_smtd_action` function. 
-   See comprehensive documentation in [Customization guide](./wiki/2.0:-Customization-guide) with cool [examples](./wiki/2.1:-Customization-guide:-Examples)
+   See comprehensive documentation in [Customization guide](https://github.com/stasmarkin/sm_td/wiki/2.0:-Customization-guide) with cool [examples](https://github.com/stasmarkin/sm_td/wiki/2.1:-Customization-guide:-Examples)
 
-7. (optional) Add global configuration parameters in your `config.h` file (see [timeouts](./wiki/2.2:-Customization-guide:-Timeouts-per-key) and [feature flags](./wiki/2.3:-Customization-guide:-Feature-flags))
-8. (optional) Add configuration per key (see [timeouts](./wiki/2.2:-Customization-guide:-Timeouts-per-key) and [feature flags](./wiki/2.3:-Customization-guide:-Feature-flags))
+7. (optional) Add global configuration parameters in your `config.h` file (see [timeouts](https://github.com/stasmarkin/sm_td/wiki/2.2:-Customization-guide:-Timeouts-per-key) and [feature flags](https://github.com/stasmarkin/sm_td/wiki/2.3:-Customization-guide:-Feature-flags))
+8. (optional) Add configuration per key (see [timeouts](https://github.com/stasmarkin/sm_td/wiki/2.2:-Customization-guide:-Timeouts-per-key) and [feature flags](https://github.com/stasmarkin/sm_td/wiki/2.3:-Customization-guide:-Feature-flags))
 
 
 ## Basic usage
@@ -119,4 +119,4 @@ For this example, you will get the following `on_smtd_action` calls:
 - `on_smtd_action(CKC, SMTD_ACTION_TOUCH, 0)` right after pressing `↓CKC` fourth time
 - `on_smtd_action(CKC, SMTD_ACTION_TAP, 0)` right after releasing `↑CKC` (third tap)
 
-For deeper understanding of the execution flow, please check [state machine description](./wiki/3.0:-Deep-explanation:-Stages) and further [one key explanation](./wiki/3.1:-Deep-explanation:-One-key-stages), [two keys explanation](./wiki/3.2:-Deep-explanation:-Two-keys-stages) and [state machine stack](./wiki/3.3:-Deep-explanation:-Three-keys-and-states-stack).
+For deeper understanding of the execution flow, please check [state machine description](https://github.com/stasmarkin/sm_td/wiki/3.0:-Deep-explanation:-Stages) and further [one key explanation](https://github.com/stasmarkin/sm_td/wiki/3.1:-Deep-explanation:-One-key-stages), [two keys explanation](https://github.com/stasmarkin/sm_td/wiki/3.2:-Deep-explanation:-Two-keys-stages) and [state machine stack](https://github.com/stasmarkin/sm_td/wiki/3.3:-Deep-explanation:-Three-keys-and-states-stack).
