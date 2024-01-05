@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Version: 0.2.1
- * Date: 2024-01-03
+ * Version: 0.3.0
+ * Date: 2024-01-05
  */
 #pragma once
 
@@ -78,7 +78,7 @@ typedef enum {
 
 __attribute__((weak)) uint32_t get_smtd_timeout(uint16_t keycode, smtd_timeout timeout);
 
-uint32_t get_smtd_timeout_default(uint16_t keycode, smtd_timeout timeout) {
+uint32_t get_smtd_timeout_default(smtd_timeout timeout) {
     switch (timeout) {
         case SMTD_TIMEOUT_TAP:
             return SMTD_GLOBAL_TAP_TERM;
@@ -96,7 +96,7 @@ uint32_t get_smtd_timeout_or_default(uint16_t keycode, smtd_timeout timeout) {
     if (get_smtd_timeout) {
         return get_smtd_timeout(keycode, timeout);
     }
-    return get_smtd_timeout_default(keycode, timeout);
+    return get_smtd_timeout_default(timeout);
 }
 
 /* ************************************* *
@@ -110,7 +110,7 @@ typedef enum {
 
 __attribute__((weak)) bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature);
 
-bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
+bool smtd_feature_enabled_default(smtd_feature feature) {
     switch (feature) {
         case SMTD_FEATURE_MODS_RECALL:
             return SMTD_GLOBAL_MODS_RECALL;
@@ -124,7 +124,7 @@ bool smtd_feature_enabled_or_default(uint16_t keycode, smtd_feature feature) {
     if (smtd_feature_enabled) {
         return smtd_feature_enabled(keycode, feature);
     }
-    return smtd_feature_enabled_default(keycode, feature);
+    return smtd_feature_enabled_default(feature);
 }
 
 /* ************************************* *
@@ -149,7 +149,7 @@ typedef enum {
     SMTD_STAGE_NONE,
     SMTD_STAGE_TOUCH,
     SMTD_STAGE_SEQUENCE,
-    SMTD_STAGE_FOLLOWING_TAP,
+    SMTD_STAGE_FOLLOWING_TOUCH,
     SMTD_STAGE_HOLD,
     SMTD_STAGE_RELEASE,
 } smtd_stage;
@@ -231,7 +231,7 @@ uint32_t timeout_touch(uint32_t trigger_time, void *cb_arg) {
     return 0;
 }
 
-uint32_t timeout_tap(uint32_t trigger_time, void *cb_arg) {
+uint32_t timeout_sequence(uint32_t trigger_time, void *cb_arg) {
     smtd_state *state = (smtd_state *)cb_arg;
     if (smtd_feature_enabled_or_default(state->macro_keycode, SMTD_FEATURE_AGGREGATE_TAPS)) {
         DO_ACTION_TAP(state);
@@ -283,11 +283,11 @@ void smtd_next_stage(smtd_state *state, smtd_stage next_stage) {
             state->timeout = defer_exec(get_smtd_timeout_or_default(state->macro_keycode, SMTD_TIMEOUT_TAP), timeout_touch, state);
             break;
         case SMTD_STAGE_SEQUENCE:
-            state->timeout = defer_exec(get_smtd_timeout_or_default(state->macro_keycode, SMTD_TIMEOUT_SEQUENCE), timeout_tap, state);
+            state->timeout = defer_exec(get_smtd_timeout_or_default(state->macro_keycode, SMTD_TIMEOUT_SEQUENCE), timeout_sequence, state);
             break;
         case SMTD_STAGE_HOLD:
             break;
-        case SMTD_STAGE_FOLLOWING_TAP:
+        case SMTD_STAGE_FOLLOWING_TOUCH:
             state->timeout = defer_exec(get_smtd_timeout_or_default(state->macro_keycode, SMTD_TIMEOUT_FOLLOWING_TAP), timeout_join, state);
             break;
         case SMTD_STAGE_RELEASE:
@@ -322,7 +322,7 @@ bool process_smtd_state(uint16_t keycode, keyrecord_t *record, smtd_state *state
             }
             if (record->event.pressed) {
                 state->following_key = record->event.key;
-                smtd_next_stage(state, SMTD_STAGE_FOLLOWING_TAP);
+                smtd_next_stage(state, SMTD_STAGE_FOLLOWING_TOUCH);
                 return false;
             }
             return true;
@@ -344,7 +344,7 @@ bool process_smtd_state(uint16_t keycode, keyrecord_t *record, smtd_state *state
             }
             return true;
 
-        case SMTD_STAGE_FOLLOWING_TAP:
+        case SMTD_STAGE_FOLLOWING_TOUCH:
             if (keycode == state->macro_keycode && !record->event.pressed) {
                 smtd_next_stage(state, SMTD_STAGE_RELEASE);
                 return false;
@@ -375,6 +375,7 @@ bool process_smtd_state(uint16_t keycode, keyrecord_t *record, smtd_state *state
         case SMTD_STAGE_RELEASE:
             if (keycode == state->macro_keycode && record->event.pressed) {
                 DO_ACTION_TAP(state);
+                smtd_press_following_key(state, false);
                 on_smtd_action(state->macro_keycode, SMTD_ACTION_TOUCH, state->sequence_len);
                 state->sequence_len = 0;
                 smtd_next_stage(state, SMTD_STAGE_TOUCH);

@@ -3,8 +3,8 @@ This is `SM Tap Dance` user library for QMK
 
 
 ## Introduction
-This is a user library for QMK with custom implementations of Tap Dance functions. 
-It offers smooth, fast and reliable tap dance functions for your keyboard.
+This is a user library for QMK with custom implementations of Tap Dance functions with reliable tap+tap vs tap+hold decision mechanism. 
+It offers smooth and fast tap dance multi-tap and hold interpretation with a very predictable behavior.
 Base functions are:
 - better tap+tap vs hold+tap interpretation with two different keys
 - better multi-tap and hold (and tap again then) interpretation of the same key
@@ -18,7 +18,9 @@ Core concept of this library is to interpret hold action in different situations
 - when you are holding a key for a long time, it is a hold action (same as in QMK tap dance)
 - when you are pressing and releasing a key while holding another key, it is a hold action for another key (also same as in QMK tap dance)
 - when you release two keys almost simultaneously, it is a hold action for a key that was pressed first (this is the main difference from QMK tap dance)
+- when you press third key while pressing other two. The first key in that sequence will be interpreted as being held.
 
+Please, see [wiki](./wiki) for comprehensive documentation.
 
 ## Roadmap
 #### `v0.1.0`
@@ -26,14 +28,16 @@ Core concept of this library is to interpret hold action in different situations
 #### `v0.2.0 `
 - public beta test
 - API is not stable yet, but it is usable
-#### `v0.2.1` ← we are here
+#### `v0.2.1`
 - rename `SMTD_ACTION_INIT` → `SMTD_ACTION_TOUCH`
 - remove obsolete `SMTD_ACTION_INIT_UNDO` (use that action within `SMTD_ACTION_TAP` instead)
 - better naming for timeout definitions (see Upgrade instructions)
 - better naming for global definitions (see Upgrade instructions)
-#### `v0.3.0` 
+#### `v0.3.0` ← we are here 
+- bug fix on pressing same macro key on stage SMTD_STAGE_RELEASE 
+- reduce args number for get_smtd_timeout_default and smtd_feature_enabled_default functions (see Upgrade instructions)
+- better stage naming 
 - comprehensive documentation
-- reddit post
 #### `v0.4.0` and further `v0.x`
 - feature requests
 - bug fixes
@@ -47,9 +51,10 @@ Core concept of this library is to interpret hold action in different situations
 #### `v1.1.0`
 - better 3 finger roll interpretation
 
+See [upgrade instructions](./wiki/1.1:-Upgrade-instructions./wiki/1.1:-Upgrade-instructions) if already using sm_td library.
 
 ## Installation
-1. Clone `sm_td.h` repository into your `keymaps/your_keymap` folder
+1. Clone `sm_td.h` repository into your `keymaps/your_keymap` folder (next to your keymap.c)
 2. Add `#include "sm_td.h"` to your `keymap.c` file
 3. Check `!process_smtd` first in your `process_record_user` function like this
 ```c
@@ -61,7 +66,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 }
 ```
 4. Add some custom keycodes to your `keymaps`, so sm_td library can use them without conflicts
-5. Declare variable `smtd_states` your custom keycodes for sm_td library like this:
+5. Declare variable `smtd_states` your custom keycodes and variable `smtd_states_size` for sm_td library like this:
 ```c
 smtd_state smtd_states[] = {
     SMTD(CUSTOM_KEYCODE_1),
@@ -72,84 +77,11 @@ smtd_state smtd_states[] = {
 // this is the size of your custom keycodes array, it is used for internal purposes. Do not delete this
 size_t smtd_states_size = sizeof(smtd_states) / sizeof(smtd_states[0]);
 ```
-6. Describe your custom keycodes in `on_smtd_action` function like this:
-```c
-void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
-    switch (keycode) {
-        case CKC_SPACE: {
-            switch (CUSTOM_KEYCODE_1) {
-                case SMTD_ACTION_TOUCH:
-                    break; // touch action are not used in this example  
-                case SMTD_ACTION_TAP:
-                    // this is a tap action for CUSTOM_KEYCODE_1
-                    tap_code(KC_SPACE);
-                    break;
-                case SMTD_ACTION_HOLD:
-                    // this is a hold action for CUSTOM_KEYCODE_1
-                    if (tap_count == 0 || tap_count == 1) {
-                        layer_move(4);
-                    } else {
-                        // sending hold for OS
-                        register_code(KC_SPACE); 
-                    }
-                    break;
-                case SMTD_ACTION_RELEASE:
-                    // this is a release action for CUSTOM_KEYCODE_1
-                    if (tap_count == 0 || tap_count == 1) {
-                        layer_move(0);
-                    } else {
-                        // releasing hold for OS
-                        unregister_code(KC_SPACE);
-                    }
-                    break;
-            }
-            break;
-        } // end of case CKC_SPACE
-            
-        // put all your custom keycodes here
-        
-    } // end of switch (keycode)
-} // end of on_smtd_action function
-```
-7. (optional) Add global configuration 
-  There are some global definitions you can use to change the behavior of sm_td library:
+6. Describe your custom keycodes in `on_smtd_action` function. 
+   See comprehensive documentation in [Customization guide](./wiki/2.0:-Customization-guide) with cool [examples](./wiki/2.1:-Customization-guide:-Examples)
 
-- `SMTD_GLOBAL_TAP_TERM` (default is TAPPING_TERM)
-
-  This is the time in ms between macro key press and release to consider it as a tap action.
-  So if you press and release a key within this time, it will be considered as a tap action. If you hold a key longer than this time, it will be considered as a hold action.
-
-
-- `SMTD_GLOBAL_FOLLOWING_TAP_TERM` (default is TAPPING_TERM) 
-
-  This is the time in ms between following key press (second after macro key pressed) and release to consider macro is still might be a tap action.
-  In other words, if you hold both macro and following keys longer than this time, macro key will be considered as a hold action. 
-
-
-- `SMTD_GLOBAL_SEQUENCE_TERM` (default is TAPPING_TERM / 2)
-
-  This is the time in ms between two macro taps to consider them as a sequence of taps.
-
-
-- `SMTD_GLOBAL_RELEASE_TERM` (default is 50)
-
-  This is the time in ms to consider two keys released within that period as a hold action for the first key and a tap action for second.
-  If two keys has bigger time between their releases, they will be considered as a tap action for both keys.
-
-
-- `SMTD_GLOBAL_MODS_RECALL` (default is true) 
-
-  Since tap action may be executed after a small delay (not immediately after key press), modifiers might be changed in that period. This option saves modifiers on key press and restores in on tap action.
-
-
-- `SMTD_GLOBAL_AGGREGATE_TAPS` (default is false) 
-
-  Default behavior of sm_td library is to call tap action every time it's considered as a tap. This option allows to aggregate taps and call tap action only once after all taps are finished (same as original QMK Tap Dance).
-
-
-If you want to tweak some of these options, you can make such definitions in your `config.h` file, eg `#define SMTD_GLOBAL_RELEASE_TERM 75`. 
-
-8. (optional) Add configuration per key #TODO
+7. (optional) Add global configuration parameters in your `config.h` file (see [timeouts](./wiki/2.2:-Customization-guide:-Timeouts-per-key) and [feature flags](./wiki/2.3:-Customization-guide:-Feature-flags))
+8. (optional) Add configuration per key (see [timeouts](./wiki/2.2:-Customization-guide:-Timeouts-per-key) and [feature flags](./wiki/2.3:-Customization-guide:-Feature-flags))
 
 
 ## Basic usage
@@ -161,8 +93,8 @@ You don't need to worry about that, sm_td will process all the keys you pressed 
 You also don't worry about that state machines stack implementation, but you need to know what output you will get from sm_td state machine.
 Once you press keys assigned to sm_td, it will be calling `on_smtd_action` function with the following arguments:
 - uint16_t keycode - keycode of the key you pressed
-- smtd_action action - result interpreted action (touch, tap, hold, release). tap, hold and release are self-explanatory. Touch action fired on key press (without knowing if it is a tap or hold).
-- uint8_t tap_count - number of sequential taps before current action. (will reset after hold or any other key press)
+- smtd_action action - result interpreted action (`SMTD_ACTION_TOUCH`, `SMTD_ACTION_TAP`, `SMTD_ACTION_HOLD`, `SMTD_ACTION_RELEASE`). tap, hold and release are self-explanatory. Touch action fired on key press (without knowing if it is going to be a tap or hold).
+- uint8_t tap_count - number of sequential taps before current action. (will reset after hold, pause or any other key press)
 
 There are only two execution flow for `on_smtd_action` function:
 - touch → tap 
@@ -187,14 +119,4 @@ For this example, you will get the following `on_smtd_action` calls:
 - `on_smtd_action(CKC, SMTD_ACTION_TOUCH, 0)` right after pressing `↓CKC` fourth time
 - `on_smtd_action(CKC, SMTD_ACTION_TAP, 0)` right after releasing `↑CKC` (third tap)
 
-## Upgrade instructions
-#### `v0.2.0` → `v0.2.1`
-- remove every SMTD_ACTION_INIT_UNDO. If you need any UNDO action, put in SMTD_ACTION_TAP instead
-- rename `SMTD_ACTION_INIT` → `SMTD_ACTION_TOUCH`
-- rename `SMTD_TIMEOUT_JOIN` → `SMTD_TIMEOUT_FOLLOWING_TAP`
-- rename `SMTD_TIMEOUT_TAP` → `SMTD_TIMEOUT_SEQUENCE`
-- rename `SMTD_TIMEOUT_INIT` → `SMTD_TIMEOUT_TAP`
-- rename `SMTD_INIT_TERM` → `SMTD_GLOBAL_TAP_TERM`
-- rename `SMTD_TAP_TERM` → `SMTD_GLOBAL_SEQUENCE_TERM`
-- rename `SMTD_JOIN_TERM` → `SMTD_GLOBAL_FOLLOWING_TAP_TERM`
-- rename `SMTD_RELEASE_TERM` → `SMTD_GLOBAL_RELEASE_TERM`
+For deeper understanding of the execution flow, please check [state machine description](./wiki/3.0:-Deep-explanation:-Stages) and further [one key explanation](./wiki/3.1:-Deep-explanation:-One-key-stages), [two keys explanation](./wiki/3.2:-Deep-explanation:-Two-keys-stages) and [state machine stack](./wiki/3.3:-Deep-explanation:-Three-keys-and-states-stack).
