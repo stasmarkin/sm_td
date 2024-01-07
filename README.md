@@ -54,9 +54,11 @@ Please, see [wiki](https://github.com/stasmarkin/sm_td/wiki) for comprehensive d
 See [upgrade instructions](https://github.com/stasmarkin/sm_td/wiki/1.1:-Upgrade-instructions) if already using sm_td library.
 
 ## Installation
-1. Clone `sm_td.h` repository into your `keymaps/your_keymap` folder (next to your keymap.c)
-2. Add `#include "sm_td.h"` to your `keymap.c` file
-3. Check `!process_smtd` first in your `process_record_user` function like this
+1. Add `DEFERRED_EXEC_ENABLE = yes` to your `rules.mk` file
+2. Add `#define MAX_DEFERRED_EXECUTORS 10` (or more than 10) to your `config.h` file
+3. Clone `sm_td.h` repository into your `keymaps/your_keymap` folder (next to your keymap.c)
+4. Add `#include "sm_td.h"` to your `keymap.c` file
+5. Check `!process_smtd` first in your `process_record_user` function like this
 ```c
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (!process_smtd(keycode, record)) {
@@ -65,8 +67,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     // your code here
 }
 ```
-4. Add some custom keycodes to your `keymaps`, so sm_td library can use them without conflicts
-5. Declare variable `smtd_states` your custom keycodes and variable `smtd_states_size` for sm_td library like this:
+6. Add some custom keycodes to your `keymaps`, so sm_td library can use them without conflicts
+7. Declare variable `smtd_states` your custom keycodes and variable `smtd_states_size` for sm_td library like this:
 ```c
 smtd_state smtd_states[] = {
     SMTD(CUSTOM_KEYCODE_1),
@@ -77,11 +79,11 @@ smtd_state smtd_states[] = {
 // this is the size of your custom keycodes array, it is used for internal purposes. Do not delete this
 size_t smtd_states_size = sizeof(smtd_states) / sizeof(smtd_states[0]);
 ```
-6. Describe your custom keycodes in `on_smtd_action` function. 
+8. Describe your custom keycodes in `on_smtd_action` function. 
    See comprehensive documentation in [Customization guide](https://github.com/stasmarkin/sm_td/wiki/2.0:-Customization-guide) with cool [examples](https://github.com/stasmarkin/sm_td/wiki/2.1:-Customization-guide:-Examples)
 
-7. (optional) Add global configuration parameters in your `config.h` file (see [timeouts](https://github.com/stasmarkin/sm_td/wiki/2.2:-Customization-guide:-Timeouts-per-key) and [feature flags](https://github.com/stasmarkin/sm_td/wiki/2.3:-Customization-guide:-Feature-flags))
-8. (optional) Add configuration per key (see [timeouts](https://github.com/stasmarkin/sm_td/wiki/2.2:-Customization-guide:-Timeouts-per-key) and [feature flags](https://github.com/stasmarkin/sm_td/wiki/2.3:-Customization-guide:-Feature-flags))
+9. (optional) Add global configuration parameters in your `config.h` file (see [timeouts](https://github.com/stasmarkin/sm_td/wiki/2.2:-Customization-guide:-Timeouts-per-key) and [feature flags](https://github.com/stasmarkin/sm_td/wiki/2.3:-Customization-guide:-Feature-flags))
+10. (optional) Add configuration per key (see [timeouts](https://github.com/stasmarkin/sm_td/wiki/2.2:-Customization-guide:-Timeouts-per-key) and [feature flags](https://github.com/stasmarkin/sm_td/wiki/2.3:-Customization-guide:-Feature-flags))
 
 
 ## Basic usage
