@@ -33,11 +33,13 @@ Please, see [wiki](https://github.com/stasmarkin/sm_td/wiki) for comprehensive d
 - remove obsolete `SMTD_ACTION_INIT_UNDO` (use that action within `SMTD_ACTION_TAP` instead)
 - better naming for timeout definitions (see Upgrade instructions)
 - better naming for global definitions (see Upgrade instructions)
-#### `v0.3.0` ← we are here 
+#### `v0.3.0` 
 - bug fix on pressing same macro key on stage SMTD_STAGE_RELEASE 
 - reduce args number for get_smtd_timeout_default and smtd_feature_enabled_default functions (see Upgrade instructions)
 - better stage naming 
 - comprehensive documentation
+#### `v0.3.1` ← we are here
+- optional delay between simultaneous key presses (see SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS in [feature flags](https://github.com/stasmarkin/sm_td/wiki/2.3:-Customization-guide:-Feature-flags)) 
 #### `v0.4.0` and further `v0.x`
 - feature requests
 - bug fixes
