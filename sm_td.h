@@ -66,21 +66,6 @@
 #endif
 
 /* ************************************* *
- *      USER SMTD STATE DECLARATION      *
- * ************************************* */
-
-#define SMTD(keycode)                       \
-    {                                       \
-        .freeze = false,                    \
-        .macro_keycode = keycode,           \
-        .tap_mods = 0,                      \
-        .following_key = MAKE_KEYPOS(0, 0), \
-        .stage = SMTD_STAGE_NONE,           \
-        .timeout = INVALID_DEFERRED_TOKEN,  \
-        .sequence_len = 0,                  \
-    }
-
-/* ************************************* *
  *       USER TIMEOUT DEFINITIONS        *
  * ************************************* */
 
@@ -179,9 +164,6 @@ typedef struct {
     bool freeze;
 } smtd_state;
 
-extern smtd_state smtd_states[];
-extern size_t smtd_states_size;
-
 
 /* ************************************* *
  *      CORE LOGIC IMPLEMENTATION        *
@@ -189,6 +171,10 @@ extern size_t smtd_states_size;
 
 smtd_state *smtd_active_states[10] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 uint8_t smtd_active_states_next_idx = 0;
+bool smtd_not_init = false;
+static size_t smtd_states_size = SMTD_KEYCODES_END - SMTD_KEYCODES_BEGIN - 1;
+static smtd_state smtd_states[SMTD_KEYCODES_END - SMTD_KEYCODES_BEGIN - 1];
+
 
 #define DO_ACTION_TAP(state)                                                                                                  \
     uint8_t current_mods = get_mods();                                                                                        \
@@ -445,6 +431,19 @@ bool process_smtd_state(uint16_t keycode, keyrecord_t *record, smtd_state *state
  * ************************************* */
 
 bool process_smtd(uint16_t keycode, keyrecord_t *record) {
+    if (smtd_not_init) {
+        for (int i = 0; i < smtd_states_size; ++i) {
+            smtd_states[i].freeze = false;
+            smtd_states[i].macro_keycode = SMTD_KEYCODES_BEGIN + i + 1;
+            smtd_states[i].tap_mods = 0;
+            smtd_states[i].following_key = MAKE_KEYPOS(0, 0);
+            smtd_states[i].stage = SMTD_STAGE_NONE;
+            smtd_states[i].timeout = INVALID_DEFERRED_TOKEN;
+            smtd_states[i].sequence_len = 0;
+        }
+        smtd_not_init = true;
+    }
+
     for (uint8_t i = 0; i < smtd_active_states_next_idx; i++) {
         smtd_state *state = smtd_active_states[i];
         if (!process_smtd_state(keycode, record, state)) {
