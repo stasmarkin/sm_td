@@ -171,7 +171,7 @@ typedef struct {
 
 smtd_state *smtd_active_states[10] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 uint8_t smtd_active_states_next_idx = 0;
-bool smtd_not_init = false;
+bool smtd_not_init = true;
 static size_t smtd_states_size = SMTD_KEYCODES_END - SMTD_KEYCODES_BEGIN - 1;
 static smtd_state smtd_states[SMTD_KEYCODES_END - SMTD_KEYCODES_BEGIN - 1];
 
@@ -441,7 +441,7 @@ bool process_smtd(uint16_t keycode, keyrecord_t *record) {
             smtd_states[i].timeout = INVALID_DEFERRED_TOKEN;
             smtd_states[i].sequence_len = 0;
         }
-        smtd_not_init = true;
+        smtd_not_init = false;
     }
 
     for (uint8_t i = 0; i < smtd_active_states_next_idx; i++) {
