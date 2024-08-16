@@ -449,7 +449,7 @@ bool process_smtd_state(uint16_t keycode, keyrecord_t *record, smtd_state *state
                 // so, now we have 3rd key pressed
                 // we assume this to be hold main key, hold following key and press the 3rd key
 
-                // need to put the following key into HOLD stage
+                // need to put first key state into HOLD stage
                 SMTD_PRINT(SMTD_ACTION_HOLD, state)
                 on_smtd_action(state->macro_keycode, SMTD_ACTION_HOLD, state->sequence_len);
                 smtd_next_stage(state, SMTD_STAGE_HOLD);
@@ -458,7 +458,7 @@ bool process_smtd_state(uint16_t keycode, keyrecord_t *record, smtd_state *state
                 SMTD_SIMULTANEOUS_PRESSES_DELAY
                 smtd_press_following_key(state, false);
 
-                // then rerun the 3rd key press.
+                // then rerun the 3rd key press
                 // since we have just started hold stage, we need to simulate the press of the 3rd key again
                 // because by holding first two keys we might have changed a layer, so current keycode might be not actual
                 // if we don't do this, we might continue processing the wrong key
@@ -507,17 +507,42 @@ bool process_smtd_state(uint16_t keycode, keyrecord_t *record, smtd_state *state
                 on_smtd_action(state->macro_keycode, SMTD_ACTION_RELEASE, state->sequence_len);
                 state->sequence_len = 0;
                 smtd_next_stage(state, SMTD_STAGE_NONE);
-                return true;
+                return false; //fixme-sm double check this. It was true, but I don't know why
             }
-            if (keycode != state->macro_keycode && (state->following_key.row != record->event.key.row ||
-                                                    state->following_key.col != record->event.key.col) &&
-                record->event.pressed) {
-                DO_ACTION_TAP(state);
+            if (
+                    keycode != state->macro_keycode
+                    && (state->following_key.row != record->event.key.row ||
+                        state->following_key.col != record->event.key.col)
+                    && record->event.pressed
+                    ) {
+                // at this point we have already released the main key and still holding the following key
+                // and we get 3rd key pressed
+                // we assume this to be tap main key, hold following key and press the 3rd key
+
+                // so we need to tap the main key first
+                DO_ACTION_TAP(state)
+
+                // then press and hold (without releasing) the following key
                 SMTD_SIMULTANEOUS_PRESSES_DELAY
                 smtd_press_following_key(state, false);
                 state->sequence_len = 0;
+
+                // release current state, because the first key is already processed
                 smtd_next_stage(state, SMTD_STAGE_NONE);
-                return true;
+
+                // then rerun the 3rd key press
+                // since we have just press following state, we need to simulate the press of the 3rd key again
+                // because by pressing second key we might have changed a layer, so current keycode might be not actual
+                // if we don't do this, we might continue processing the wrong key
+                SMTD_SIMULTANEOUS_PRESSES_DELAY
+
+                // we also don't need to freeze the state here, because we are already put in NONE stage
+                keyevent_t event_press = MAKE_KEYEVENT(record->event.key.row, record->event.key.col, true);
+                keyrecord_t record_press = {.event = event_press};
+                process_record(&record_press);
+
+                // we have processed the 3rd key, so we intentionally return false to stop further processing
+                return false;
             }
             return true;
     }
