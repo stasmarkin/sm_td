@@ -215,6 +215,30 @@ typedef struct {
     bool freeze;
 } smtd_state;
 
+/* ************************************* *
+ *             LAYER UTILS               *
+ * ************************************* */
+
+#define RETURN_LAYER_NOT_SET 15
+
+static uint8_t return_layer     = RETURN_LAYER_NOT_SET;
+static uint8_t return_layer_cnt = 0;
+
+#define LAYER_PUSH(layer)                              \
+    return_layer_cnt++;                                \
+    if (return_layer == RETURN_LAYER_NOT_SET) {        \
+        return_layer = get_highest_layer(layer_state); \
+    }                                                  \
+    layer_move(layer);
+
+#define LAYER_RESTORE()                          \
+    if (return_layer_cnt > 0) {                  \
+        return_layer_cnt--;                      \
+        if (return_layer_cnt == 0) {             \
+            layer_move(return_layer);            \
+            return_layer = RETURN_LAYER_NOT_SET; \
+        }                                        \
+    }
 
 /* ************************************* *
  *      CORE LOGIC IMPLEMENTATION        *
@@ -565,6 +589,12 @@ bool process_smtd(uint16_t keycode, keyrecord_t *record) {
             smtd_states[i].timeout = INVALID_DEFERRED_TOKEN;
             smtd_states[i].sequence_len = 0;
         }
+
+        // just touch them, so compiler won't throw "defined but not used" error
+        // that variables are used in macros that user may not use
+        if (return_layer == 0) return_layer = 0;
+        if (return_layer_cnt == 0) return_layer_cnt = 0;
+
         smtd_not_init = false;
     }
 
@@ -584,3 +614,109 @@ bool process_smtd(uint16_t keycode, keyrecord_t *record) {
 
     return true;
 }
+
+
+/* ************************************* *
+ *         CUSTOMIZATION MACROS          *
+ * ************************************* */
+
+#ifdef CAPS_WORD_ENABLE
+#define SMTD_TAP_16(use_cl, key) tap_code16(use_cl && is_caps_word_on() ? LSFT(key) : key)
+#define SMTD_REGISTER_16(use_cl, key) register_code16(use_cl && is_caps_word_on() ? LSFT(key) : key)
+#define SMTD_UNREGISTER_16(use_cl, key) unregister_code16(use_cl && is_caps_word_on() ? LSFT(key) : key)
+#else
+#define SMTD_TAP_16(key) tap_code16(key)
+#define SMTD_REGISTER_16(key) register_code16(key)
+#define SMTD_UNREGISTER_16(key) unregister_code16(key)
+#endif
+
+#define SMTD_GET_MACRO(_1, _2, _3, _4, _5, NAME, ...) NAME
+#define SMTD_MT(...) SMTD_GET_MACRO(__VA_ARGS__, SMTD_MT5, SMTD_MT4, SMTD_MT3)(__VA_ARGS__)
+#define SMTD_MTE(...) SMTD_GET_MACRO(__VA_ARGS__, SMTD_MTE5, SMTD_MTE4, SMTD_MTE3)(__VA_ARGS__)
+#define SMTD_LT(...) SMTD_GET_MACRO(__VA_ARGS__, SMTD_LT5, SMTD_LT4, SMTD_LT3)(__VA_ARGS__)
+
+#define SMTD_MT3(macro_key, tap_key, mod) SMTD_MT4(macro_key, tap_key, mod, 1000)
+#define SMTD_MTE3(macro_key, tap_key, mod) SMTD_MTE4(macro_key, tap_key, mod, 1000)
+#define SMTD_LT3(macro_key, tap_key, layer) SMTD_LT4(macro_key, tap_key, layer, 1000)
+
+#define SMTD_MT4(macro_key, tap_key, mod, threshold) SMTD_MT5(macro_key, tap_key, mod, threshold, true)
+#define SMTD_MTE4(macro_key, tap_key, mod, threshold) SMTD_MTE5(macro_key, tap_key, mod, threshold, true)
+#define SMTD_LT4(macro_key, tap_key, layer, threshold) SMTD_LT5(macro_key, tap_key, layer, threshold, true)
+
+#define SMTD_MT5(macro_key, tap_key, mod, threshold, use_cl)  \
+    case macro_key: {                                         \
+        switch (action) {                                     \
+            case SMTD_ACTION_TOUCH:                           \
+                break;                                        \
+            case SMTD_ACTION_TAP:                             \
+                SMTD_TAP_16(use_cl, tap_key);                 \
+                break;                                        \
+            case SMTD_ACTION_HOLD:                            \
+                if (tap_count < threshold) {                  \
+                    register_mods(get_mods() | MOD_BIT(mod)); \
+                } else {                                      \
+                    SMTD_REGISTER_16(use_cl, tap_key);        \
+                }                                             \
+                break;                                        \
+            case SMTD_ACTION_RELEASE:                         \
+                if (tap_count < threshold) {                  \
+                    unregister_mods(MOD_BIT(mod));            \
+                } else {                                      \
+                    SMTD_UNREGISTER_16(use_cl, tap_key);      \
+                }                                             \
+                break;                                        \
+        }                                                     \
+        break;                                                \
+    }
+
+#define SMTD_MTE5(macro_key, tap_key, mod, threshold, use_cl) \
+    case macro_key: {                                         \
+        switch (action) {                                     \
+            case SMTD_ACTION_TOUCH:                           \
+                register_mods(get_mods() | MOD_BIT(mod));     \
+                break;                                        \
+            case SMTD_ACTION_TAP:                             \
+                unregister_mods(MOD_BIT(mod));                \
+                SMTD_TAP_16(use_cl, tap_key);                 \
+                break;                                        \
+            case SMTD_ACTION_HOLD:                            \
+                if (!(tap_count < threshold)) {               \
+                    unregister_mods(MOD_BIT(mod));            \
+                    SMTD_REGISTER_16(use_cl, tap_key);        \
+                }                                             \
+                break;                                        \
+            case SMTD_ACTION_RELEASE:                         \
+                if (tap_count < threshold) {                  \
+                    unregister_mods(MOD_BIT(mod));            \
+                } else {                                      \
+                    SMTD_UNREGISTER_16(use_cl, tap_key);      \
+                }                                             \
+                break;                                        \
+        }                                                     \
+        break;                                                \
+    }
+
+#define SMTD_LT5(macro_key, tap_key, layer, threshold, use_cl)\
+    case macro_key: {                                         \
+        switch (action) {                                     \
+            case SMTD_ACTION_TOUCH:                           \
+                break;                                        \
+            case SMTD_ACTION_TAP:                             \
+                SMTD_TAP_16(use_cl, tap_key);                 \
+                break;                                        \
+            case SMTD_ACTION_HOLD:                            \
+                if (tap_count < threshold) {                  \
+                    LAYER_PUSH(layer);                        \
+                } else {                                      \
+                    SMTD_REGISTER_16(use_cl, tap_key);        \
+                }                                             \
+                break;                                        \
+            case SMTD_ACTION_RELEASE:                         \
+                if (tap_count < threshold) {                  \
+                    LAYER_RESTORE();                          \
+                }                                             \
+                SMTD_UNREGISTER_16(use_cl, tap_key);          \
+                break;                                        \
+        }                                                     \
+        break;                                                \
+    }
