@@ -221,7 +221,7 @@ typedef struct {
 
 #define RETURN_LAYER_NOT_SET 15
 
-static uint8_t return_layer     = RETURN_LAYER_NOT_SET;
+static uint8_t return_layer = RETURN_LAYER_NOT_SET;
 static uint8_t return_layer_cnt = 0;
 
 #define LAYER_PUSH(layer)                              \
@@ -246,7 +246,7 @@ static uint8_t return_layer_cnt = 0;
 
 smtd_state *smtd_active_states[10] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 uint8_t smtd_active_states_next_idx = 0;
-bool smtd_not_init = true;
+bool smtd_needs_init = true;
 static size_t smtd_states_size = SMTD_KEYCODES_END - SMTD_KEYCODES_BEGIN - 1;
 static smtd_state smtd_states[SMTD_KEYCODES_END - SMTD_KEYCODES_BEGIN - 1];
 
@@ -579,7 +579,7 @@ bool process_smtd_state(uint16_t keycode, keyrecord_t *record, smtd_state *state
  * ************************************* */
 
 bool process_smtd(uint16_t keycode, keyrecord_t *record) {
-    if (smtd_not_init) {
+    if (smtd_needs_init) {
         for (int i = 0; i < smtd_states_size; ++i) {
             smtd_states[i].freeze = false;
             smtd_states[i].macro_keycode = SMTD_KEYCODES_BEGIN + i + 1;
@@ -595,9 +595,10 @@ bool process_smtd(uint16_t keycode, keyrecord_t *record) {
         if (return_layer == 0) return_layer = 0;
         if (return_layer_cnt == 0) return_layer_cnt = 0;
 
-        smtd_not_init = false;
+        smtd_needs_init = false;
     }
 
+    // check if any active state may process an event
     for (uint8_t i = 0; i < smtd_active_states_next_idx; i++) {
         smtd_state *state = smtd_active_states[i];
         if (!process_smtd_state(keycode, record, state)) {
@@ -605,9 +606,17 @@ bool process_smtd(uint16_t keycode, keyrecord_t *record) {
         }
     }
 
+    // may be start a new state? A key must be just pressed
+    if (!record->event.pressed) {
+        return true;
+    }
+
     for (uint8_t i = 0; i < smtd_states_size; i++) {
         smtd_state *state = &smtd_states[i];
-        if (state->stage == SMTD_STAGE_NONE && !process_smtd_state(keycode, record, state)) {
+        // looking for deactivated state with the same keycode
+        if (state->stage == SMTD_STAGE_NONE
+            && keycode == state->macro_keycode
+            && !process_smtd_state(keycode, record, state)) {
             return false;
         }
     }
