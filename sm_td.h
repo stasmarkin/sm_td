@@ -308,7 +308,6 @@ static smtd_state smtd_states[SMTD_KEYCODES_END - SMTD_KEYCODES_BEGIN - 1];
         del_mods(state->modes_with_touch); \
         send_keyboard_report();                                                                                               \
                                                                                                                               \
-        /* fixme сначала заходить в стейт, а потом делать экшон */ \
         state->modes_before_touch = 0; /* fixme this is a quick fix */ \
         state->modes_with_touch = 0; /* fixme this is a quick fix */ \
     } else {\
@@ -351,7 +350,6 @@ uint32_t timeout_reset_seq(uint32_t trigger_time, void *cb_arg) {
 uint32_t timeout_touch(uint32_t trigger_time, void *cb_arg) {
     smtd_state *state = (smtd_state *) cb_arg;
     smtd_next_stage(state, SMTD_STAGE_HOLD);
-
     return 0;
 }
 
@@ -363,7 +361,6 @@ uint32_t timeout_sequence(uint32_t trigger_time, void *cb_arg) {
     }
 
     smtd_next_stage(state, SMTD_STAGE_NONE);
-
     return 0;
 }
 
@@ -373,7 +370,6 @@ uint32_t timeout_following_touch(uint32_t trigger_time, void *cb_arg) {
 
     SMTD_SIMULTANEOUS_PRESSES_DELAY
     smtd_press_following_key(state, false);
-
     return 0;
 }
 
@@ -386,7 +382,6 @@ uint32_t timeout_release(uint32_t trigger_time, void *cb_arg) {
     smtd_press_following_key(state, false);
 
     smtd_next_stage(state, SMTD_STAGE_NONE);
-
     return 0;
 }
 
@@ -484,11 +479,11 @@ bool process_smtd_state(uint16_t keycode, keyrecord_t *record, smtd_state *state
                 return false;
             }
             if (keycode != state->macro_keycode && record->event.pressed) {
+                smtd_next_stage(state, SMTD_STAGE_FOLLOWING_TOUCH);
                 state->following_key = record->event.key;
                 #ifdef SMTD_DEBUG_ENABLED
                 state->following_keycode = keycode;
                 #endif
-                smtd_next_stage(state, SMTD_STAGE_FOLLOWING_TOUCH);
                 return false;
             }
             return true;
@@ -588,12 +583,12 @@ bool process_smtd_state(uint16_t keycode, keyrecord_t *record, smtd_state *state
                 SMTD_SIMULTANEOUS_PRESSES_DELAY
                 smtd_press_following_key(state, false);
 
+                //todo need to go to NONE stage and from NONE jump to TOUCH stage
                 SMTD_SIMULTANEOUS_PRESSES_DELAY
                 smtd_next_stage(state, SMTD_STAGE_TOUCH);
 
                 state->sequence_len = 0;
 
-                //fixme тут нужно выходить в none, а потом опять запускаться
                 return false;
             }
             if (
@@ -618,7 +613,7 @@ bool process_smtd_state(uint16_t keycode, keyrecord_t *record, smtd_state *state
 
                 smtd_next_stage(state, SMTD_STAGE_NONE);
 
-                return false; //fixme-sm double check this. It was true, but I don't know why
+                return false;
             }
             if (
                     keycode != state->macro_keycode
