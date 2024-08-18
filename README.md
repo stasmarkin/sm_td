@@ -43,6 +43,8 @@ Please, see [wiki](https://github.com/stasmarkin/sm_td/wiki) for comprehensive d
 #### `v0.4.0` ← we are here
 — Simplified installation process 
 - fixme: update installation instructions and add migration guide for SMTD_KEYCODES_BEGIN and SMTD_KEYCODES_END
+- fixme: multiple bug fixes
+- fixme: debugging tools
 #### `v0.5.0` and further `v0.x`
 - feature requests
 - bug fixes
