@@ -30,7 +30,6 @@
 #include "timer.h"
 #endif
 
-
 /* ************************************* *
  *         GLOBAL CONFIGURATION          *
  * ************************************* */
@@ -187,7 +186,6 @@ char *smtd_action_to_string(smtd_action action) {
 #endif
 
 void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t sequence_len);
-
 
 /* ************************************* *
  *       USER STATES DEFINITIONS         *
@@ -726,7 +724,6 @@ bool process_smtd(uint16_t keycode, keyrecord_t *record) {
     #endif
     return true;
 }
-
 
 /* ************************************* *
  *         CUSTOMIZATION MACROS          *
