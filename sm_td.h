@@ -289,30 +289,30 @@ static size_t smtd_states_size = SMTD_KEYCODES_END - SMTD_KEYCODES_BEGIN - 1;
 static smtd_state smtd_states[SMTD_KEYCODES_END - SMTD_KEYCODES_BEGIN - 1];
 
 
-#define DO_ACTION_TAP(state)                                                                                                  \
-    uint8_t current_mods = get_mods();                                                                                        \
-    if (                                                                                                                      \
-            smtd_feature_enabled_or_default(state->macro_keycode, SMTD_FEATURE_MODS_RECALL)                                   \
-            && state->modes_before_touch != current_mods                                                                             \
-            ) { \
-        set_mods(state->modes_before_touch);                                                                                            \
-        send_keyboard_report();                                                                                               \
-        \
-        SMTD_SIMULTANEOUS_PRESSES_DELAY                                                                                       \
-        CONSOLE_LOG(SMTD_ACTION_TAP, state) \
-        on_smtd_action(state->macro_keycode, SMTD_ACTION_TAP, state->sequence_len);                                           \
-        uint8_t mods_diff = get_mods() ^ state->modes_before_touch; \
-                                                                                                                              \
-        SMTD_SIMULTANEOUS_PRESSES_DELAY                                                                                      \
-        set_mods(current_mods ^ mods_diff);        \
-        del_mods(state->modes_with_touch); \
-        send_keyboard_report();                                                                                               \
-                                                                                                                              \
-        state->modes_before_touch = 0; /* fixme this is a quick fix */ \
-        state->modes_with_touch = 0; /* fixme this is a quick fix */ \
-    } else {\
-        CONSOLE_LOG(SMTD_ACTION_TAP, state) \
-        on_smtd_action(state->macro_keycode, SMTD_ACTION_TAP, state->sequence_len);                                               \
+#define DO_ACTION_TAP(state)                                                                 \
+    uint8_t current_mods = get_mods();                                                       \
+    if (                                                                                     \
+            smtd_feature_enabled_or_default(state->macro_keycode, SMTD_FEATURE_MODS_RECALL)  \
+            && state->modes_before_touch != current_mods                                     \
+            ) {                                                                              \
+        set_mods(state->modes_before_touch);                                                 \
+        send_keyboard_report();                                                              \
+                                                                                             \
+        SMTD_SIMULTANEOUS_PRESSES_DELAY                                                      \
+        CONSOLE_LOG(SMTD_ACTION_TAP, state)                                                  \
+        on_smtd_action(state->macro_keycode, SMTD_ACTION_TAP, state->sequence_len);          \
+        uint8_t mods_diff = get_mods() ^ state->modes_before_touch;                          \
+                                                                                             \
+        SMTD_SIMULTANEOUS_PRESSES_DELAY                                                      \
+        set_mods(current_mods ^ mods_diff);                                                  \
+        del_mods(state->modes_with_touch);                                                   \
+        send_keyboard_report();                                                              \
+                                                                                             \
+        state->modes_before_touch = 0;                                                       \
+        state->modes_with_touch = 0;                                                         \
+    } else {                                                                                 \
+        CONSOLE_LOG(SMTD_ACTION_TAP, state)                                                  \
+        on_smtd_action(state->macro_keycode, SMTD_ACTION_TAP, state->sequence_len);          \
     }
 
 void smtd_press_following_key(smtd_state *state, bool release) {
@@ -786,7 +786,7 @@ bool process_smtd(uint16_t keycode, keyrecord_t *record) {
     case macro_key: {                                         \
         switch (action) {                                     \
             case SMTD_ACTION_TOUCH:                           \
-                register_mods(MOD_BIT(mod));     \
+                register_mods(MOD_BIT(mod));                  \
                 break;                                        \
             case SMTD_ACTION_TAP:                             \
                 unregister_mods(MOD_BIT(mod));                \
