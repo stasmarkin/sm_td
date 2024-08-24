@@ -73,13 +73,6 @@
  * ************************************* */
 
 #ifdef SMTD_DEBUG_ENABLED
-#define CONSOLE_LOG(action, state) printf("%s by %s in %s\n", \
-    smtd_action_to_string(action), keycode_to_string(state->macro_keycode), smtd_stage_to_string(state->stage));
-#else
-#define CONSOLE_LOG(action, state)
-#endif
-
-#ifdef SMTD_DEBUG_ENABLED
 __attribute__((weak)) char* keycode_to_string_user(uint16_t keycode);
 
 char* keycode_to_string(uint16_t keycode) {
@@ -187,6 +180,14 @@ char *smtd_action_to_string(smtd_action action) {
 
 void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t sequence_len);
 
+#ifdef SMTD_DEBUG_ENABLED
+#define SMTD_ACTION(action, state) printf("%s by %s in %s\n", \
+    smtd_action_to_string(action), keycode_to_string(state->macro_keycode), smtd_stage_to_string(state->stage)); \
+    on_smtd_action(state->macro_keycode, action, state->sequence_len);
+#else
+#define SMTD_ACTION(action, state) on_smtd_action(state->macro_keycode, action, state->sequence_len);
+#endif
+
 /* ************************************* *
  *       USER STATES DEFINITIONS         *
  * ************************************* */
@@ -236,10 +237,8 @@ typedef struct {
     /** The position of key that was pressed after macro was pressed */
     keypos_t following_key;
 
-    #ifdef SMTD_DEBUG_ENABLED
     /** The keycode of the key that was pressed after macro was pressed */
     uint16_t following_keycode;
-    #endif
 
     /** The timeout of current stage */
     deferred_token timeout;
@@ -251,6 +250,18 @@ typedef struct {
     bool freeze;
 } smtd_state;
 
+#define EMPTY_STATE {                       \
+        .macro_keycode = 0,                 \
+        .modes_before_touch = 0,            \
+        .modes_with_touch = 0,              \
+        .sequence_len = 0,                  \
+        .following_key = MAKE_KEYPOS(0, 0), \
+        .following_keycode = 0,             \
+        .timeout = INVALID_DEFERRED_TOKEN,  \
+        .stage = SMTD_STAGE_NONE,           \
+        .freeze = false                     \
+}
+
 /* ************************************* *
  *             LAYER UTILS               *
  * ************************************* */
@@ -259,6 +270,13 @@ typedef struct {
 
 static uint8_t return_layer = RETURN_LAYER_NOT_SET;
 static uint8_t return_layer_cnt = 0;
+
+void avoid_unused_variable_on_compile(void* ptr) {
+    // just touch them, so compiler won't throw "defined but not used" error
+    // that variables are used in macros that user may not use
+    if (return_layer == RETURN_LAYER_NOT_SET) return_layer = RETURN_LAYER_NOT_SET;
+    if (return_layer_cnt == 0) return_layer_cnt = 0;
+}
 
 #define LAYER_PUSH(layer)                              \
     return_layer_cnt++;                                \
@@ -280,11 +298,9 @@ static uint8_t return_layer_cnt = 0;
  *      CORE LOGIC IMPLEMENTATION        *
  * ************************************* */
 
-smtd_state *smtd_active_states[10] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
-uint8_t smtd_active_states_next_idx = 0;
-bool smtd_needs_init = true;
-static size_t smtd_states_size = SMTD_KEYCODES_END - SMTD_KEYCODES_BEGIN - 1;
-static smtd_state smtd_states[SMTD_KEYCODES_END - SMTD_KEYCODES_BEGIN - 1];
+smtd_state smtd_active_states[10] = {EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE,
+                                     EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE};
+uint8_t smtd_active_states_size = 0;
 
 
 #define DO_ACTION_TAP(state)                                                                 \
@@ -297,8 +313,7 @@ static smtd_state smtd_states[SMTD_KEYCODES_END - SMTD_KEYCODES_BEGIN - 1];
         send_keyboard_report();                                                              \
                                                                                              \
         SMTD_SIMULTANEOUS_PRESSES_DELAY                                                      \
-        CONSOLE_LOG(SMTD_ACTION_TAP, state)                                                  \
-        on_smtd_action(state->macro_keycode, SMTD_ACTION_TAP, state->sequence_len);          \
+        SMTD_ACTION(SMTD_ACTION_TAP, state)                                                  \
         uint8_t mods_diff = get_mods() ^ state->modes_before_touch;                          \
                                                                                              \
         SMTD_SIMULTANEOUS_PRESSES_DELAY                                                      \
@@ -309,8 +324,7 @@ static smtd_state smtd_states[SMTD_KEYCODES_END - SMTD_KEYCODES_BEGIN - 1];
         state->modes_before_touch = 0;                                                       \
         state->modes_with_touch = 0;                                                         \
     } else {                                                                                 \
-        CONSOLE_LOG(SMTD_ACTION_TAP, state)                                                  \
-        on_smtd_action(state->macro_keycode, SMTD_ACTION_TAP, state->sequence_len);          \
+        SMTD_ACTION(SMTD_ACTION_TAP, state)                                                  \
     }
 
 void smtd_press_following_key(smtd_state *state, bool release) {
@@ -389,43 +403,46 @@ void smtd_next_stage(smtd_state *state, smtd_stage next_stage) {
            smtd_stage_to_string(state->stage),smtd_stage_to_string(next_stage));
     #endif
 
-    cancel_deferred_exec(state->timeout);
-
-    if (state->stage == SMTD_STAGE_NONE) {
-        smtd_active_states[smtd_active_states_next_idx] = state;
-        smtd_active_states_next_idx++;
-    }
-    if (next_stage == SMTD_STAGE_NONE) {
-        for (uint8_t i = 0; i < smtd_active_states_next_idx; i++) {
-            if (smtd_active_states[i] != state) continue;
-
-            for (uint8_t j = i; j < smtd_active_states_next_idx - 1; j++) {
-                smtd_active_states[j] = smtd_active_states[j + 1];
-            }
-            smtd_active_states_next_idx--;
-            smtd_active_states[smtd_active_states_next_idx] = NULL;
-            break;
-        }
-    }
-
+    deferred_token prev_token = state->timeout;
     state->timeout = INVALID_DEFERRED_TOKEN;
     state->stage = next_stage;
 
     switch (state->stage) {
         case SMTD_STAGE_NONE:
-            state->following_key = MAKE_KEYPOS(0, 0);
-            #ifdef SMTD_DEBUG_ENABLED
-            state->following_keycode = 0;
-            #endif
-            state->sequence_len = 0;
-            state->modes_before_touch = 0;
-            state->modes_with_touch = 0;
+            for (uint8_t i = 0; i < smtd_active_states_size; i++) {
+                if (&smtd_active_states[i] != state) continue;
+
+                for (uint8_t j = i; j < smtd_active_states_size - 1; j++) {
+                    smtd_active_states[j].macro_keycode = smtd_active_states[j + 1].macro_keycode;
+                    smtd_active_states[j].modes_before_touch = smtd_active_states[j + 1].modes_before_touch;
+                    smtd_active_states[j].modes_with_touch = smtd_active_states[j + 1].modes_with_touch;
+                    smtd_active_states[j].sequence_len = smtd_active_states[j + 1].sequence_len;
+                    smtd_active_states[j].following_key = smtd_active_states[j + 1].following_key;
+                    smtd_active_states[j].following_keycode = smtd_active_states[j + 1].following_keycode;
+                    smtd_active_states[j].timeout = smtd_active_states[j + 1].timeout;
+                    smtd_active_states[j].stage = smtd_active_states[j + 1].stage;
+                    smtd_active_states[j].freeze = smtd_active_states[j + 1].freeze;
+                }
+
+                smtd_active_states_size--;
+                smtd_state *last_state = &smtd_active_states[smtd_active_states_size];
+                last_state->macro_keycode = 0;
+                last_state->modes_before_touch = 0;
+                last_state->modes_with_touch = 0;
+                last_state->sequence_len = 0;
+                last_state->following_key = MAKE_KEYPOS(0, 0);
+                last_state->following_keycode = 0;
+                last_state->timeout = INVALID_DEFERRED_TOKEN;
+                last_state->stage = SMTD_STAGE_NONE;
+                last_state->freeze = false;
+
+                break;
+            }
             break;
 
         case SMTD_STAGE_TOUCH:
             state->modes_before_touch = get_mods();
-            CONSOLE_LOG(SMTD_ACTION_TOUCH, state)
-            on_smtd_action(state->macro_keycode, SMTD_ACTION_TOUCH, state->sequence_len);
+            SMTD_ACTION(SMTD_ACTION_TOUCH, state)
             state->modes_with_touch = get_mods() & ~state->modes_before_touch;
             state->timeout = defer_exec(get_smtd_timeout_or_default(state->macro_keycode, SMTD_TIMEOUT_TAP),
                                         timeout_touch, state);
@@ -437,8 +454,7 @@ void smtd_next_stage(smtd_state *state, smtd_stage next_stage) {
             break;
 
         case SMTD_STAGE_HOLD:
-            CONSOLE_LOG(SMTD_ACTION_HOLD, state)
-            on_smtd_action(state->macro_keycode, SMTD_ACTION_HOLD, state->sequence_len);
+            SMTD_ACTION(SMTD_ACTION_HOLD, state)
             break;
 
         case SMTD_STAGE_FOLLOWING_TOUCH:
@@ -451,6 +467,9 @@ void smtd_next_stage(smtd_state *state, smtd_stage next_stage) {
                                         timeout_release, state);
             break;
     }
+
+    // need to cancel after creating new timeout. There is a bug in QMK scheduling
+    cancel_deferred_exec(prev_token);
 }
 
 bool process_smtd_state(uint16_t keycode, keyrecord_t *record, smtd_state *state) {
@@ -477,11 +496,9 @@ bool process_smtd_state(uint16_t keycode, keyrecord_t *record, smtd_state *state
                 return false;
             }
             if (keycode != state->macro_keycode && record->event.pressed) {
-                smtd_next_stage(state, SMTD_STAGE_FOLLOWING_TOUCH);
                 state->following_key = record->event.key;
-                #ifdef SMTD_DEBUG_ENABLED
                 state->following_keycode = keycode;
-                #endif
+                smtd_next_stage(state, SMTD_STAGE_FOLLOWING_TOUCH);
                 return false;
             }
             return true;
@@ -563,8 +580,7 @@ bool process_smtd_state(uint16_t keycode, keyrecord_t *record, smtd_state *state
 
         case SMTD_STAGE_HOLD:
             if (keycode == state->macro_keycode && !record->event.pressed) {
-                CONSOLE_LOG(SMTD_ACTION_RELEASE, state)
-                on_smtd_action(state->macro_keycode, SMTD_ACTION_RELEASE, state->sequence_len);
+                SMTD_ACTION(SMTD_ACTION_RELEASE, state)
 
                 smtd_next_stage(state, SMTD_STAGE_NONE);
 
@@ -599,15 +615,13 @@ bool process_smtd_state(uint16_t keycode, keyrecord_t *record, smtd_state *state
                 // we need to execute hold the macro key and execute tap the following key
                 // then close the state
 
-                CONSOLE_LOG(SMTD_ACTION_HOLD, state)
-                on_smtd_action(state->macro_keycode, SMTD_ACTION_HOLD, state->sequence_len);
+                SMTD_ACTION(SMTD_ACTION_HOLD, state)
 
                 SMTD_SIMULTANEOUS_PRESSES_DELAY
                 smtd_press_following_key(state, true);
 
                 SMTD_SIMULTANEOUS_PRESSES_DELAY
-                CONSOLE_LOG(SMTD_ACTION_RELEASE, state)
-                on_smtd_action(state->macro_keycode, SMTD_ACTION_RELEASE, state->sequence_len);
+                SMTD_ACTION(SMTD_ACTION_RELEASE, state)
 
                 smtd_next_stage(state, SMTD_STAGE_NONE);
 
@@ -658,36 +672,13 @@ bool process_smtd_state(uint16_t keycode, keyrecord_t *record, smtd_state *state
  * ************************************* */
 
 bool process_smtd(uint16_t keycode, keyrecord_t *record) {
-    if (smtd_needs_init) {
-        for (int i = 0; i < smtd_states_size; ++i) {
-            smtd_states[i].freeze = false;
-            smtd_states[i].macro_keycode = SMTD_KEYCODES_BEGIN + i + 1;
-            smtd_states[i].modes_before_touch = 0;
-            smtd_states[i].modes_with_touch = 0;
-            smtd_states[i].following_key = MAKE_KEYPOS(0, 0);
-            #ifdef SMTD_DEBUG_ENABLED
-            smtd_states[i].following_keycode = 0;
-            #endif
-            smtd_states[i].stage = SMTD_STAGE_NONE;
-            smtd_states[i].timeout = INVALID_DEFERRED_TOKEN;
-            smtd_states[i].sequence_len = 0;
-        }
-
-        // just touch them, so compiler won't throw "defined but not used" error
-        // that variables are used in macros that user may not use
-        if (return_layer == 0) return_layer = 0;
-        if (return_layer_cnt == 0) return_layer_cnt = 0;
-
-        smtd_needs_init = false;
-    }
-
     #ifdef SMTD_DEBUG_ENABLED
     printf("\n>> GOT KEY %s %s\n", keycode_to_string(keycode), record->event.pressed ? "PRESSED" : "RELEASED");
     #endif
 
     // check if any active state may process an event
-    for (uint8_t i = 0; i < smtd_active_states_next_idx; i++) {
-        smtd_state *state = smtd_active_states[i];
+    for (uint8_t i = 0; i < smtd_active_states_size; i++) {
+        smtd_state *state = &smtd_active_states[i];
         if (!process_smtd_state(keycode, record, state)) {
             #ifdef SMTD_DEBUG_ENABLED
             printf("<< HANDLE KEY %s %s by %s\n", keycode_to_string(keycode),
@@ -705,24 +696,33 @@ bool process_smtd(uint16_t keycode, keyrecord_t *record) {
         return true;
     }
 
-    for (uint8_t i = 0; i < smtd_states_size; i++) {
-        smtd_state *state = &smtd_states[i];
-        // looking for deactivated state with the same keycode
-        if (state->stage == SMTD_STAGE_NONE
-            && keycode == state->macro_keycode
-            && !process_smtd_state(keycode, record, state)) {
+    // check if the key is a macro key
+    if (keycode <= SMTD_KEYCODES_BEGIN || SMTD_KEYCODES_END <= keycode) {
+        #ifdef SMTD_DEBUG_ENABLED
+        printf("<< BYPASS KEY %s %s\n", keycode_to_string(keycode), record->event.pressed ? "PRESSED" : "RELEASED");
+        #endif
+        return true;
+    }
+
+    // check if the key is already handled
+    for (uint8_t i = 0; i < smtd_active_states_size; i++) {
+        if (smtd_active_states[i].macro_keycode == keycode) {
             #ifdef SMTD_DEBUG_ENABLED
-            printf("<< STARTED KEY %s %s by %s\n", keycode_to_string(keycode),
-                   record->event.pressed ? "PRESSED" : "RELEASED", keycode_to_string(state->macro_keycode));
+            printf("<< ALREADY HANDELED KEY %s %s\n", keycode_to_string(keycode), record->event.pressed ? "PRESSED" : "RELEASED");
             #endif
-            return false;
+            return true;
         }
     }
 
+    // create a new state and process the event
+    smtd_state *state = &smtd_active_states[smtd_active_states_size];
+    state->macro_keycode = keycode;
+    smtd_active_states_size++;
+
     #ifdef SMTD_DEBUG_ENABLED
-    printf("<< BYPASS KEY %s %s\n", keycode_to_string(keycode), record->event.pressed ? "PRESSED" : "RELEASED");
+    printf("<< CREATE STATE %s %s\n", keycode_to_string(keycode), record->event.pressed ? "PRESSED" : "RELEASED");
     #endif
-    return true;
+    return process_smtd_state(keycode, record, state);
 }
 
 /* ************************************* *

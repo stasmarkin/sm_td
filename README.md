@@ -1,8 +1,10 @@
 # sm_td
-This is `SM Tap Dance` user library for QMK
-
 
 ## Introduction
+
+This is `SM Tap Dance` user library for QMK.
+The main goal of this library is to ultimately fix home row mods (HRM) and tap dance issues in QMK.
+
 This is a user library for QMK with custom implementations of Tap Dance functions with reliable tap+tap vs tap+hold decision mechanism. 
 It offers smooth and fast tap dance multi-tap and hold interpretation with a very predictable behavior.
 Base functions are:
@@ -45,6 +47,8 @@ Please, see [wiki](https://github.com/stasmarkin/sm_td/wiki) for comprehensive d
 - fixme: update installation instructions and add migration guide for SMTD_KEYCODES_BEGIN and SMTD_KEYCODES_END
 - fixme: multiple bug fixes
 - fixme: debugging tools
+- fixme: SMTD_MT, SMTD_MTE, SMTD_LT macros
+- memory optimizations (on storing active states)
 #### `v0.5.0` and further `v0.x`
 - feature requests
 - bug fixes
