@@ -734,9 +734,9 @@ bool process_smtd(uint16_t keycode, keyrecord_t *record) {
 #define SMTD_REGISTER_16(use_cl, key) register_code16(use_cl && is_caps_word_on() ? LSFT(key) : key)
 #define SMTD_UNREGISTER_16(use_cl, key) unregister_code16(use_cl && is_caps_word_on() ? LSFT(key) : key)
 #else
-#define SMTD_TAP_16(key) tap_code16(key)
-#define SMTD_REGISTER_16(key) register_code16(key)
-#define SMTD_UNREGISTER_16(key) unregister_code16(key)
+#define SMTD_TAP_16(use_cl, key) tap_code16(key)
+#define SMTD_REGISTER_16(use_cl, key) register_code16(key)
+#define SMTD_UNREGISTER_16(use_cl, key) unregister_code16(key)
 #endif
 
 #define SMTD_GET_MACRO(_1, _2, _3, _4, _5, NAME, ...) NAME
