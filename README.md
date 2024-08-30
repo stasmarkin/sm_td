@@ -46,6 +46,8 @@ Please see the [wiki](https://github.com/stasmarkin/sm_td/wiki) for extensive do
 - added debugging utilities (see [Debugging Guide](https://github.com/stasmarkin/sm_td/wiki/1.3:-Debugging-guide))
 - fixed several bugs (especially with sticky modifiers)
 - made some memory optimizations (for storing active states)
+#### `v0.4.1`
+- fix 'SMTD_KEYCODES_BEGIN' undeclared error on compilation
 #### `v0.5.0` and further `v0.x`
 - feature requests
 - bug fixes
@@ -65,7 +67,7 @@ See [upgrade instructions](https://github.com/stasmarkin/sm_td/wiki/1.1:-Upgrade
 1. Add `DEFERRED_EXEC_ENABLE = yes` to your `rules.mk` file.
 2. Add `#define MAX_DEFERRED_EXECUTORS 10` (or add 10 if you already use it) to your `config.h` file.
 3. Clone the `sm_td.h` repository into your `keymaps/your_keymap` folder (next to your `keymap.c`)
-4. Add `#include "sm_td.h"` to your `keymap.c` file.
+4. Add `#include "sm_td.h"` to your `keymap.c` file. !!! WARNING !!! There is a bug in v0.4.0 and the library would compile with a "'SMTD_KEYCODES_BEGIN' undeclared" error. You need to put this `#include "sm_td.h"` right after you define your custom keycodes enum (described on p.6).
 5. Check `!process_smtd` first in your `process_record_user` function like this
    ```c
    bool process_record_user(uint16_t keycode, keyrecord_t *record) {
