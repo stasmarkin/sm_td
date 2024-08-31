@@ -98,7 +98,7 @@ See [upgrade instructions](https://github.com/stasmarkin/sm_td/wiki/1.1:-Upgrade
 8. Create a `void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count)` function that would handle all the actions of the custom keycodes you defined in the previous step.
    For example, if you want to use `CKC_A`, `CKC_S`, `CKC_D` and `CKC_F` for HRM, your `on_smtd_action()` function will look like this
    ```c
-   void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) { }
+   void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
        switch (keycode) {
            SMTD_MT(CKC_A, KC_A, KC_LEFT_GUI)
            SMTD_MT(CKC_S, KC_S, KC_LEFT_ALT)
