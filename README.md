@@ -88,9 +88,9 @@ See [upgrade instructions](https://github.com/stasmarkin/sm_td/wiki/1.1:-Upgrade
        CKC_D,
        CKC_F,
        SMTD_KEYCODES_END,
-   }
+   };
    ```
-   Note that `SAFE_RANGE` is a predefined constant in QMK, and is used [to define custom keycodes](https://docs.qmk.fm/custom_quantum_functions).
+   Please don't forget to put `;` at the end of the enum definition. Normally it's not necessary, but if you put `#include "sm_td.h"` it will break compilation.   Note that `SAFE_RANGE` is a predefined constant in QMK, and is used [to define custom keycodes](https://docs.qmk.fm/custom_quantum_functions).
    You need to put it on the beginning of your custom keycodes enum.
    Some keyboards may have their own `SAFE_RANGE` constant, so you need to check your firmware for this constant.
 
