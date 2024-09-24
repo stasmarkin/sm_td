@@ -75,6 +75,8 @@ See [upgrade instructions](https://github.com/stasmarkin/sm_td/wiki/1.1:-Upgrade
            return false;
        }
        // your code here
+
+      return true;
    }
    ```
    
