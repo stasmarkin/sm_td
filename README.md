@@ -67,7 +67,7 @@ See [upgrade instructions](https://github.com/stasmarkin/sm_td/wiki/1.1:-Upgrade
 1. Add `DEFERRED_EXEC_ENABLE = yes` to your `rules.mk` file.
 2. Add `#define MAX_DEFERRED_EXECUTORS 10` (or add 10 if you already use it) to your `config.h` file.
 3. Clone the `sm_td.h` repository into your `keymaps/your_keymap` folder (next to your `keymap.c`)
-4. Add `#include "sm_td.h"` to your `keymap.c` file. !!! WARNING !!! There is a bug in v0.4.0 and the library would compile with a "'SMTD_KEYCODES_BEGIN' undeclared" error. You need to put this `#include "sm_td.h"` right after you define your custom keycodes enum (described on p.6).
+4. Add `#include "sm_td.h"` to your `keymap.c` file. !!! WARNING !!! There is a bug in v0.4.0 and the library would compile with a "'SMTD_KEYCODES_BEGIN' undeclared" error. You need to put this `#include "sm_td.h"` right after you define your custom keycodes enum (described in step 6).
 5. Check `!process_smtd` first in your `process_record_user` function like this
    ```c
    bool process_record_user(uint16_t keycode, keyrecord_t *record) {
