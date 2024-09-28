@@ -44,6 +44,14 @@ typedef enum {
     SMTD_STAGE_RELEASE,
 } smtd_stage;
 
+typedef enum {
+    SMTD_STATUS_UNSET,
+    SMTD_STATUS_UNHANDLED,
+    SMTD_STATUS_UNDEF_LAYER,
+    SMTD_STATUS_UNDEF_MOD,
+    SMTD_STATUS_CERTAIN,
+} smtd_status;
+
 #ifdef SMTD_DEBUG_ENABLED
 char *smtd_stage_to_string(smtd_stage stage) {
     switch (stage) {
@@ -71,11 +79,8 @@ typedef struct {
     /** The keycode of the key that was pressed (assigned on tap) */
     uint16_t tap_keycode;
 
-    /** The mods before the touch action performed. Required for mod_recall feature */
-    uint8_t modes_before_touch;
-
-    /** Since touch can modify global mods, we need to save them separately to correctly restore a state before touch */
-    uint8_t modes_with_touch;
+    /** The mods after the touch action performed */
+    uint8_t modes_after_touch;
 
     /** The length of the sequence of same key taps */
     uint8_t sequence_len;
@@ -85,16 +90,19 @@ typedef struct {
 
     /** The current stage of the state */
     smtd_stage stage;
+
+    /** The level of certainty of the state */
+    smtd_status status;
 } smtd_state;
 
 #define EMPTY_STATE {                       \
         .macro_pos = MAKE_KEYPOS(0, 0),     \
         .tap_keycode = 0,                   \
-        .modes_before_touch = 0,            \
-        .modes_with_touch = 0,              \
+        .modes_after_touch = 0,              \
         .sequence_len = 0,                  \
         .timeout = INVALID_DEFERRED_TOKEN,  \
-        .stage = SMTD_STAGE_NONE            \
+        .stage = SMTD_STAGE_NONE,           \
+        .status = SMTD_STATUS_UNSET         \
 }
 
 /* ************************************* *
@@ -255,7 +263,7 @@ char *action_to_string(smtd_action action) {
 }
 #endif
 
-void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t sequence_len);
+smtd_status on_smtd_action(uint16_t keycode, smtd_action action, uint8_t sequence_len);
 
 /* ************************************* *
  *             LAYER UTILS               *
@@ -286,12 +294,25 @@ static uint8_t return_layer_cnt = 0;
  *      CORE LOGIC IMPLEMENTATION        *
  * ************************************* */
 
-smtd_state smtd_states_pool[10] = {EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE,
-                                   EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE};
-smtd_state *smtd_active_states[10] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
-uint8_t smtd_active_states_size = 0;
+static smtd_state smtd_states_pool[10] = {EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE,
+                                          EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE};
+static smtd_state *smtd_active_states[10] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+static uint8_t smtd_active_states_size = 0;
 static bool smtd_bypass = false;
 static bool smtd_uncertain_layer = false;
+
+smtd_status worst_status_before(smtd_state *state) {
+    smtd_status result = SMTD_STATUS_CERTAIN;
+    for (uint8_t i = 0; i < smtd_active_states_size; i++) {
+        if (smtd_active_states[i] == state) {
+            break;
+        }
+        if (smtd_active_states[i]->status < result) {
+            result = smtd_active_states[i]->status;
+        }
+    }
+    return result;
+}
 
 void avoid_unused_variable_on_compile(void *ptr) {
     // just touch them, so compiler won't throw "defined but not used" error
@@ -379,10 +400,10 @@ void smtd_next_stage(smtd_state *state, smtd_stage next_stage) {
 
             state->macro_pos = MAKE_KEYPOS(0, 0);
             state->tap_keycode = 0;
-            state->modes_before_touch = 0;
-            state->modes_with_touch = 0;
+            state->modes_after_touch = 0;
             state->sequence_len = 0;
             state->timeout = INVALID_DEFERRED_TOKEN;
+            state->status = SMTD_STATUS_UNSET;
             break;
 
         case SMTD_STAGE_TOUCH:
@@ -394,6 +415,8 @@ void smtd_next_stage(smtd_state *state, smtd_stage next_stage) {
             break;
 
         case SMTD_STAGE_SEQUENCE:
+            state->status = SMTD_STATUS_UNSET;
+            state->modes_after_touch = 0;
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_SEQUENCE),
                                         timeout_sequence, state);
             break;
@@ -433,11 +456,11 @@ bool process_smtd_state(keyrecord_t *record, smtd_state *state, uint8_t idx) {
 
         case SMTD_STAGE_TOUCH:
             if (IS_STATE_KEY(state, record->event.key) && !record->event.pressed) {
-                smtd_next_stage(state, SMTD_STAGE_SEQUENCE);
-
                 if (!smtd_feature_enabled_or_default(state, SMTD_FEATURE_AGGREGATE_TAPS)) {
                     do_smtd_action(SMTD_ACTION_TAP, state);
                 }
+
+                smtd_next_stage(state, SMTD_STAGE_SEQUENCE);
 
                 return false;
             }
@@ -676,62 +699,68 @@ void do_smtd_action(smtd_action action, smtd_state *state) {
 
     uint16_t keycode = state->tap_keycode;
     uint8_t mods_before_action = get_mods();
-    if (action == SMTD_ACTION_TOUCH) {
-        state->modes_before_touch = mods_before_action;
-    }
+    smtd_status status_before_action = state->status;
+
     if ((action == SMTD_ACTION_TAP || action == SMTD_ACTION_HOLD)
-        && state->modes_before_touch != mods_before_action) {
-        set_mods(state->modes_before_touch);
+        && state->modes_after_touch != mods_before_action) {
+        set_mods(state->modes_after_touch);
         send_keyboard_report();
         SMTD_SIMULTANEOUS_PRESSES_DELAY
     }
 
-    //fixme remove SMTD_KEYCODES_BEGIN and SMTD_KEYCODES_END
-    if (keycode <= SMTD_KEYCODES_BEGIN || SMTD_KEYCODES_END <= keycode) {
+    smtd_status new_status = on_smtd_action(keycode, action, state->sequence_len);
+    if (new_status > state->status) {
+        state->status = new_status;
+    }
+
+    if (new_status == SMTD_STATUS_UNHANDLED) {
         switch (action) {
             case SMTD_ACTION_TOUCH:
-                //fixme
+                if (worst_status_before(state) == SMTD_STATUS_CERTAIN) {
+                    emulate_press(&state->macro_pos, true);
+                    state->status = SMTD_STATUS_CERTAIN;
+                }
                 break;
             case SMTD_ACTION_TAP:
-                emulate_press(&state->macro_pos, true);
+                if (state->status == SMTD_STATUS_UNHANDLED) {
+                    emulate_press(&state->macro_pos, true);
+                    state->status = SMTD_STATUS_CERTAIN;
+                }
                 emulate_press(&state->macro_pos, false);
                 break;
             case SMTD_ACTION_HOLD:
-                emulate_press(&state->macro_pos, true);
+                if (state->status == SMTD_STATUS_UNHANDLED) {
+                    emulate_press(&state->macro_pos, true);
+                    state->status = SMTD_STATUS_CERTAIN;
+                }
                 break;
             case SMTD_ACTION_RELEASE:
                 emulate_press(&state->macro_pos, false);
                 break;
         }
-    } else {
-        on_smtd_action(keycode, action, state->sequence_len);
     }
 
     uint8_t mods_after_action = get_mods();
-    uint8_t changed_mods = mods_after_action ^ state->modes_before_touch;
-
     if (action == SMTD_ACTION_TOUCH) {
-        state->modes_with_touch = changed_mods;
-        return;
+        state->modes_after_touch = mods_after_action;
     }
-    if (action == SMTD_ACTION_RELEASE) {
-        return;
-    }
-    //action == SMTD_ACTION_TAP || action == SMTD_ACTION_HOLD
 
+    smtd_status status_after_action = state->status;
+    if (status_after_action <= SMTD_STATUS_UNDEF_MOD || status_before_action > SMTD_STATUS_UNDEF_MOD) {
+        return;
+    }
+
+    uint8_t changed_mods = mods_after_action ^ state->modes_after_touch;
     uint8_t enabled_mods = mods_after_action & changed_mods;
     uint8_t disabled_mods = mods_before_action & changed_mods;
-    if (action == SMTD_ACTION_TAP) {
-        disabled_mods |= state->modes_with_touch;
-    }
 
     uint8_t result_mods = (mods_before_action | enabled_mods) & ~disabled_mods;
     set_mods(result_mods);
     send_keyboard_report();
 
     #ifdef SMTD_DEBUG_ENABLED
-    printf("  state[%s]: state->modes_with_touch:%x  mods_before_action:%x  mods_after_action:%x  changed_mods:%x  enabled_mods:%x  disabled_mods:%x  result_mods:%x\n",
-               state_to_string(state), state->modes_with_touch, mods_before_action, mods_after_action, changed_mods, enabled_mods, disabled_mods, result_mods);
+    printf("  state[%s]: state->modes_after_touch:%x  mods_before_action:%x  mods_after_action:%x  changed_mods:%x  enabled_mods:%x  disabled_mods:%x  result_mods:%x\n",
+               state_to_string(state), state->modes_after_touch, mods_before_action, mods_after_action, changed_mods, enabled_mods, disabled_mods, result_mods);
     #endif
 
     if (result_mods == mods_before_action) {
@@ -767,23 +796,22 @@ void do_smtd_action(smtd_action action, smtd_state *state) {
         }
 
         #ifdef SMTD_DEBUG_ENABLED
-        printf("  state[%s] upd state[%s].modes_before_touch %x by +%x -%x\n",
+        printf("  state[%s] upd state[%s].modes_after_touch %x by +%x -%x\n",
                state_to_string(state), state_to_string(smtd_active_states[i]),
-               smtd_active_states[i]->modes_before_touch, enabled_mods, disabled_mods);
+               smtd_active_states[i]->modes_after_touch, enabled_mods, disabled_mods);
         #endif
 
-        smtd_active_states[i]->modes_before_touch |= enabled_mods;
-        smtd_active_states[i]->modes_before_touch &= ~disabled_mods;
+        smtd_active_states[i]->modes_after_touch |= enabled_mods;
+        smtd_active_states[i]->modes_after_touch &= ~disabled_mods;
 
         #ifdef SMTD_DEBUG_ENABLED
-        printf("  state[%s] upd state[%s].modes_before_touch result %x\n",
+        printf("  state[%s] upd state[%s].modes_after_touch result %x\n",
                state_to_string(state), state_to_string(smtd_active_states[i]),
-               smtd_active_states[i]->modes_before_touch);
+               smtd_active_states[i]->modes_after_touch);
         #endif
     }
 
-    state->modes_before_touch = 0;
-    state->modes_with_touch = 0;
+    state->modes_after_touch = 0;
 }
 
 /* ************************************* *
@@ -813,39 +841,21 @@ void do_smtd_action(smtd_action action, smtd_state *state) {
 #define SMTD_MTE4(macro_kc, tap_key, mod, threshold) SMTD_MTE5(macro_kc, tap_key, mod, threshold, true)
 #define SMTD_LT4(macro_kc, tap_key, layer, threshold) SMTD_LT5(macro_kc, tap_key, layer, threshold, true)
 
-#define SMTD_DEFAULT()                                        \
-    default: {                                                \
-        switch (action) {                                     \
-            case SMTD_ACTION_TOUCH:                           \
-                register_code16(keycode);                     \
-                break;                                        \
-            case SMTD_ACTION_TAP:                             \
-                unregister_code16(keycode);                   \
-                break;                                        \
-            case SMTD_ACTION_HOLD:                            \
-                break;                                        \
-            case SMTD_ACTION_RELEASE:                         \
-                unregister_code16(keycode);                   \
-                break;                                        \
-        }                                                     \
-        break;                                                \
-    }
-
 #define SMTD_MT5(macro_kc, tap_key, mod, threshold, use_cl)   \
     case macro_kc: {                                          \
         switch (action) {                                     \
             case SMTD_ACTION_TOUCH:                           \
-                break;                                        \
+                return SMTD_STATUS_UNDEF_MOD;                 \
             case SMTD_ACTION_TAP:                             \
                 SMTD_TAP_16(use_cl, tap_key);                 \
-                break;                                        \
+                return SMTD_STATUS_CERTAIN;                   \
             case SMTD_ACTION_HOLD:                            \
                 if (tap_count < threshold) {                  \
                     register_mods(MOD_BIT(mod));              \
                 } else {                                      \
                     SMTD_REGISTER_16(use_cl, tap_key);        \
                 }                                             \
-                break;                                        \
+                return SMTD_STATUS_CERTAIN;                   \
             case SMTD_ACTION_RELEASE:                         \
                 if (tap_count < threshold) {                  \
                     unregister_mods(MOD_BIT(mod));            \
@@ -853,7 +863,7 @@ void do_smtd_action(smtd_action action, smtd_state *state) {
                     SMTD_UNREGISTER_16(use_cl, tap_key);      \
                     send_keyboard_report();                   \
                 }                                             \
-                break;                                        \
+                return SMTD_STATUS_CERTAIN;                   \
         }                                                     \
         break;                                                \
     }
@@ -863,17 +873,17 @@ void do_smtd_action(smtd_action action, smtd_state *state) {
         switch (action) {                                     \
             case SMTD_ACTION_TOUCH:                           \
                 register_mods(MOD_BIT(mod));                  \
-                break;                                        \
+                return SMTD_STATUS_UNDEF_MOD;                 \
             case SMTD_ACTION_TAP:                             \
                 unregister_mods(MOD_BIT(mod));                \
                 SMTD_TAP_16(use_cl, tap_key);                 \
-                break;                                        \
+                return SMTD_STATUS_CERTAIN;                   \
             case SMTD_ACTION_HOLD:                            \
                 if (!(tap_count < threshold)) {               \
                     unregister_mods(MOD_BIT(mod));            \
                     SMTD_REGISTER_16(use_cl, tap_key);        \
                 }                                             \
-                break;                                        \
+                return SMTD_STATUS_CERTAIN;                   \
             case SMTD_ACTION_RELEASE:                         \
                 if (tap_count < threshold) {                  \
                     unregister_mods(MOD_BIT(mod));            \
@@ -881,7 +891,7 @@ void do_smtd_action(smtd_action action, smtd_state *state) {
                 } else {                                      \
                     SMTD_UNREGISTER_16(use_cl, tap_key);      \
                 }                                             \
-                break;                                        \
+                return SMTD_STATUS_CERTAIN;                   \
         }                                                     \
         break;                                                \
     }
@@ -890,23 +900,23 @@ void do_smtd_action(smtd_action action, smtd_state *state) {
     case macro_kc: {                                          \
         switch (action) {                                     \
             case SMTD_ACTION_TOUCH:                           \
-                break;                                        \
+                return SMTD_STATUS_UNDEF_LAYER;               \
             case SMTD_ACTION_TAP:                             \
                 SMTD_TAP_16(use_cl, tap_key);                 \
-                break;                                        \
+                return SMTD_STATUS_CERTAIN;                   \
             case SMTD_ACTION_HOLD:                            \
                 if (tap_count < threshold) {                  \
                     LAYER_PUSH(layer);                        \
                 } else {                                      \
                     SMTD_REGISTER_16(use_cl, tap_key);        \
                 }                                             \
-                break;                                        \
+                return SMTD_STATUS_CERTAIN;                   \
             case SMTD_ACTION_RELEASE:                         \
                 if (tap_count < threshold) {                  \
                     LAYER_RESTORE();                          \
                 }                                             \
                 SMTD_UNREGISTER_16(use_cl, tap_key);          \
-                break;                                        \
+                return SMTD_STATUS_CERTAIN;                   \
         }                                                     \
         break;                                                \
     }
