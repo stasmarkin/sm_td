@@ -46,9 +46,9 @@ typedef enum {
 
 typedef enum {
     SMTD_STATUS_UNSET,
-    SMTD_STATUS_UNHANDLED,
     SMTD_STATUS_UNDEF_LAYER,
     SMTD_STATUS_UNDEF_MOD,
+    SMTD_STATUS_UNHANDLED,
     SMTD_STATUS_CERTAIN,
 } smtd_status;
 
@@ -302,15 +302,48 @@ static bool smtd_bypass = false;
 static bool smtd_uncertain_layer = false;
 
 smtd_status worst_status_before(smtd_state *state) {
+    #ifdef SMTD_DEBUG_ENABLED
+    printf("  worst_status_before: state[%s] start\n", state_to_string(state));
+    #endif
+
     smtd_status result = SMTD_STATUS_CERTAIN;
     for (uint8_t i = 0; i < smtd_active_states_size; i++) {
+        #ifdef SMTD_DEBUG_ENABLED
+        printf("  worst_status_before: state[%s] loop %d\n", state_to_string(state), i);
+        #endif
+
+        #ifdef SMTD_DEBUG_ENABLED
+        printf("  worst_status_before: state[%s] examine state[%s]\n",
+               state_to_string(state), state_to_string(smtd_active_states[i]));
+        #endif
+
         if (smtd_active_states[i] == state) {
+            #ifdef SMTD_DEBUG_ENABLED
+            printf("  worst_status_before: state[%s] reached self\n",
+               state_to_string(state));
+            #endif
             break;
         }
+        if (smtd_active_states[i]->stage == SMTD_STAGE_SEQUENCE) {
+            #ifdef SMTD_DEBUG_ENABLED
+            printf("  worst_status_before: state[%s] skip seq state[%s]\n",
+               state_to_string(state), state_to_string(smtd_active_states[i]));
+            #endif
+            continue;
+        }
         if (smtd_active_states[i]->status < result) {
+            #ifdef SMTD_DEBUG_ENABLED
+            printf("  worst_status_before: state[%s] examine state[%s], %d->%d\n",
+               state_to_string(state), state_to_string(smtd_active_states[i]), result, smtd_active_states[i]->status);
+            #endif
             result = smtd_active_states[i]->status;
         }
     }
+
+    #ifdef SMTD_DEBUG_ENABLED
+    printf("  worst_status_before: state[%s] result %d\n",
+           state_to_string(state), result);
+    #endif
     return result;
 }
 
@@ -447,8 +480,8 @@ bool process_smtd_state(keyrecord_t *record, smtd_state *state, uint8_t idx) {
     switch (state->stage) {
         case SMTD_STAGE_NONE:
             if (IS_STATE_KEY(state, record->event.key) && record->event.pressed) {
-                smtd_next_stage(state, SMTD_STAGE_TOUCH);
-                do_smtd_action(SMTD_ACTION_TOUCH, state);
+                    smtd_next_stage(state, SMTD_STAGE_TOUCH);
+                    do_smtd_action(SMTD_ACTION_TOUCH, state);
                 return false;
             }
 
@@ -619,16 +652,17 @@ smtd_state *process_smtd_active_states(keyrecord_t *record, uint8_t starting_idx
  * ************************************* */
 
 bool process_smtd_fixed(uint16_t keycode, keyrecord_t *record, bool fixed) {
-    #ifdef SMTD_DEBUG_ENABLED
-    printf("\n>> GOT KEY %s %s\n", keycode_to_string(keycode), record->event.pressed ? "PRESSED" : "RELEASED");
-    #endif
-
     if (smtd_bypass) {
         #ifdef SMTD_DEBUG_ENABLED
-        printf("<< GLOBAL BYPASS KEY %s %s\n", keycode_to_string(keycode), record->event.pressed ? "PRESSED" : "RELEASED");
+        printf("   GLOBAL BYPASS KEY %s %s\n", keycode_to_string(keycode), record->event.pressed ? "PRESSED" : "RELEASED");
         #endif
         return true;
     }
+
+
+    #ifdef SMTD_DEBUG_ENABLED
+    printf("\n>> GOT KEY %s %s\n", keycode_to_string(keycode), record->event.pressed ? "PRESSED" : "RELEASED");
+    #endif
 
     // check if any active state may process an event
     smtd_state *processed_state = process_smtd_active_states(record, 0);
@@ -691,6 +725,77 @@ bool process_smtd(uint16_t keycode, keyrecord_t *record) {
     return process_smtd_fixed(keycode, record, false);
 }
 
+void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t mods_after_action) {
+    uint8_t changed_mods = mods_after_action ^ state->modes_after_touch;
+    uint8_t enabled_mods = mods_after_action & changed_mods;
+    uint8_t disabled_mods = mods_before_action & changed_mods;
+
+    uint8_t result_mods = (mods_before_action | enabled_mods) & ~disabled_mods;
+    set_mods(result_mods);
+    send_keyboard_report();
+
+    #ifdef SMTD_DEBUG_ENABLED
+    printf("  state[%s]: state->modes_after_touch:%x  mods_before_action:%x  mods_after_action:%x  changed_mods:%x  enabled_mods:%x  disabled_mods:%x  result_mods:%x\n",
+               state_to_string(state), state->modes_after_touch, mods_before_action, mods_after_action, changed_mods, enabled_mods, disabled_mods, result_mods);
+    #endif
+
+    if (result_mods == mods_before_action) {
+        #ifdef SMTD_DEBUG_ENABLED
+        printf("  state[%s] no changed modes\n", state_to_string(state));
+        #endif
+        return;
+    }
+
+    bool reached_curr_state = false;
+    for (uint8_t i = 0; i < smtd_active_states_size; i++) {
+        #ifdef SMTD_DEBUG_ENABLED
+        printf("  state[%s] examine state[%s]\n",
+               state_to_string(state), state_to_string(smtd_active_states[i]));
+        #endif
+
+        if (!reached_curr_state && smtd_active_states[i] == state) {
+            if (smtd_active_states[i] != state) {
+                #ifdef SMTD_DEBUG_ENABLED
+                printf("  state[%s] skip state[%s]\n",
+                    state_to_string(state), state_to_string(smtd_active_states[i]));
+                #endif
+                continue;
+            }
+
+            reached_curr_state = true;
+            #ifdef SMTD_DEBUG_ENABLED
+            printf("  state[%s] reached self\n", state_to_string(state));
+            #endif
+            continue;
+        }
+
+        if (smtd_active_states[i]->stage == SMTD_STAGE_DELAY) {
+            #ifdef SMTD_DEBUG_ENABLED
+            printf("  state[%s] skip delayed state[%s]\n",
+                    state_to_string(state), state_to_string(smtd_active_states[i]));
+            #endif
+            continue;
+        }
+
+        #ifdef SMTD_DEBUG_ENABLED
+        printf("  state[%s] upd state[%s].modes_after_touch %x by +%x -%x\n",
+               state_to_string(state), state_to_string(smtd_active_states[i]),
+               smtd_active_states[i]->modes_after_touch, enabled_mods, disabled_mods);
+        #endif
+
+        smtd_active_states[i]->modes_after_touch |= enabled_mods;
+        smtd_active_states[i]->modes_after_touch &= ~disabled_mods;
+
+        #ifdef SMTD_DEBUG_ENABLED
+        printf("  state[%s] upd state[%s].modes_after_touch result %x\n",
+               state_to_string(state), state_to_string(smtd_active_states[i]),
+               smtd_active_states[i]->modes_after_touch);
+        #endif
+    }
+
+    state->modes_after_touch = 0;
+}
+
 void do_smtd_action(smtd_action action, smtd_state *state) {
     #ifdef SMTD_DEBUG_ENABLED
     printf("%s by %s in %s\n",
@@ -746,72 +851,9 @@ void do_smtd_action(smtd_action action, smtd_state *state) {
     }
 
     smtd_status status_after_action = state->status;
-    if (status_after_action <= SMTD_STATUS_UNDEF_MOD || status_before_action > SMTD_STATUS_UNDEF_MOD) {
-        return;
+    if (status_before_action <= SMTD_STATUS_UNDEF_MOD && SMTD_STATUS_UNDEF_MOD < status_after_action) {
+        smtd_propagate_mods(state, mods_before_action, mods_after_action);
     }
-
-    uint8_t changed_mods = mods_after_action ^ state->modes_after_touch;
-    uint8_t enabled_mods = mods_after_action & changed_mods;
-    uint8_t disabled_mods = mods_before_action & changed_mods;
-
-    uint8_t result_mods = (mods_before_action | enabled_mods) & ~disabled_mods;
-    set_mods(result_mods);
-    send_keyboard_report();
-
-    #ifdef SMTD_DEBUG_ENABLED
-    printf("  state[%s]: state->modes_after_touch:%x  mods_before_action:%x  mods_after_action:%x  changed_mods:%x  enabled_mods:%x  disabled_mods:%x  result_mods:%x\n",
-               state_to_string(state), state->modes_after_touch, mods_before_action, mods_after_action, changed_mods, enabled_mods, disabled_mods, result_mods);
-    #endif
-
-    if (result_mods == mods_before_action) {
-        #ifdef SMTD_DEBUG_ENABLED
-        printf("  state[%s] no changed modes after %s\n",
-               state_to_string(state), action_to_string(action));
-        #endif
-        return;
-    }
-
-    bool reached_curr_state = false;
-    for (uint8_t i = 0; i < smtd_active_states_size; i++) {
-        #ifdef SMTD_DEBUG_ENABLED
-        printf("  state[%s] examine state[%s]\n",
-               state_to_string(state), state_to_string(smtd_active_states[i]));
-        #endif
-
-        if (smtd_active_states[i] == state) {
-            reached_curr_state = true;
-            #ifdef SMTD_DEBUG_ENABLED
-            printf("  state[%s] reached self\n",
-               state_to_string(state));
-            #endif
-            continue;
-        }
-
-        if (!reached_curr_state) {
-            #ifdef SMTD_DEBUG_ENABLED
-            printf("  state[%s] skip state[%s]\n",
-               state_to_string(state), state_to_string(smtd_active_states[i]));
-            #endif
-            continue;
-        }
-
-        #ifdef SMTD_DEBUG_ENABLED
-        printf("  state[%s] upd state[%s].modes_after_touch %x by +%x -%x\n",
-               state_to_string(state), state_to_string(smtd_active_states[i]),
-               smtd_active_states[i]->modes_after_touch, enabled_mods, disabled_mods);
-        #endif
-
-        smtd_active_states[i]->modes_after_touch |= enabled_mods;
-        smtd_active_states[i]->modes_after_touch &= ~disabled_mods;
-
-        #ifdef SMTD_DEBUG_ENABLED
-        printf("  state[%s] upd state[%s].modes_after_touch result %x\n",
-               state_to_string(state), state_to_string(smtd_active_states[i]),
-               smtd_active_states[i]->modes_after_touch);
-        #endif
-    }
-
-    state->modes_after_touch = 0;
 }
 
 /* ************************************* *
