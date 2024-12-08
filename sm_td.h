@@ -724,8 +724,6 @@ void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t 
                smtd_active_states[i]->saved_mods);
         #endif
     }
-
-    // state->saved_mods = 0; //fixme what to do with this?
 }
 
 smtd_status send_actual_keypress(smtd_state *state, smtd_action action, smtd_status status_before_action) {
