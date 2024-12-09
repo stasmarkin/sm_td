@@ -219,6 +219,9 @@ smtd_resolution worst_resolution_before(smtd_state *state);
  * ************************************* */
 
 #ifdef SMTD_DEBUG_ENABLED
+
+#define SMTD_DEBUG(...) printf(__VA_ARGS__)
+
 char *smtd_stage_to_string(smtd_stage stage) {
     switch (stage) {
         case SMTD_STAGE_NONE:
@@ -280,6 +283,10 @@ char* state_to_string(smtd_state *state) {
     }
     return keycode_to_string_uncertain(keycode, false);
 }
+#else
+
+#define SMTD_DEBUG(...)
+
 #endif
 
 
@@ -335,17 +342,11 @@ bool process_smtd(uint16_t keycode, keyrecord_t *record) {
 
 bool smtd_process_desired(uint16_t pressed_keycode, keyrecord_t *record, uint16_t desired_keycode) {
     if (smtd_bypass) {
-        #ifdef SMTD_DEBUG_ENABLED
-        printf("   GLOBAL BYPASS KEY %s %s\n", keycode_to_string_uncertain(pressed_keycode, desired_keycode == 0), record->event.pressed ? "PRESSED" : "RELEASED");
-        #endif
+        SMTD_DEBUG("   GLOBAL BYPASS KEY %s %s\n", keycode_to_string_uncertain(pressed_keycode, desired_keycode == 0), record->event.pressed ? "PRESSED" : "RELEASED");
         return true;
     }
 
-
-    #ifdef SMTD_DEBUG_ENABLED
-    printf("\n>> GOT KEY %s %s\n", keycode_to_string_uncertain(pressed_keycode, desired_keycode == 0), record->event.pressed ? "PRESSED" : "RELEASED");
-    #endif
-
+    SMTD_DEBUG("\n>> GOT KEY %s %s\n", keycode_to_string_uncertain(pressed_keycode, desired_keycode == 0), record->event.pressed ? "PRESSED" : "RELEASED");
     smtd_apply_to_stack(0, record, desired_keycode);
     return false;
 }
@@ -359,25 +360,19 @@ void smtd_apply_to_stack(uint8_t starting_idx, keyrecord_t *record, uint16_t des
         bool is_state_key = IS_STATE_KEY(state, record->event.key);
         processed_state = processed_state | is_state_key;
 
-        #ifdef SMTD_DEBUG_ENABLED
-        printf("   processing state %s by %s, is_state_key=%d\n", record->event.pressed ? "PRESSED" : "RELEASED",
+        SMTD_DEBUG("   processing state %s by %s, is_state_key=%d\n", record->event.pressed ? "PRESSED" : "RELEASED",
                state_to_string(state), is_state_key);
-        #endif
         bool can_process_next = smtd_apply_event(state, record, is_state_key);
 
         if (!can_process_next) {
-            #ifdef SMTD_DEBUG_ENABLED
-            printf("<< TERM STATE %s by %s\n",
+            SMTD_DEBUG("<< TERM STATE %s by %s\n",
                    record->event.pressed ? "PRESSED" : "RELEASED", state_to_string(state));
-            #endif
             break;
         }
     }
 
     if (processed_state) {
-        #ifdef SMTD_DEBUG_ENABLED
-        printf("<< GOT RELEVANT STATE\n");
-        #endif
+        SMTD_DEBUG("<< GOT RELEVANT STATE\n");
         return;
     }
 
@@ -387,9 +382,7 @@ void smtd_apply_to_stack(uint8_t starting_idx, keyrecord_t *record, uint16_t des
 void smtd_create_state(keyrecord_t *record, uint16_t desired_keycode) {
     // may be start a new state? A key must be just pressed
     if (!record->event.pressed) {
-        #ifdef SMTD_DEBUG_ENABLED
-        printf("<< BYPASS KEY RELEASE\n");
-        #endif
+        SMTD_DEBUG("<< BYPASS KEY RELEASE\n");
         return;
     }
 
@@ -403,9 +396,7 @@ void smtd_create_state(keyrecord_t *record, uint16_t desired_keycode) {
     }
 
     if (!state || state == NULL) {
-        #ifdef SMTD_DEBUG_ENABLED
-        printf("<< NO FREE STATES\n");
-        #endif
+        SMTD_DEBUG("<< NO FREE STATES\n");
         return;
     }
 
@@ -417,10 +408,8 @@ void smtd_create_state(keyrecord_t *record, uint16_t desired_keycode) {
     }
     smtd_active_states_size++;
 
-    #ifdef SMTD_DEBUG_ENABLED
-    printf("<< CREATE STATE %s %s\n", state_to_string(state),
+    SMTD_DEBUG("<< CREATE STATE %s %s\n", state_to_string(state),
                record->event.pressed ? "PRESSED" : "RELEASED");
-    #endif
     smtd_apply_event(state, record, true);
     return;
 }
@@ -565,10 +554,8 @@ bool smtd_apply_event(smtd_state *state, keyrecord_t *record, bool is_state_key)
 }
 
 void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
-    #ifdef SMTD_DEBUG_ENABLED
-    printf("STAGE by %s, %s -> %s\n", state_to_string(state),
+    SMTD_DEBUG("STAGE by %s, %s -> %s\n", state_to_string(state),
            smtd_stage_to_string(state->stage),smtd_stage_to_string(next_stage));
-    #endif
 
     deferred_token prev_token = state->timeout;
     state->timeout = INVALID_DEFERRED_TOKEN;
@@ -626,18 +613,14 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
 }
 
 void smtd_handle_action(smtd_state *state, smtd_action action) {
-    #ifdef SMTD_DEBUG_ENABLED
-    printf("..action %s by %s in %s\n",
+    SMTD_DEBUG("..action %s by %s in %s\n",
            action_to_string(action), state_to_string(state), smtd_stage_to_string(state->stage));
-    #endif
 
     if (worst_resolution_before(state) < SMTD_RESOLUTION_DETERMINED) {
         state->need_next_action = true;
         state->next_action = action;
-        #ifdef SMTD_DEBUG_ENABLED
-        printf("..action %s by %s in %s deferred\n",
+        SMTD_DEBUG("..action %s by %s in %s deferred\n",
            action_to_string(action), state_to_string(state), smtd_stage_to_string(state->stage));
-        #endif
         return;
     }
 
@@ -654,25 +637,19 @@ void smtd_handle_action(smtd_state *state, smtd_action action) {
     }
 
     if (next_state == NULL) {
-        #ifdef SMTD_DEBUG_ENABLED
-        printf("..action %s by %s in %s is complete by last item in stack\n",
+        SMTD_DEBUG("..action %s by %s in %s is complete by last item in stack\n",
            action_to_string(action), state_to_string(state), smtd_stage_to_string(state->stage));
-        #endif
         return;
     }
 
     if (!(resolution_before_action < SMTD_RESOLUTION_DETERMINED && SMTD_RESOLUTION_DETERMINED == resolution_after_action)) {
-        #ifdef SMTD_DEBUG_ENABLED
-        printf("..action %s by %s in %s is complete by not certain\n",
+        SMTD_DEBUG("..action %s by %s in %s is complete by not certain\n",
            action_to_string(action), state_to_string(state), smtd_stage_to_string(state->stage));
-        #endif
         return;
     }
 
-    #ifdef SMTD_DEBUG_ENABLED
-    printf("..action defer %s by %s in %s\n",
+    SMTD_DEBUG("..action defer %s by %s in %s\n",
            action_to_string(next_state->next_action), state_to_string(next_state), smtd_stage_to_string(next_state->stage));
-    #endif
 
     next_state->need_next_action = false;
 
@@ -695,10 +672,8 @@ void smtd_handle_action(smtd_state *state, smtd_action action) {
             break;
     }
 
-    #ifdef SMTD_DEBUG_ENABLED
-    printf("..action %s by %s in %s is complete\n",
+    SMTD_DEBUG("..action %s by %s in %s is complete\n",
            action_to_string(action), state_to_string(state), smtd_stage_to_string(state->stage));
-    #endif
 }
 
 void smtd_execute_action(smtd_state *state, smtd_action action) {
@@ -749,28 +724,22 @@ void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t 
     uint8_t enabled_mods = mods_after_action & changed_mods;
     uint8_t disabled_mods = mods_before_action & changed_mods;
 
-    #ifdef SMTD_DEBUG_ENABLED
-    printf("  state[%s]: mods_before_action:%x  mods_after_action:%x"
+    SMTD_DEBUG("  state[%s]: mods_before_action:%x  mods_after_action:%x"
            "  changed_mods:%x  enabled_mods:%x  disabled_mods:%x\n",
                state_to_string(state), mods_before_action, mods_after_action,
                changed_mods, enabled_mods, disabled_mods);
-    #endif
 
     for (uint8_t i = state->idx + 1; i < smtd_active_states_size; i++) {
-        #ifdef SMTD_DEBUG_ENABLED
-        printf("  state[%s] upd state[%s].saved_mods %x by +%x -%x\n",
+        SMTD_DEBUG("  state[%s] upd state[%s].saved_mods %x by +%x -%x\n",
                state_to_string(state), state_to_string(smtd_active_states[i]),
                smtd_active_states[i]->saved_mods, enabled_mods, disabled_mods);
-        #endif
 
         smtd_active_states[i]->saved_mods |= enabled_mods;
         smtd_active_states[i]->saved_mods &= ~disabled_mods;
 
-        #ifdef SMTD_DEBUG_ENABLED
-        printf("  state[%s] upd state[%s].saved_mods result %x\n",
+        SMTD_DEBUG("  state[%s] upd state[%s].saved_mods result %x\n",
                state_to_string(state), state_to_string(smtd_active_states[i]),
                smtd_active_states[i]->saved_mods);
-        #endif
     }
 }
 
@@ -780,10 +749,8 @@ void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t 
  * ************************************* */
 
 void smtd_emulate_press(keypos_t *keypos, bool press) {
-    #ifdef SMTD_DEBUG_ENABLED
-    printf("\nEMULATE %s %s\n", press ? "PRESS" : "RELEASE",
+    SMTD_DEBUG("\nEMULATE %s %s\n", press ? "PRESS" : "RELEASE",
            keycode_to_string(current_keycode(keypos)));
-    #endif
     smtd_bypass = true;
     keyevent_t event_press = MAKE_KEYEVENT(keypos->row, keypos->col, press);
     keyrecord_t record_press = {.event = event_press};
@@ -803,10 +770,8 @@ smtd_resolution worst_resolution_before(smtd_state *state) {
         }
     }
 
-    #ifdef SMTD_DEBUG_ENABLED
-    printf("  worst_resolution_before: state[%s] result %d\n",
+    SMTD_DEBUG("  worst_resolution_before: state[%s] result %d\n",
            state_to_string(state), result);
-    #endif
     return result;
 }
 
