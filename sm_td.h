@@ -438,7 +438,7 @@ void smtd_next_stage(smtd_state *state, smtd_stage next_stage) {
 
         case SMTD_STAGE_SEQUENCE:
             state->status = SMTD_STATUS_UNSET;
-            state->saved_mods = 0;
+            state->saved_mods = get_mods();
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_SEQUENCE),
                                         timeout_sequence, state);
             break;
@@ -472,6 +472,7 @@ bool process_smtd_state(bool is_state_key, keyrecord_t *record, smtd_state *stat
                 state->saved_mods = get_mods();
                 smtd_next_stage(state, SMTD_STAGE_TOUCH);
                 do_smtd_action(state, SMTD_ACTION_TOUCH);
+                break;
             }
             break;
 
@@ -482,10 +483,12 @@ bool process_smtd_state(bool is_state_key, keyrecord_t *record, smtd_state *stat
                 }
 
                 smtd_next_stage(state, SMTD_STAGE_SEQUENCE);
+                break;
             }
 
             if (!is_state_key && record->event.pressed) {
                 smtd_next_stage(state, SMTD_STAGE_FOLLOWING_TOUCH);
+                break;
             }
             break;
 
@@ -495,13 +498,16 @@ bool process_smtd_state(bool is_state_key, keyrecord_t *record, smtd_state *stat
                 state->sequence_len++;
                 do_smtd_action(state, SMTD_ACTION_TOUCH);
                 smtd_next_stage(state, SMTD_STAGE_TOUCH);
+                break;
             }
 
-            if (record->event.pressed) {
+            if (!is_state_key && record->event.pressed) {
+                state->status = SMTD_STATUS_CERTAIN;
                 if (smtd_feature_enabled_or_default(state, SMTD_FEATURE_AGGREGATE_TAPS)) {
                     do_smtd_action(state, SMTD_ACTION_TAP);
                 }
                 smtd_next_stage(state, SMTD_STAGE_NONE);
+                break;
             }
             break;
 
@@ -512,6 +518,7 @@ bool process_smtd_state(bool is_state_key, keyrecord_t *record, smtd_state *stat
             if (is_state_key && !record->event.pressed) {
                 // Macro key is released, moving to the next stage
                 smtd_next_stage(state, SMTD_STAGE_RELEASE);
+                break;
             }
 
             if (!is_state_key && !record->event.pressed) {
@@ -535,6 +542,7 @@ bool process_smtd_state(bool is_state_key, keyrecord_t *record, smtd_state *stat
                 smtd_next_stage(state, SMTD_STAGE_HOLD);
                 do_smtd_action(state, SMTD_ACTION_HOLD);
                 SMTD_SIMULTANEOUS_PRESSES_DELAY
+                break;
             }
             break;
 
@@ -542,6 +550,7 @@ bool process_smtd_state(bool is_state_key, keyrecord_t *record, smtd_state *stat
             if (is_state_key && !record->event.pressed) {
                 do_smtd_action(state, SMTD_ACTION_RELEASE);
                 smtd_next_stage(state, SMTD_STAGE_NONE);
+                break;
             }
             break;
 
@@ -563,7 +572,7 @@ bool process_smtd_state(bool is_state_key, keyrecord_t *record, smtd_state *stat
                 return false;
             }
 
-            if (record->event.pressed) {
+            if (!is_state_key && record->event.pressed) {
                 return true;
             }
 
@@ -670,6 +679,7 @@ void process_smtd_active_states(keyrecord_t *record, uint8_t starting_idx, uint1
  *      ENTRY POINT IMPLEMENTATION       *
  * ************************************* */
 
+//fixme don't like `fixed` name
 bool process_smtd_fixed(uint16_t keycode, keyrecord_t *record, bool fixed) {
     if (smtd_bypass) {
         #ifdef SMTD_DEBUG_ENABLED
