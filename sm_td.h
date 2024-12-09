@@ -170,9 +170,6 @@ bool process_smtd(uint16_t keycode, keyrecord_t *record);
 
 smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t sequence_len);
 
-
-#define IS_STATE_KEY(state, key) (state->macro_pos.row == key.row && state->macro_pos.col == key.col)
-
 uint16_t current_keycode(keypos_t *key);
 
 __attribute__((weak)) uint32_t get_smtd_timeout(uint16_t keycode, smtd_timeout timeout);
@@ -192,6 +189,8 @@ bool smtd_feature_enabled_or_default(smtd_state *state, smtd_feature feature);
 /* ************************************* *
  *           INTERNAL FUNCTIONS          *
  * ************************************* */
+
+#define IS_STATE_KEY(state, key) (state->macro_pos.row == key.row && state->macro_pos.col == key.col)
 
 bool smtd_process_desired(uint16_t pressed_keycode, keyrecord_t *record, uint16_t desired_keycode);
 
