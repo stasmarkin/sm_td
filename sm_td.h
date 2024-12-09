@@ -70,7 +70,6 @@
 #endif
 
 
-
 /* ************************************* *
  *         BASE DEFINITIONS              *
  * ************************************* */
@@ -85,19 +84,17 @@ typedef enum {
 } smtd_stage;
 
 typedef enum {
-    SMTD_STATUS_UNSET,
-    SMTD_STATUS_UNDEF_LAYER,
-    SMTD_STATUS_UNDEF_MOD, //fixme unset + undef* -> undef
-    SMTD_STATUS_UNHANDLED,
-    SMTD_STATUS_CERTAIN,
-} smtd_status; //fixme better nameing. It's not status, it's certainty or something like handle result
-
-typedef enum {
     SMTD_ACTION_TOUCH,
     SMTD_ACTION_TAP,
     SMTD_ACTION_HOLD,
     SMTD_ACTION_RELEASE,
 } smtd_action;
+
+typedef enum {
+    SMTD_RESOLUTION_UNCERTAIN,
+    SMTD_RESOLUTION_UNHANDLED,
+    SMTD_RESOLUTION_DETERMINED,
+} smtd_resolution;
 
 typedef enum {
     SMTD_TIMEOUT_TAP,
@@ -131,8 +128,9 @@ typedef struct {
     smtd_stage stage;
 
     /** The level of certainty of the state */
-    smtd_status status;
+    smtd_resolution resolution;
 
+    /** Whether the next action should be performed */
     bool need_next_action;
 
     /** The action that should be performed next */
@@ -149,7 +147,7 @@ typedef struct {
         .sequence_len = 0,                  \
         .timeout = INVALID_DEFERRED_TOKEN,  \
         .stage = SMTD_STAGE_NONE,           \
-        .status = SMTD_STATUS_UNSET,        \
+        .resolution = SMTD_RESOLUTION_UNCERTAIN,        \
         .next_action = SMTD_ACTION_TOUCH,   \
         .need_next_action = false,          \
         .idx = 0                            \
@@ -169,18 +167,24 @@ static bool smtd_bypass = false;
  * ************************************* */
 
 bool process_smtd(uint16_t keycode, keyrecord_t *record);
-smtd_status on_smtd_action(uint16_t keycode, smtd_action action, uint8_t sequence_len);
+
+smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t sequence_len);
 
 
 #define IS_STATE_KEY(state, key) (state->macro_pos.row == key.row && state->macro_pos.col == key.col)
+
 uint16_t current_keycode(keypos_t *key);
 
 __attribute__((weak)) uint32_t get_smtd_timeout(uint16_t keycode, smtd_timeout timeout);
+
 uint32_t get_smtd_timeout_default(smtd_timeout timeout);
+
 uint32_t get_smtd_timeout_or_default(smtd_state *state, smtd_timeout timeout);
 
 __attribute__((weak)) bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature);
+
 bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature);
+
 bool smtd_feature_enabled_or_default(smtd_state *state, smtd_feature feature);
 
 
@@ -190,15 +194,24 @@ bool smtd_feature_enabled_or_default(smtd_state *state, smtd_feature feature);
  * ************************************* */
 
 bool smtd_process_desired(uint16_t pressed_keycode, keyrecord_t *record, uint16_t desired_keycode);
+
 void smtd_apply_to_stack(uint8_t starting_idx, keyrecord_t *record, uint16_t desired_keycode);
+
 void smtd_create_state(keyrecord_t *record, uint16_t desired_keycode);
+
 bool smtd_apply_event(smtd_state *state, keyrecord_t *record, bool is_state_key);
+
 void smtd_apply_stage(smtd_state *state, smtd_stage next_stage);
+
 void smtd_handle_action(smtd_state *state, smtd_action action);
+
 void smtd_execute_action(smtd_state *state, smtd_action action);
+
 void smtd_emulate_press(keypos_t *keypos, bool press);
+
 void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t mods_after_action);
-smtd_status worst_status_before(smtd_state *state);
+
+smtd_resolution worst_resolution_before(smtd_state *state);
 
 
 
@@ -269,7 +282,6 @@ char* state_to_string(smtd_state *state) {
     return keycode_to_string_uncertain(keycode, false);
 }
 #endif
-
 
 
 /* ************************************* *
@@ -451,7 +463,7 @@ bool smtd_apply_event(smtd_state *state, keyrecord_t *record, bool is_state_key)
             }
 
             if (!is_state_key && record->event.pressed) {
-                state->status = SMTD_STATUS_CERTAIN;
+                state->resolution = SMTD_RESOLUTION_DETERMINED;
                 if (smtd_feature_enabled_or_default(state, SMTD_FEATURE_AGGREGATE_TAPS)) {
                     smtd_handle_action(state, SMTD_ACTION_TAP);
                 }
@@ -578,7 +590,7 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             state->saved_mods = 0;
             state->sequence_len = 0;
             state->timeout = INVALID_DEFERRED_TOKEN;
-            state->status = SMTD_STATUS_UNSET;
+            state->resolution = SMTD_RESOLUTION_UNCERTAIN;
             state->idx = 0;
             state->next_action = SMTD_ACTION_TOUCH;
             state->need_next_action = false;
@@ -590,7 +602,7 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             break;
 
         case SMTD_STAGE_SEQUENCE:
-            state->status = SMTD_STATUS_UNSET;
+            state->resolution = SMTD_RESOLUTION_UNCERTAIN;
             state->saved_mods = get_mods();
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_SEQUENCE),
                                         timeout_sequence, state);
@@ -620,7 +632,7 @@ void smtd_handle_action(smtd_state *state, smtd_action action) {
            action_to_string(action), state_to_string(state), smtd_stage_to_string(state->stage));
     #endif
 
-    if (worst_status_before(state) < SMTD_STATUS_CERTAIN) {
+    if (worst_resolution_before(state) < SMTD_RESOLUTION_DETERMINED) {
         state->need_next_action = true;
         state->next_action = action;
         #ifdef SMTD_DEBUG_ENABLED
@@ -630,9 +642,9 @@ void smtd_handle_action(smtd_state *state, smtd_action action) {
         return;
     }
 
-    smtd_status status_before_action = state->status;
+    smtd_resolution resolution_before_action = state->resolution;
     smtd_execute_action(state, action);
-    smtd_status status_after_action = state->status;
+    smtd_resolution resolution_after_action = state->resolution;
 
     smtd_state *next_state = NULL;
     for (int i = state->idx + 1; i < smtd_active_states_size; i++) {
@@ -650,7 +662,7 @@ void smtd_handle_action(smtd_state *state, smtd_action action) {
         return;
     }
 
-    if (!(status_before_action < SMTD_STATUS_CERTAIN && SMTD_STATUS_CERTAIN == status_after_action)) {
+    if (!(resolution_before_action < SMTD_RESOLUTION_DETERMINED && SMTD_RESOLUTION_DETERMINED == resolution_after_action)) {
         #ifdef SMTD_DEBUG_ENABLED
         printf("..action %s by %s in %s is complete by not certain\n",
            action_to_string(action), state_to_string(state), smtd_stage_to_string(state->stage));
@@ -703,16 +715,16 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
         SMTD_SIMULTANEOUS_PRESSES_DELAY
     }
 
-    smtd_status new_status = on_smtd_action(state->tap_keycode, action, state->sequence_len);
-    if (new_status > state->status) {
-        state->status = new_status;
+    smtd_resolution new_resolution = on_smtd_action(state->tap_keycode, action, state->sequence_len);
+    if (new_resolution > state->resolution) {
+        state->resolution = new_resolution;
     }
 
-    if (new_status == SMTD_STATUS_UNHANDLED) {
+    if (new_resolution == SMTD_RESOLUTION_UNHANDLED) {
         switch (action) {
             case SMTD_ACTION_TOUCH:
                 smtd_emulate_press(&state->macro_pos, true);
-                state->status = SMTD_STATUS_CERTAIN;
+                state->resolution = SMTD_RESOLUTION_DETERMINED;
                 break;
             case SMTD_ACTION_TAP:
                 smtd_emulate_press(&state->macro_pos, false);
@@ -764,7 +776,6 @@ void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t 
 }
 
 
-
 /* ************************************* *
  *      UTILLITY FUNCTIONS               *
  * ************************************* */
@@ -781,20 +792,20 @@ void smtd_emulate_press(keypos_t *keypos, bool press) {
     smtd_bypass = false;
 }
 
-smtd_status worst_status_before(smtd_state *state) {
-    smtd_status result = SMTD_STATUS_CERTAIN;
+smtd_resolution worst_resolution_before(smtd_state *state) {
+    smtd_resolution result = SMTD_RESOLUTION_DETERMINED;
     for (uint8_t i = 0; i < state->idx; i++) {
         if (smtd_active_states[i]->stage == SMTD_STAGE_SEQUENCE) {
             continue;
         }
 
-        if (smtd_active_states[i]->status < result) {
-            result = smtd_active_states[i]->status;
+        if (smtd_active_states[i]->resolution < result) {
+            result = smtd_active_states[i]->resolution;
         }
     }
 
     #ifdef SMTD_DEBUG_ENABLED
-    printf("  worst_status_before: state[%s] result %d\n",
+    printf("  worst_resolution_before: state[%s] result %d\n",
            state_to_string(state), result);
     #endif
     return result;
@@ -874,17 +885,17 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
     case macro_kc: {                                          \
         switch (action) {                                     \
             case SMTD_ACTION_TOUCH:                           \
-                return SMTD_STATUS_UNDEF_MOD;                 \
+                return SMTD_RESOLUTION_UNCERTAIN;                 \
             case SMTD_ACTION_TAP:                             \
                 SMTD_TAP_16(use_cl, tap_key);                 \
-                return SMTD_STATUS_CERTAIN;                   \
+                return SMTD_RESOLUTION_DETERMINED;                   \
             case SMTD_ACTION_HOLD:                            \
                 if (tap_count < threshold) {                  \
                     register_mods(MOD_BIT(mod));              \
                 } else {                                      \
                     SMTD_REGISTER_16(use_cl, tap_key);        \
                 }                                             \
-                return SMTD_STATUS_CERTAIN;                   \
+                return SMTD_RESOLUTION_DETERMINED;                   \
             case SMTD_ACTION_RELEASE:                         \
                 if (tap_count < threshold) {                  \
                     unregister_mods(MOD_BIT(mod));            \
@@ -892,7 +903,7 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
                     SMTD_UNREGISTER_16(use_cl, tap_key);      \
                     send_keyboard_report();                   \
                 }                                             \
-                return SMTD_STATUS_CERTAIN;                   \
+                return SMTD_RESOLUTION_DETERMINED;                   \
         }                                                     \
         break;                                                \
     }
@@ -902,17 +913,17 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
         switch (action) {                                     \
             case SMTD_ACTION_TOUCH:                           \
                 register_mods(MOD_BIT(mod));                  \
-                return SMTD_STATUS_UNDEF_MOD;                 \
+                return SMTD_RESOLUTION_UNCERTAIN;                 \
             case SMTD_ACTION_TAP:                             \
                 unregister_mods(MOD_BIT(mod));                \
                 SMTD_TAP_16(use_cl, tap_key);                 \
-                return SMTD_STATUS_CERTAIN;                   \
+                return SMTD_RESOLUTION_DETERMINED;                   \
             case SMTD_ACTION_HOLD:                            \
                 if (!(tap_count < threshold)) {               \
                     unregister_mods(MOD_BIT(mod));            \
                     SMTD_REGISTER_16(use_cl, tap_key);        \
                 }                                             \
-                return SMTD_STATUS_CERTAIN;                   \
+                return SMTD_RESOLUTION_DETERMINED;                   \
             case SMTD_ACTION_RELEASE:                         \
                 if (tap_count < threshold) {                  \
                     unregister_mods(MOD_BIT(mod));            \
@@ -920,7 +931,7 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
                 } else {                                      \
                     SMTD_UNREGISTER_16(use_cl, tap_key);      \
                 }                                             \
-                return SMTD_STATUS_CERTAIN;                   \
+                return SMTD_RESOLUTION_DETERMINED;                   \
         }                                                     \
         break;                                                \
     }
@@ -929,23 +940,23 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
     case macro_kc: {                                          \
         switch (action) {                                     \
             case SMTD_ACTION_TOUCH:                           \
-                return SMTD_STATUS_UNDEF_LAYER;               \
+                return SMTD_RESOLUTION_UNCERTAIN;               \
             case SMTD_ACTION_TAP:                             \
                 SMTD_TAP_16(use_cl, tap_key);                 \
-                return SMTD_STATUS_CERTAIN;                   \
+                return SMTD_RESOLUTION_DETERMINED;                   \
             case SMTD_ACTION_HOLD:                            \
                 if (tap_count < threshold) {                  \
                     LAYER_PUSH(layer);                        \
                 } else {                                      \
                     SMTD_REGISTER_16(use_cl, tap_key);        \
                 }                                             \
-                return SMTD_STATUS_CERTAIN;                   \
+                return SMTD_RESOLUTION_DETERMINED;                   \
             case SMTD_ACTION_RELEASE:                         \
                 if (tap_count < threshold) {                  \
                     LAYER_RESTORE();                          \
                 }                                             \
                 SMTD_UNREGISTER_16(use_cl, tap_key);          \
-                return SMTD_STATUS_CERTAIN;                   \
+                return SMTD_RESOLUTION_DETERMINED;                   \
         }                                                     \
         break;                                                \
     }
