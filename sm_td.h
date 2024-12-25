@@ -140,17 +140,17 @@ typedef struct {
     uint8_t idx;
 } smtd_state;
 
-#define EMPTY_STATE {                       \
-        .macro_pos = MAKE_KEYPOS(0, 0),     \
-        .tap_keycode = 0,                   \
-        .saved_mods = 0,             \
-        .sequence_len = 0,                  \
-        .timeout = INVALID_DEFERRED_TOKEN,  \
-        .stage = SMTD_STAGE_NONE,           \
-        .resolution = SMTD_RESOLUTION_UNCERTAIN,        \
-        .next_action = SMTD_ACTION_TOUCH,   \
-        .need_next_action = false,          \
-        .idx = 0                            \
+#define EMPTY_STATE {                               \
+        .macro_pos = MAKE_KEYPOS(0, 0),             \
+        .tap_keycode = 0,                           \
+        .saved_mods = 0,                            \
+        .sequence_len = 0,                          \
+        .timeout = INVALID_DEFERRED_TOKEN,          \
+        .stage = SMTD_STAGE_NONE,                   \
+        .resolution = SMTD_RESOLUTION_UNCERTAIN,    \
+        .next_action = SMTD_ACTION_TOUCH,           \
+        .need_next_action = false,                  \
+        .idx = 0                                    \
 }
 
 #define SMTD_POOL_SIZE 10
@@ -662,6 +662,8 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
         case SMTD_STAGE_TOUCH:
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_TAP),
                                         timeout_touch, state);
+            SMTD_DEBUG("      %s timeout_touch in %lums\n", smtd_state_to_str(state),
+                       get_smtd_timeout_or_default(state, SMTD_TIMEOUT_TAP));
             break;
 
         case SMTD_STAGE_SEQUENCE:
@@ -669,6 +671,8 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             state->saved_mods = get_mods();
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_SEQUENCE),
                                         timeout_sequence, state);
+            SMTD_DEBUG("      %s timeout_sequence in %lums\n", smtd_state_to_str(state),
+                       get_smtd_timeout_or_default(state, SMTD_TIMEOUT_SEQUENCE));
             break;
 
         case SMTD_STAGE_HOLD:
@@ -677,11 +681,15 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
         case SMTD_STAGE_FOLLOWING_TOUCH:
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_FOLLOWING_TAP),
                                         timeout_following_touch, state);
+            SMTD_DEBUG("      %s timeout_following_touch in %lums\n", smtd_state_to_str(state),
+                       get_smtd_timeout_or_default(state, SMTD_TIMEOUT_FOLLOWING_TAP));
             break;
 
         case SMTD_STAGE_RELEASE:
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE),
                                         timeout_release, state);
+            SMTD_DEBUG("      %s timeout_release in %lums\n", smtd_state_to_str(state),
+                       get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE));
             break;
     }
 
@@ -979,7 +987,7 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
                     SMTD_UNREGISTER_16(use_cl, tap_key);      \
                     send_keyboard_report();                   \
                 }                                             \
-                return SMTD_RESOLUTION_DETERMINEDb            \
+                return SMTD_RESOLUTION_DETERMINED;            \
         }                                                     \
         break;                                                \
     }
