@@ -770,13 +770,15 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
                smtd_state_to_str(state),
                smtd_action_to_str(action));
 
-    uint8_t mods_before_action = get_mods();
+    uint8_t mods_on_start = get_mods();
 
-    if (state->saved_mods != mods_before_action) {
+    if (state->saved_mods != mods_on_start) {
         set_mods(state->saved_mods);
         send_keyboard_report();
         SMTD_SIMULTANEOUS_PRESSES_DELAY
     }
+
+    uint8_t mods_on_restore = state->saved_mods;
 
     smtd_resolution new_resolution = on_smtd_action(state->tap_keycode, action, state->sequence_len);
     if (new_resolution > state->resolution) {
@@ -801,9 +803,24 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
     }
 
     uint8_t mods_after_action = get_mods();
-    if (mods_before_action != mods_after_action) {
+
+    if (mods_on_restore != mods_after_action) {
         state->saved_mods = mods_after_action;
-        smtd_propagate_mods(state, mods_before_action, mods_after_action);
+        smtd_propagate_mods(state, mods_on_restore, mods_after_action);
+    }
+
+    if (mods_on_start != mods_on_restore) {
+        uint8_t changed_mods = mods_on_start ^ mods_on_restore;
+        uint8_t enabled_mods = mods_on_start & changed_mods;
+        uint8_t disabled_mods = mods_on_restore & changed_mods;
+
+        uint8_t current_mods = get_mods();
+        current_mods |= enabled_mods;
+        current_mods &= ~disabled_mods;
+
+        set_mods(current_mods);
+        send_keyboard_report();
+        SMTD_SIMULTANEOUS_PRESSES_DELAY
     }
 
     SMTD_DEBUG("          %s exec done with %s\n",
@@ -944,17 +961,17 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
     case macro_kc: {                                          \
         switch (action) {                                     \
             case SMTD_ACTION_TOUCH:                           \
-                return SMTD_RESOLUTION_UNCERTAIN;                 \
+                return SMTD_RESOLUTION_UNCERTAIN;             \
             case SMTD_ACTION_TAP:                             \
                 SMTD_TAP_16(use_cl, tap_key);                 \
-                return SMTD_RESOLUTION_DETERMINED;                   \
+                return SMTD_RESOLUTION_DETERMINED;            \
             case SMTD_ACTION_HOLD:                            \
                 if (tap_count < threshold) {                  \
                     register_mods(MOD_BIT(mod));              \
                 } else {                                      \
                     SMTD_REGISTER_16(use_cl, tap_key);        \
                 }                                             \
-                return SMTD_RESOLUTION_DETERMINED;                   \
+                return SMTD_RESOLUTION_DETERMINED;            \
             case SMTD_ACTION_RELEASE:                         \
                 if (tap_count < threshold) {                  \
                     unregister_mods(MOD_BIT(mod));            \
@@ -962,7 +979,7 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
                     SMTD_UNREGISTER_16(use_cl, tap_key);      \
                     send_keyboard_report();                   \
                 }                                             \
-                return SMTD_RESOLUTION_DETERMINED;                   \
+                return SMTD_RESOLUTION_DETERMINEDb            \
         }                                                     \
         break;                                                \
     }
@@ -972,17 +989,17 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
         switch (action) {                                     \
             case SMTD_ACTION_TOUCH:                           \
                 register_mods(MOD_BIT(mod));                  \
-                return SMTD_RESOLUTION_UNCERTAIN;                 \
+                return SMTD_RESOLUTION_UNCERTAIN;             \
             case SMTD_ACTION_TAP:                             \
                 unregister_mods(MOD_BIT(mod));                \
                 SMTD_TAP_16(use_cl, tap_key);                 \
-                return SMTD_RESOLUTION_DETERMINED;                   \
+                return SMTD_RESOLUTION_DETERMINED;            \
             case SMTD_ACTION_HOLD:                            \
                 if (!(tap_count < threshold)) {               \
                     unregister_mods(MOD_BIT(mod));            \
                     SMTD_REGISTER_16(use_cl, tap_key);        \
                 }                                             \
-                return SMTD_RESOLUTION_DETERMINED;                   \
+                return SMTD_RESOLUTION_DETERMINED;            \
             case SMTD_ACTION_RELEASE:                         \
                 if (tap_count < threshold) {                  \
                     unregister_mods(MOD_BIT(mod));            \
@@ -990,7 +1007,7 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
                 } else {                                      \
                     SMTD_UNREGISTER_16(use_cl, tap_key);      \
                 }                                             \
-                return SMTD_RESOLUTION_DETERMINED;              b     \
+                return SMTD_RESOLUTION_DETERMINED;            \
         }                                                     \
         break;                                                \
     }
