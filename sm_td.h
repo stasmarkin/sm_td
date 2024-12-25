@@ -220,6 +220,8 @@ smtd_resolution worst_resolution_before(smtd_state *state);
 
 #ifdef SMTD_DEBUG_ENABLED
 
+uint32_t last_key_timer = 0;
+
 #define SMTD_DEBUG(...) printf(__VA_ARGS__)
 
 char *smtd_stage_to_str(smtd_stage stage) {
@@ -290,7 +292,7 @@ char* smtd_keycode_to_str(uint16_t keycode) {
 char* smtd_state_to_str(smtd_state *state) {
     static char buffer_state[64];
 
-    snprintf(buffer_state, sizeof(buffer_state), "S[%d](@%d#%d){%s,%s/%s,m=%d}",
+    snprintf(buffer_state, sizeof(buffer_state), "S[%d](@%d#%d){%s,%s/%s,m=%x}",
              state->idx,
              state->macro_pos.row,
              state->macro_pos.col,
@@ -300,6 +302,21 @@ char* smtd_state_to_str(smtd_state *state) {
              state->saved_mods);
 
     return buffer_state;
+}
+
+char* smtd_state_to_str2(smtd_state *state) {
+    static char buffer_state2[64];
+
+    snprintf(buffer_state2, sizeof(buffer_state2), "S[%d](@%d#%d){%s,%s/%s,m=%x}",
+             state->idx,
+             state->macro_pos.row,
+             state->macro_pos.col,
+             smtd_keycode_to_str(state->tap_keycode),
+             smtd_stage_to_str(state->stage),
+             smtd_resolution_to_str(state->resolution),
+             state->saved_mods);
+
+    return buffer_state2;
 }
 
 char* smtd_record_to_str(keyrecord_t *record) {
@@ -382,9 +399,14 @@ bool smtd_process_desired(uint16_t pressed_keycode, keyrecord_t *record, uint16_
         return true;
     }
 
-    SMTD_DEBUG("\n>> %s GOT KEY %s\n",
+
+    SMTD_DEBUG("\n>> +%lums %s GOT KEY %s\n",
+               timer_elapsed32(last_key_timer),
                smtd_record_to_str(record),
                smtd_keycode_to_str_uncertain(pressed_keycode, desired_keycode == 0));
+    #ifdef SMTD_DEBUG_ENABLED
+    last_key_timer = timer_read32();
+    #endif
     smtd_apply_to_stack(0, record, desired_keycode);
     return false;
 }
@@ -399,6 +421,7 @@ void smtd_apply_to_stack(uint8_t starting_idx, keyrecord_t *record, uint16_t des
     for (uint8_t i = starting_idx; i < smtd_active_states_size; i++) {
         smtd_state *state = smtd_active_states[i];
 
+        //fixme need to check with incoming keycode, since combos are processed is event.key=(0,0)
         bool is_state_key = IS_STATE_KEY(state, record->event.key);
         processed_state = processed_state | is_state_key;
 
@@ -410,8 +433,8 @@ void smtd_apply_to_stack(uint8_t starting_idx, keyrecord_t *record, uint16_t des
 
         if (!can_process_next) {
             SMTD_DEBUG("<< %s TERM STATE with %s\n",
-                       smtd_state_to_str(state),
-                       smtd_record_to_str(record));
+                       smtd_record_to_str(record),
+                       smtd_state_to_str(state));
             break;
         }
     }
@@ -458,12 +481,12 @@ void smtd_create_state(keyrecord_t *record, uint16_t desired_keycode) {
 
     smtd_apply_event(state, record, true);
     SMTD_DEBUG("<< %s CREATE STATE %s\n",
-               smtd_state_to_str(state),
-               smtd_record_to_str(record));
+               smtd_record_to_str(record),
+               smtd_state_to_str(state));
 }
 
 bool smtd_apply_event(smtd_state *state, keyrecord_t *record, bool is_state_key) {
-    SMTD_DEBUG("      %s apply_event with %s, is_state_key=%d\n",
+    SMTD_DEBUG("   -- %s apply_event with %s, is_state_key=%d\n",
                smtd_state_to_str(state),
                smtd_record_to_str(record),
                is_state_key);
@@ -686,7 +709,7 @@ void smtd_handle_action(smtd_state *state, smtd_action action) {
 
     if (!(resolution_before_action < SMTD_RESOLUTION_DETERMINED &&
           SMTD_RESOLUTION_DETERMINED == resolution_after_action)) {
-        SMTD_DEBUG("        %s action is complete by not determined with %s\n",
+        SMTD_DEBUG("        %s action is complete by not just got determined with %s\n",
                    smtd_state_to_str(state),
                    smtd_action_to_str(action));
         return;
@@ -710,7 +733,7 @@ void smtd_handle_action(smtd_state *state, smtd_action action) {
     SMTD_DEBUG("        %s action with %s runs deferred %s\n",
                smtd_state_to_str(state),
                smtd_action_to_str(action),
-               smtd_state_to_str(next_state));
+               smtd_state_to_str2(next_state));
 
     next_state->need_next_action = false;
 
@@ -794,24 +817,23 @@ void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t 
     uint8_t enabled_mods = mods_after_action & changed_mods;
     uint8_t disabled_mods = mods_before_action & changed_mods;
 
-    SMTD_DEBUG("            %s modes: mods_before_action:%x  mods_after_action:%x"
-               "  changed_mods:%x  enabled_mods:%x  disabled_mods:%x\n",
+    SMTD_DEBUG("            %s mods: before:%x  after:%x  ^^:%x  ++:%x  --:%x\n",
                smtd_state_to_str(state), mods_before_action, mods_after_action,
                changed_mods, enabled_mods, disabled_mods);
 
     for (uint8_t i = state->idx + 1; i < smtd_active_states_size; i++) {
-        SMTD_DEBUG("            %s modes upd %s by +%x -%x\n",
+        SMTD_DEBUG("            %s mods upd %s by +%x -%x\n",
                    smtd_state_to_str(state),
-                   smtd_state_to_str(smtd_active_states[i]),
+                   smtd_state_to_str2(smtd_active_states[i]),
                    enabled_mods,
                    disabled_mods);
 
         smtd_active_states[i]->saved_mods |= enabled_mods;
         smtd_active_states[i]->saved_mods &= ~disabled_mods;
 
-        SMTD_DEBUG("            %s changed modes %s\n",
+        SMTD_DEBUG("            %s changed mods %s\n",
                    smtd_state_to_str(state),
-                   smtd_state_to_str(smtd_active_states[i]));
+                   smtd_state_to_str2(smtd_active_states[i]));
     }
 }
 
@@ -824,6 +846,7 @@ void smtd_emulate_press(keypos_t *keypos, bool press) {
     SMTD_DEBUG("            EMULATE %s %s\n", press ? "PRESS" : "RELEASE",
                smtd_keycode_to_str(current_keycode(keypos)));
     smtd_bypass = true;
+    //fixme-sm how to emulate keypresses with row,col = (0,0) // like combos for example
     keyevent_t event_press = MAKE_KEYEVENT(keypos->row, keypos->col, press);
     keyrecord_t record_press = {.event = event_press};
     process_record(&record_press);
@@ -967,7 +990,7 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
                 } else {                                      \
                     SMTD_UNREGISTER_16(use_cl, tap_key);      \
                 }                                             \
-                return SMTD_RESOLUTION_DETERMINED;                   \
+                return SMTD_RESOLUTION_DETERMINED;              b     \
         }                                                     \
         break;                                                \
     }
@@ -976,23 +999,23 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
     case macro_kc: {                                          \
         switch (action) {                                     \
             case SMTD_ACTION_TOUCH:                           \
-                return SMTD_RESOLUTION_UNCERTAIN;               \
+                return SMTD_RESOLUTION_UNCERTAIN;             \
             case SMTD_ACTION_TAP:                             \
                 SMTD_TAP_16(use_cl, tap_key);                 \
-                return SMTD_RESOLUTION_DETERMINED;                   \
+                return SMTD_RESOLUTION_DETERMINED;            \
             case SMTD_ACTION_HOLD:                            \
                 if (tap_count < threshold) {                  \
                     LAYER_PUSH(layer);                        \
                 } else {                                      \
                     SMTD_REGISTER_16(use_cl, tap_key);        \
                 }                                             \
-                return SMTD_RESOLUTION_DETERMINED;                   \
+                return SMTD_RESOLUTION_DETERMINED;            \
             case SMTD_ACTION_RELEASE:                         \
                 if (tap_count < threshold) {                  \
                     LAYER_RESTORE();                          \
                 }                                             \
                 SMTD_UNREGISTER_16(use_cl, tap_key);          \
-                return SMTD_RESOLUTION_DETERMINED;                   \
+                return SMTD_RESOLUTION_DETERMINED;            \
         }                                                     \
         break;                                                \
     }
