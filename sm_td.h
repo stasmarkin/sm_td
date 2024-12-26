@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Version: 0.4.0
- * Date: 2024-03-07
+ * Version: 0.5.0-RC1
+ * Date: 2024-12-26
  */
 #pragma once
 
@@ -109,14 +109,14 @@ typedef enum {
 
 
 typedef struct {
-    /** The position of key that was pressed */
-    keypos_t macro_pos;
+    /** The position of a key that QMK thinks was pressed */
+    keypos_t pressed_keyposition;
 
-    /** The keycode of the key that was indicated by QMK */
-    uint16_t original_keycode;
+    /** The keycode of a key that QMK thinks was pressed */
+    uint16_t pressed_keycode;
 
-    /** The keycode of the key that was pressed (assigned on tap) */
-    uint16_t tap_keycode;
+    /** The keycode that should be actually pressed (asked outside or determined by the tap action) */
+    uint16_t desired_keycode;
 
     /** The mods that were active on last key action */
     uint8_t saved_mods;
@@ -144,9 +144,9 @@ typedef struct {
 } smtd_state;
 
 #define EMPTY_STATE {                               \
-        .macro_pos = MAKE_KEYPOS(0, 0),             \
-        .original_keycode = 0,                      \
-        .tap_keycode = 0,                           \
+        .pressed_keyposition = MAKE_KEYPOS(0, 0),   \
+        .pressed_keycode = 0,                       \
+        .desired_keycode = 0,                       \
         .saved_mods = 0,                            \
         .sequence_len = 0,                          \
         .timeout = INVALID_DEFERRED_TOKEN,          \
@@ -174,19 +174,9 @@ bool process_smtd(uint16_t keycode, keyrecord_t *record);
 
 smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t sequence_len);
 
-uint16_t current_keycode(keypos_t *key);
-
 __attribute__((weak)) uint32_t get_smtd_timeout(uint16_t keycode, smtd_timeout timeout);
 
-uint32_t get_smtd_timeout_default(smtd_timeout timeout);
-
-uint32_t get_smtd_timeout_or_default(smtd_state *state, smtd_timeout timeout);
-
 __attribute__((weak)) bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature);
-
-bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature);
-
-bool smtd_feature_enabled_or_default(smtd_state *state, smtd_feature feature);
 
 
 
@@ -200,7 +190,8 @@ void smtd_apply_to_stack(uint8_t starting_idx, uint16_t pressed_keycode, keyreco
 
 void smtd_create_state(uint16_t pressed_keycode, keyrecord_t *record, uint16_t desired_keycode);
 
-bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_keycode, keyrecord_t *record, uint16_t desired_keycode);
+bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_keycode, keyrecord_t *record,
+                      uint16_t desired_keycode);
 
 void smtd_apply_stage(smtd_state *state, smtd_stage next_stage);
 
@@ -212,7 +203,17 @@ void smtd_emulate_press(keypos_t *keypos, bool press);
 
 void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t mods_after_action);
 
-smtd_resolution worst_resolution_before(smtd_state *state);
+smtd_resolution smtd_worst_resolution_before(smtd_state *state);
+
+uint16_t smtd_current_keycode(keypos_t *key);
+
+uint32_t get_smtd_timeout_default(smtd_timeout timeout);
+
+uint32_t get_smtd_timeout_or_default(smtd_state *state, smtd_timeout timeout);
+
+bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature);
+
+bool smtd_feature_enabled_or_default(smtd_state *state, smtd_feature feature);
 
 
 
@@ -296,10 +297,10 @@ char* smtd_state_to_str(smtd_state *state) {
 
     snprintf(buffer_state, sizeof(buffer_state), "S[%d](@%d.%d#%s->%s){%s/%s,m=%x}",
              state->idx,
-             state->macro_pos.row,
-             state->macro_pos.col,
-             smtd_keycode_to_str(state->original_keycode),
-             smtd_keycode_to_str(state->tap_keycode),
+             state->pressed_keyposition.row,
+             state->pressed_keyposition.col,
+             smtd_keycode_to_str(state->pressed_keycode),
+             smtd_keycode_to_str(state->desired_keycode),
              smtd_stage_to_str(state->stage),
              smtd_resolution_to_str(state->resolution),
              state->saved_mods);
@@ -312,10 +313,10 @@ char* smtd_state_to_str2(smtd_state *state) {
 
     snprintf(buffer_state2, sizeof(buffer_state2), "S[%d](@%d.%d#%s->%s){%s/%s,m=%x}",
              state->idx,
-             state->macro_pos.row,
-             state->macro_pos.col,
-             smtd_keycode_to_str(state->original_keycode),
-             smtd_keycode_to_str(state->tap_keycode),
+             state->pressed_keyposition.row,
+             state->pressed_keyposition.col,
+             smtd_keycode_to_str(state->pressed_keycode),
+             smtd_keycode_to_str(state->desired_keycode),
              smtd_stage_to_str(state->stage),
              smtd_resolution_to_str(state->resolution),
              state->saved_mods);
@@ -415,7 +416,8 @@ bool smtd_process_desired(uint16_t pressed_keycode, keyrecord_t *record, uint16_
     return false;
 }
 
-void smtd_apply_to_stack(uint8_t starting_idx, uint16_t pressed_keycode, keyrecord_t *record, uint16_t desired_keycode) {
+void
+smtd_apply_to_stack(uint8_t starting_idx, uint16_t pressed_keycode, keyrecord_t *record, uint16_t desired_keycode) {
     SMTD_DEBUG("    %s apply_to_stack starting idx=%d\n",
                smtd_record_to_str(record),
                starting_idx);
@@ -426,10 +428,10 @@ void smtd_apply_to_stack(uint8_t starting_idx, uint16_t pressed_keycode, keyreco
         smtd_state *state = smtd_active_states[i];
 
         //fixme need to check with incoming keycode, since combos are processed is event.key=(0,0)
-        bool is_state_key = (record->event.key.row == state->macro_pos.row &&
-                             record->event.key.col == state->macro_pos.col) &&
-                            (pressed_keycode == state->original_keycode ||
-                             pressed_keycode == state->tap_keycode);
+        bool is_state_key = (record->event.key.row == state->pressed_keyposition.row &&
+                             record->event.key.col == state->pressed_keyposition.col) &&
+                            (pressed_keycode == state->pressed_keycode ||
+                             pressed_keycode == state->desired_keycode);
         processed_state = processed_state | is_state_key;
 
         bool can_process_next = smtd_apply_event(is_state_key, state, pressed_keycode, record, desired_keycode);
@@ -476,10 +478,10 @@ void smtd_create_state(uint16_t pressed_keycode, keyrecord_t *record, uint16_t d
 
     smtd_active_states[smtd_active_states_size] = state;
     state->idx = smtd_active_states_size;
-    state->original_keycode = pressed_keycode;
-    state->macro_pos = record->event.key;
+    state->pressed_keycode = pressed_keycode;
+    state->pressed_keyposition = record->event.key;
     if (desired_keycode > 0) {
-        state->tap_keycode = desired_keycode;
+        state->desired_keycode = desired_keycode;
     }
     smtd_active_states_size++;
 
@@ -489,7 +491,8 @@ void smtd_create_state(uint16_t pressed_keycode, keyrecord_t *record, uint16_t d
                smtd_state_to_str(state));
 }
 
-bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_keycode, keyrecord_t *record, uint16_t desired_keycode) {
+bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_keycode, keyrecord_t *record,
+                      uint16_t desired_keycode) {
     SMTD_DEBUG("   -- %s apply_event with %s, is_state_key=%d\n",
                smtd_state_to_str(state),
                smtd_record_to_str(record),
@@ -554,10 +557,11 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 // Another key has been released
                 smtd_state *following_key_state = NULL;
                 for (uint8_t i = state->idx + 1; i < smtd_active_states_size; i++) {
-                    bool is_following_state_key = (record->event.key.row == smtd_active_states[i]->macro_pos.row &&
-                                                   record->event.key.col == smtd_active_states[i]->macro_pos.col) &&
-                                                  (pressed_keycode == smtd_active_states[i]->original_keycode ||
-                                                   pressed_keycode == smtd_active_states[i]->tap_keycode);
+                    bool is_following_state_key =
+                            (record->event.key.row == smtd_active_states[i]->pressed_keyposition.row &&
+                             record->event.key.col == smtd_active_states[i]->pressed_keyposition.col) &&
+                            (pressed_keycode == smtd_active_states[i]->pressed_keycode ||
+                             pressed_keycode == smtd_active_states[i]->desired_keycode);
                     if (is_following_state_key) {
                         following_key_state = smtd_active_states[i];
                         break;
@@ -611,10 +615,11 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
 
             smtd_state *following_key_state = NULL;
             for (uint8_t i = state->idx + 1; i < smtd_active_states_size; i++) {
-                bool is_following_state_key = (record->event.key.row == smtd_active_states[i]->macro_pos.row &&
-                                               record->event.key.col == smtd_active_states[i]->macro_pos.col) &&
-                                              (pressed_keycode == smtd_active_states[i]->original_keycode ||
-                                               pressed_keycode == smtd_active_states[i]->tap_keycode);
+                bool is_following_state_key =
+                        (record->event.key.row == smtd_active_states[i]->pressed_keyposition.row &&
+                         record->event.key.col == smtd_active_states[i]->pressed_keyposition.col) &&
+                        (pressed_keycode == smtd_active_states[i]->pressed_keycode ||
+                         pressed_keycode == smtd_active_states[i]->desired_keycode);
                 if (is_following_state_key) {
                     following_key_state = smtd_active_states[i];
                     break;
@@ -660,9 +665,9 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             smtd_active_states_size--;
             smtd_active_states[smtd_active_states_size] = NULL;
 
-            state->macro_pos = MAKE_KEYPOS(0, 0);
-            state->original_keycode = 0;
-            state->tap_keycode = 0;
+            state->pressed_keyposition = MAKE_KEYPOS(0, 0);
+            state->pressed_keycode = 0;
+            state->desired_keycode = 0;
             state->saved_mods = 0;
             state->sequence_len = 0;
             state->timeout = INVALID_DEFERRED_TOKEN;
@@ -715,7 +720,7 @@ void smtd_handle_action(smtd_state *state, smtd_action action) {
                smtd_state_to_str(state),
                smtd_action_to_str(action));
 
-    if (worst_resolution_before(state) < SMTD_RESOLUTION_DETERMINED) {
+    if (smtd_worst_resolution_before(state) < SMTD_RESOLUTION_DETERMINED) {
         state->need_next_action = true;
         state->next_action = action;
         SMTD_DEBUG("        %s action is deffered with %s\n",
@@ -783,8 +788,8 @@ void smtd_handle_action(smtd_state *state, smtd_action action) {
 }
 
 void smtd_execute_action(smtd_state *state, smtd_action action) {
-    if (state->tap_keycode == 0) {
-        state->tap_keycode = current_keycode(&state->macro_pos);
+    if (state->desired_keycode == 0) {
+        state->desired_keycode = smtd_current_keycode(&state->pressed_keyposition);
     }
 
     SMTD_DEBUG("          %s exec in progress with %s\n",
@@ -801,7 +806,7 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
 
     uint8_t mods_on_restore = state->saved_mods;
 
-    smtd_resolution new_resolution = on_smtd_action(state->tap_keycode, action, state->sequence_len);
+    smtd_resolution new_resolution = on_smtd_action(state->desired_keycode, action, state->sequence_len);
     if (new_resolution > state->resolution) {
         state->resolution = new_resolution;
     }
@@ -809,16 +814,16 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
     if (new_resolution == SMTD_RESOLUTION_UNHANDLED) {
         switch (action) {
             case SMTD_ACTION_TOUCH:
-                smtd_emulate_press(&state->macro_pos, true);
+                smtd_emulate_press(&state->pressed_keyposition, true);
                 state->resolution = SMTD_RESOLUTION_DETERMINED;
                 break;
             case SMTD_ACTION_TAP:
-                smtd_emulate_press(&state->macro_pos, false);
+                smtd_emulate_press(&state->pressed_keyposition, false);
                 break;
             case SMTD_ACTION_HOLD:
                 break;
             case SMTD_ACTION_RELEASE:
-                smtd_emulate_press(&state->macro_pos, false);
+                smtd_emulate_press(&state->pressed_keyposition, false);
                 break;
         }
     }
@@ -882,7 +887,7 @@ void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t 
 
 void smtd_emulate_press(keypos_t *keypos, bool press) {
     SMTD_DEBUG("            EMULATE %s %s\n", press ? "PRESS" : "RELEASE",
-               smtd_keycode_to_str(current_keycode(keypos)));
+               smtd_keycode_to_str(smtd_current_keycode(keypos)));
     smtd_bypass = true;
     //fixme-sm how to emulate keypresses with row,col = (0,0) // like combos for example
     keyevent_t event_press = MAKE_KEYEVENT(keypos->row, keypos->col, press);
@@ -891,7 +896,7 @@ void smtd_emulate_press(keypos_t *keypos, bool press) {
     smtd_bypass = false;
 }
 
-smtd_resolution worst_resolution_before(smtd_state *state) {
+smtd_resolution smtd_worst_resolution_before(smtd_state *state) {
     smtd_resolution result = SMTD_RESOLUTION_DETERMINED;
     for (uint8_t i = 0; i < state->idx; i++) {
         if (smtd_active_states[i]->stage == SMTD_STAGE_SEQUENCE) {
@@ -910,7 +915,7 @@ smtd_resolution worst_resolution_before(smtd_state *state) {
 
 uint32_t get_smtd_timeout_or_default(smtd_state *state, smtd_timeout timeout) {
     if (get_smtd_timeout) {
-        return get_smtd_timeout(state->tap_keycode, timeout);
+        return get_smtd_timeout(state->desired_keycode, timeout);
     }
     return get_smtd_timeout_default(timeout);
 }
@@ -929,16 +934,16 @@ uint32_t get_smtd_timeout_default(smtd_timeout timeout) {
     return 0;
 }
 
-uint16_t current_keycode(keypos_t *key) {
+uint16_t smtd_current_keycode(keypos_t *key) {
     uint8_t current_layer = get_highest_layer(layer_state);
     return keymaps[current_layer][key->row][key->col];
 }
 
 bool smtd_feature_enabled_or_default(smtd_state *state, smtd_feature feature) {
     if (smtd_feature_enabled) {
-        return smtd_feature_enabled(state->tap_keycode, feature);
+        return smtd_feature_enabled(state->desired_keycode, feature);
     }
-    return smtd_feature_enabled_default(state->tap_keycode, feature);
+    return smtd_feature_enabled_default(state->desired_keycode, feature);
 }
 
 bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
