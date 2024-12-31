@@ -381,6 +381,7 @@ uint32_t timeout_following_touch(uint32_t trigger_time, void *cb_arg) {
 uint32_t timeout_release(uint32_t trigger_time, void *cb_arg) {
     smtd_state *state = (smtd_state *) cb_arg;
     SMTD_DEBUG("\n      %s timeout_release\n", smtd_state_to_str(state));
+    //fixme double check this with state pressed time. Sometimes timeout fails
     smtd_handle_action(state, SMTD_ACTION_TAP);
     smtd_apply_stage(state, SMTD_STAGE_NONE);
     return 0;
@@ -427,7 +428,6 @@ smtd_apply_to_stack(uint8_t starting_idx, uint16_t pressed_keycode, keyrecord_t 
     for (uint8_t i = starting_idx; i < smtd_active_states_size; i++) {
         smtd_state *state = smtd_active_states[i];
 
-        //fixme need to check with incoming keycode, since combos are processed is event.key=(0,0)
         bool is_state_key = (record->event.key.row == state->pressed_keyposition.row &&
                              record->event.key.col == state->pressed_keyposition.col) &&
                             (pressed_keycode == state->pressed_keycode ||
