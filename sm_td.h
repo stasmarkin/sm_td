@@ -910,7 +910,7 @@ void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t 
 
 
 /* ************************************* *
- *      UTILLITY FUNCTIONS               *
+ *      UTILITY FUNCTIONS                *
  * ************************************* */
 
 void smtd_emulate_press(keypos_t *keypos, bool press) {
