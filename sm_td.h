@@ -126,6 +126,9 @@ typedef struct {
     /** The time when the key was pressed */
     uint32_t pressed_time;
 
+    /** The time when the key was released */
+    uint32_t released_time;
+
     /** The timeout of current stage */
     deferred_token timeout;
 
@@ -152,6 +155,7 @@ typedef struct {
         .saved_mods = 0,                            \
         .sequence_len = 0,                          \
         .pressed_time = 0,                          \
+        .released_time = 0,                         \
         .timeout = INVALID_DEFERRED_TOKEN,          \
         .stage = SMTD_STAGE_NONE,                   \
         .resolution = SMTD_RESOLUTION_UNCERTAIN,    \
@@ -383,7 +387,6 @@ uint32_t timeout_following_touch(uint32_t trigger_time, void *cb_arg) {
 uint32_t timeout_release(uint32_t trigger_time, void *cb_arg) {
     smtd_state *state = (smtd_state *) cb_arg;
     SMTD_DEBUG("\n      %s timeout_release\n", smtd_state_to_str(state));
-    //fixme double check this with state pressed time. Sometimes timeout fails
     smtd_handle_action(state, SMTD_ACTION_TAP);
     smtd_apply_stage(state, SMTD_STAGE_NONE);
     return 0;
@@ -624,7 +627,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 break;
             }
 
-            if (timer_elapsed32(state->pressed_time) >= get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE)) {
+            if (timer_elapsed32(state->released_time) >= get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE)) {
                 // Timeout has been reached, but timeout_release has not been executed yet
                 SMTD_DEBUG("        %s timeout_release has not been executed yet\n",
                            smtd_state_to_str(state));
@@ -697,6 +700,7 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             state->saved_mods = 0;
             state->sequence_len = 0;
             state->pressed_time = 0;
+            state->released_time = 0;
             state->timeout = INVALID_DEFERRED_TOKEN;
             state->resolution = SMTD_RESOLUTION_UNCERTAIN;
             state->idx = 0;
@@ -713,6 +717,7 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             break;
 
         case SMTD_STAGE_SEQUENCE:
+            state->released_time = timer_read32();
             state->resolution = SMTD_RESOLUTION_UNCERTAIN;
             state->saved_mods = get_mods();
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_SEQUENCE),
@@ -732,6 +737,7 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             break;
 
         case SMTD_STAGE_RELEASE:
+            state->released_time = timer_read32();
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE),
                                         timeout_release, state);
             SMTD_DEBUG("      %s timeout_release in %lums\n", smtd_state_to_str(state),
