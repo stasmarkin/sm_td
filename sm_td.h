@@ -361,8 +361,8 @@ uint32_t timeout_reset_seq(uint32_t trigger_time, void *cb_arg) {
 uint32_t timeout_touch(uint32_t trigger_time, void *cb_arg) {
     smtd_state *state = (smtd_state *) cb_arg;
     SMTD_DEBUG("\n      %s timeout_touch\n", smtd_state_to_str(state));
-    smtd_handle_action(state, SMTD_ACTION_HOLD);
     smtd_apply_stage(state, SMTD_STAGE_HOLD);
+    smtd_handle_action(state, SMTD_ACTION_HOLD);
     return 0;
 }
 
@@ -379,8 +379,8 @@ uint32_t timeout_sequence(uint32_t trigger_time, void *cb_arg) {
 uint32_t timeout_following_touch(uint32_t trigger_time, void *cb_arg) {
     smtd_state *state = (smtd_state *) cb_arg;
     SMTD_DEBUG("\n      %s timeout_following_touch\n", smtd_state_to_str(state));
-    smtd_handle_action(state, SMTD_ACTION_HOLD);
     smtd_apply_stage(state, SMTD_STAGE_HOLD);
+    smtd_handle_action(state, SMTD_ACTION_HOLD);
     return 0;
 }
 
@@ -460,8 +460,7 @@ smtd_apply_to_stack(uint8_t starting_idx, uint16_t pressed_keycode, keyrecord_t 
 void smtd_create_state(uint16_t pressed_keycode, keyrecord_t *record, uint16_t desired_keycode) {
     // may be start a new state? A key must be just pressed
     if (!record->event.pressed) {
-        SMTD_DEBUG("<< %s BYPASS KEY RELEASE\n",
-                   smtd_record_to_str(record));
+        SMTD_DEBUG("<< %s BYPASS KEY RELEASE\n", smtd_record_to_str(record));
         return;
     }
 
@@ -659,6 +658,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 // Following key is released. Now we definitely know that macro key is held
                 // we need to execute hold the macro key and let following state handle the key release
 
+                smtd_apply_stage(state, SMTD_STAGE_HOLD);
                 smtd_handle_action(state, SMTD_ACTION_HOLD);
                 SMTD_SIMULTANEOUS_PRESSES_DELAY
 
