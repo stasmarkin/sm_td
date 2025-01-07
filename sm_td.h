@@ -19,13 +19,13 @@
  */
 #pragma once
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
 #include QMK_KEYBOARD_H
 #include "deferred_exec.h"
 
 #ifdef SMTD_DEBUG_ENABLED
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
 #include "print.h"
 #endif
 
@@ -621,7 +621,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 return false;
             }
 
-            // if (!is_state_key && record->event.pressed) { -- is_state_key == false always here
+        // if (!is_state_key && record->event.pressed) { -- is_state_key == false always here
             if (record->event.pressed) {
                 break;
             }
@@ -970,6 +970,7 @@ uint32_t get_smtd_timeout_default(smtd_timeout timeout) {
 
 uint16_t smtd_current_keycode(keypos_t *key) {
     uint8_t current_layer = get_highest_layer(layer_state);
+    //fixme how to pass keymaps to the function?
     return keymaps[current_layer][key->row][key->col];
 }
 
