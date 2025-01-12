@@ -970,7 +970,6 @@ uint32_t get_smtd_timeout_default(smtd_timeout timeout) {
 
 uint16_t smtd_current_keycode(keypos_t *key) {
     uint8_t current_layer = get_highest_layer(layer_state);
-    //fixme how to pass keymaps to the function?
     return keymaps[current_layer][key->row][key->col];
 }
 
@@ -1004,98 +1003,179 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
 #define SMTD_UNREGISTER_16(use_cl, key) unregister_code16(key)
 #endif
 
-#define SMTD_GET_MACRO(_1, _2, _3, _4, _5, NAME, ...) NAME
-#define SMTD_MT(...) SMTD_GET_MACRO(__VA_ARGS__, SMTD_MT5, SMTD_MT4, SMTD_MT3)(__VA_ARGS__)
-#define SMTD_MTE(...) SMTD_GET_MACRO(__VA_ARGS__, SMTD_MTE5, SMTD_MTE4, SMTD_MTE3)(__VA_ARGS__)
-#define SMTD_LT(...) SMTD_GET_MACRO(__VA_ARGS__, SMTD_LT5, SMTD_LT4, SMTD_LT3)(__VA_ARGS__)
+#ifndef NOTHING
+#define NOTHING
+#endif
+#ifndef OVERLOAD6
+#define OVERLOAD6(_1, _2, _3, _4, _5, _6, NAME, ...) NAME
+#endif
+#ifndef OVERLOAD5
+#define OVERLOAD5(_1, _2, _3, _4, _5, NAME, ...) NAME
+#endif
+#ifndef OVERLOAD4
+#define OVERLOAD4(_1, _2, _3, _4, NAME, ...) NAME
+#endif
+#ifndef EXEC
+#define EXEC(code) do { code } while(0)
+#endif
 
-#define SMTD_MT3(macro_kc, tap_key, mod) SMTD_MT4(macro_kc, tap_key, mod, 1000)
-#define SMTD_MTE3(macro_kc, tap_key, mod) SMTD_MTE4(macro_kc, tap_key, mod, 1000)
-#define SMTD_LT3(macro_kc, tap_key, layer) SMTD_LT4(macro_kc, tap_key, layer, 1000)
+#define SMTD_LIMIT(limit, then, otherwise) \
+    if (tap_count < limit) { then; } else { otherwise; }
 
-#define SMTD_MT4(macro_kc, tap_key, mod, threshold) SMTD_MT5(macro_kc, tap_key, mod, threshold, true)
-#define SMTD_MTE4(macro_kc, tap_key, mod, threshold) SMTD_MTE5(macro_kc, tap_key, mod, threshold, true)
-#define SMTD_LT4(macro_kc, tap_key, layer, threshold) SMTD_LT5(macro_kc, tap_key, layer, threshold, true)
-
-#define SMTD_MT5(macro_kc, tap_key, mod, threshold, use_cl)   \
-    case macro_kc: {                                          \
-        switch (action) {                                     \
-            case SMTD_ACTION_TOUCH:                           \
-                return SMTD_RESOLUTION_UNCERTAIN;             \
-            case SMTD_ACTION_TAP:                             \
-                SMTD_TAP_16(use_cl, tap_key);                 \
-                return SMTD_RESOLUTION_DETERMINED;            \
-            case SMTD_ACTION_HOLD:                            \
-                if (tap_count < threshold) {                  \
-                    register_mods(MOD_BIT(mod));              \
-                } else {                                      \
-                    SMTD_REGISTER_16(use_cl, tap_key);        \
-                }                                             \
-                return SMTD_RESOLUTION_DETERMINED;            \
-            case SMTD_ACTION_RELEASE:                         \
-                if (tap_count < threshold) {                  \
-                    unregister_mods(MOD_BIT(mod));            \
-                } else {                                      \
-                    SMTD_UNREGISTER_16(use_cl, tap_key);      \
-                    send_keyboard_report();                   \
-                }                                             \
-                return SMTD_RESOLUTION_DETERMINED;            \
-        }                                                     \
-        break;                                                \
+#define SMTD_DANCE(macro_key, touch_action, tap_action, hold_action, release_action)    \
+    case macro_key: {                                                                   \
+        switch (action) {                                                               \
+            case SMTD_ACTION_TOUCH: touch_action; return SMTD_RESOLUTION_UNCERTAIN;     \
+            case SMTD_ACTION_TAP: tap_action; return SMTD_RESOLUTION_DETERMINED;        \
+            case SMTD_ACTION_HOLD: hold_action; return SMTD_RESOLUTION_DETERMINED;      \
+            case SMTD_ACTION_RELEASE: release_action; return SMTD_RESOLUTION_DETERMINED;\
+        }                                                                               \
+        break;                                                                          \
     }
 
-#define SMTD_MTE5(macro_kc, tap_key, mod, threshold, use_cl)  \
-    case macro_kc: {                                          \
-        switch (action) {                                     \
-            case SMTD_ACTION_TOUCH:                           \
-                register_mods(MOD_BIT(mod));                  \
-                return SMTD_RESOLUTION_UNCERTAIN;             \
-            case SMTD_ACTION_TAP:                             \
-                unregister_mods(MOD_BIT(mod));                \
-                SMTD_TAP_16(use_cl, tap_key);                 \
-                return SMTD_RESOLUTION_DETERMINED;            \
-            case SMTD_ACTION_HOLD:                            \
-                if (!(tap_count < threshold)) {               \
-                    unregister_mods(MOD_BIT(mod));            \
-                    SMTD_REGISTER_16(use_cl, tap_key);        \
-                }                                             \
-                return SMTD_RESOLUTION_DETERMINED;            \
-            case SMTD_ACTION_RELEASE:                         \
-                if (tap_count < threshold) {                  \
-                    unregister_mods(MOD_BIT(mod));            \
-                    send_keyboard_report();                   \
-                } else {                                      \
-                    SMTD_UNREGISTER_16(use_cl, tap_key);      \
-                }                                             \
-                return SMTD_RESOLUTION_DETERMINED;            \
-        }                                                     \
-        break;                                                \
-    }
 
-#define SMTD_LT5(macro_kc, tap_key, layer, threshold, use_cl) \
-    case macro_kc: {                                          \
-        switch (action) {                                     \
-            case SMTD_ACTION_TOUCH:                           \
-                return SMTD_RESOLUTION_UNCERTAIN;             \
-            case SMTD_ACTION_TAP:                             \
-                SMTD_TAP_16(use_cl, tap_key);                 \
-                return SMTD_RESOLUTION_DETERMINED;            \
-            case SMTD_ACTION_HOLD:                            \
-                if (tap_count < threshold) {                  \
-                    LAYER_PUSH(layer);                        \
-                } else {                                      \
-                    SMTD_REGISTER_16(use_cl, tap_key);        \
-                }                                             \
-                return SMTD_RESOLUTION_DETERMINED;            \
-            case SMTD_ACTION_RELEASE:                         \
-                if (tap_count < threshold) {                  \
-                    LAYER_RESTORE();                          \
-                }                                             \
-                SMTD_UNREGISTER_16(use_cl, tap_key);          \
-                return SMTD_RESOLUTION_DETERMINED;            \
-        }                                                     \
-        break;                                                \
-    }
+#define SMTD_MT_ON_MKEY(...) OVERLOAD5(__VA_ARGS__, SMTD_MT5_ON_MKEY, SMTD_MT4_ON_MKEY, SMTD_MT3_ON_MKEY)(__VA_ARGS__)
+#define SMTD_MT3_ON_MKEY(...) SMTD_MT4_ON_MKEY(__VA_ARGS__, 1)
+#define SMTD_MT4_ON_MKEY(...) SMTD_MT5_ON_MKEY(__VA_ARGS__, true)
+#define SMTD_MT5_ON_MKEY(macro_key, tap_key, mod, threshold, use_cl) \
+    SMTD_DANCE(macro_key,                                    \
+        NOTHING,                                             \
+        SMTD_TAP_16(use_cl, tap_key),                        \
+        SMTD_LIMIT(threshold,                                \
+            register_mods(MOD_BIT(mod));                     \
+            send_keyboard_report(),                          \
+            SMTD_REGISTER_16(use_cl, tap_key)),              \
+        SMTD_LIMIT(threshold,                                \
+            unregister_mods(MOD_BIT(mod));                   \
+            send_keyboard_report(),                          \
+            SMTD_UNREGISTER_16(use_cl, tap_key));            \
+            send_keyboard_report()                           \
+    )
+
+#define SMTD_MT_ON_MKEY(...) OVERLOAD5(__VA_ARGS__, SMTD_MT5_ON_MKEY, SMTD_MT4_ON_MKEY, SMTD_MT3_ON_MKEY)(__VA_ARGS__)
+#define SMTD_MT3_ON_MKEY(...) SMTD_MT4_ON_MKEY(__VA_ARGS__, 1)
+#define SMTD_MT4_ON_MKEY(...) SMTD_MT5_ON_MKEY(__VA_ARGS__, true)
+#define SMTD_MT5_ON_MKEY(macro_key, tap_key, mod, threshold, use_cl) \
+    SMTD_DANCE(macro_key,                                    \
+        NOTHING,                                             \
+        SMTD_TAP_16(use_cl, tap_key),                        \
+        SMTD_LIMIT(threshold,                                \
+            register_mods(MOD_BIT(mod));                     \
+            send_keyboard_report(),                          \
+            SMTD_REGISTER_16(use_cl, tap_key)),              \
+        SMTD_LIMIT(threshold,                                \
+            unregister_mods(MOD_BIT(mod));                   \
+            send_keyboard_report(),                          \
+            SMTD_UNREGISTER_16(use_cl, tap_key));            \
+            send_keyboard_report()                           \
+    )
+
+
+#define SMTD_MT_ON_MKEY(...) OVERLOAD5(__VA_ARGS__, SMTD_MT5_ON_MKEY, SMTD_MT4_ON_MKEY, SMTD_MT3_ON_MKEY)(__VA_ARGS__)
+#define SMTD_MT3_ON_MKEY(...) SMTD_MT4_ON_MKEY(__VA_ARGS__, 1)
+#define SMTD_MT4_ON_MKEY(...) SMTD_MT5_ON_MKEY(__VA_ARGS__, true)
+#define SMTD_MT5_ON_MKEY(macro_key, tap_key, mod, threshold, use_cl) \
+    SMTD_DANCE(macro_key,                                    \
+        NOTHING,                                             \
+        SMTD_TAP_16(use_cl, tap_key),                        \
+        SMTD_LIMIT(threshold,                                \
+            register_mods(MOD_BIT(mod));                     \
+            send_keyboard_report(),                          \
+            SMTD_REGISTER_16(use_cl, tap_key)),              \
+        SMTD_LIMIT(threshold,                                \
+            unregister_mods(MOD_BIT(mod));                   \
+            send_keyboard_report(),                          \
+            SMTD_UNREGISTER_16(use_cl, tap_key));            \
+            send_keyboard_report()                           \
+    )
+
+#define SMTD_MTE_ON_MKEY(...) OVERLOAD5(__VA_ARGS__, SMTD_MTE5_ON_MKEY, SMTD_MTE4_ON_MKEY, SMTD_MTE3_ON_MKEY)(__VA_ARGS__)
+#define SMTD_MTE3_ON_MKEY(...) SMTD_MTE4_ON_MKEY(__VA_ARGS__, 1)
+#define SMTD_MTE4_ON_MKEY(...) SMTD_MTE5_ON_MKEY(__VA_ARGS__, true)
+#define SMTD_MTE5_ON_MKEY(macro_key, tap_key, mod, threshold, use_cl)\
+    SMTD_DANCE(macro_key,                                    \
+        EXEC(                                                \
+            register_mods(MOD_BIT(mod));                     \
+            send_keyboard_report();                          \
+        ),                                                   \
+        EXEC(                                                \
+            unregister_mods(MOD_BIT(mod));                   \
+            SMTD_TAP_16(use_cl, tap_key);                    \
+        ),                                                   \
+        SMTD_LIMIT(threshold,                                \
+            NOTHING,                                         \
+            EXEC(                                            \
+                unregister_mods(MOD_BIT(mod));               \
+                send_keyboard_report();                      \
+                SMTD_REGISTER_16(use_cl, tap_key);           \
+            )                                                \
+        ),                                                   \
+        SMTD_LIMIT(threshold,                                \
+            EXEC(                                            \
+                unregister_mods(MOD_BIT(mod));               \
+                send_keyboard_report();                      \
+            ),                                               \
+            SMTD_UNREGISTER_16(use_cl, tap_key)              \
+        )                                                    \
+    )
+
+#define SMTD_LT_ON_MKEY(...) OVERLOAD5(__VA_ARGS__, SMTD_LT5_ON_MKEY, SMTD_LT4_ON_MKEY, SMTD_LT3_ON_MKEY)(__VA_ARGS__)
+#define SMTD_LT3_ON_MKEY(...) SMTD_LT4_ON_MKEY(__VA_ARGS__, 1)
+#define SMTD_LT4_ON_MKEY(...) SMTD_LT5_ON_MKEY(__VA_ARGS__, true)
+#define SMTD_LT5_ON_MKEY(macro_key, tap_key, layer, threshold, use_cl)\
+    SMTD_DANCE(macro_key,                                     \
+        NOTHING,                                              \
+        SMTD_TAP_16(use_cl, tap_key),                         \
+        SMTD_LIMIT(threshold,                                 \
+            LAYER_PUSH(layer),                                \
+            SMTD_REGISTER_16(use_cl, tap_key)),               \
+        SMTD_LIMIT(threshold,                                 \
+            LAYER_RESTORE(),                                  \
+            NOTHING); SMTD_UNREGISTER_16(use_cl, tap_key)     \
+    )
+
+#define SMTD_TD_ON_MKEY(...) OVERLOAD5(__VA_ARGS__, SMTD_TD5_ON_MKEY, SMTD_TD4_ON_MKEY, SMTD_TD3_ON_MKEY)(__VA_ARGS__)
+#define SMTD_TD3_ON_MKEY(...) SMTD_TD4_ON_MKEY(__VA_ARGS__, 1)
+#define SMTD_TD4_ON_MKEY(...) SMTD_TD5_ON_MKEY(__VA_ARGS__, true)
+#define SMTD_TD5_ON_MKEY(macro_key, tap_key, hold_key, threshold, use_cl)\
+    SMTD_DANCE(macro_key,                                        \
+        NOTHING,                                                 \
+        SMTD_TAP_16(use_cl, tap_key),                            \
+        SMTD_LIMIT(threshold,                                    \
+            SMTD_TAP_16(use_cl, hold_key),                       \
+            SMTD_TAP_16(use_cl, tap_key)),                       \
+        SMTD_LIMIT(threshold,                                    \
+            SMTD_UNREGISTER_16(use_cl, hold_key),                \
+            SMTD_UNREGISTER_16(use_cl, tap_key))                 \
+    )
+
+// multi-tap activated key
+#define SMTD_TK_ON_MKEY(...) OVERLOAD4(__VA_ARGS__, SMTD_TK4_ON_MKEY, SMTD_TK3_ON_MKEY, SMTD_TK2_ON_MKEY)(__VA_ARGS__)
+#define SMTD_TK2_ON_MKEY(...) SMTD_TK3_ON_MKEY(__VA_ARGS__, 1)
+#define SMTD_TK3_ON_MKEY(...) SMTD_TK4_ON_MKEY(__VA_ARGS__, true)
+#define SMTD_TK4_ON_MKEY(macro_key, tap_key, threshold, use_cl) \
+    SMTD_DANCE(macro_key,                              \
+        SMTD_LIMIT(threshold,                          \
+            NOTHING,                                   \
+            SMTD_TAP_16(use_cl, tap_key)),             \
+        NOTHING,                                       \
+        NOTHING,                                       \
+        NOTHING                                        \
+    )
+
+// multi-tap activated layer move
+#define SMTD_TTO_ON_MKEY(...) OVERLOAD4(__VA_ARGS__, SMTD_TTO4_ON_MKEY, SMTD_TTO3_ON_MKEY, SMTD_TTO2_ON_MKEY)(__VA_ARGS__)
+#define SMTD_TTO2_ON_MKEY(...) SMTD_TTO3_ON_MKEY(__VA_ARGS__, 1)
+#define SMTD_TTO3_ON_MKEY(...) SMTD_TTO4_ON_MKEY(__VA_ARGS__, true)
+#define SMTD_TTO4_ON_MKEY(macro_key, layer, threshold, use_cl) \
+    SMTD_DANCE(macro_key,                              \
+        SMTD_LIMIT(threshold,                          \
+            NOTHING,                                   \
+            layer_move(layer)),                        \
+        NOTHING,                                       \
+        NOTHING,                                       \
+        NOTHING                                        \
+    )
 
 
 /* ************************************* *
