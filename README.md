@@ -1,4 +1,6 @@
-# sm_td
+# SM_TD (QMK user library)
+
+![SM Tap Dance Logo](SM_TD_logo_bg.png)
 
 ## Introduction
 
@@ -20,54 +22,44 @@ The main idea is to pay attention to the time between key releases (instead of k
 So, `↓h` `↓i` `↑h` (tiny pause) `↑i` will be interpreted as `layer_move(1)` + `tap(KC_I)` because as humans we release combo keys almost simultaneously.
 On the other hand, `↓h` `↓i` `↑h` (long pause) `↑i` will be interpreted as `tap(KC_H)` + `tap(KC_I)` because as humans we release sequential keys with a long pause in between.
 
-Please see the [wiki](https://github.com/stasmarkin/sm_td/wiki) for extensive documentation.
+Please see the [docs](https://github.com/stasmarkin/sm_td/blob/main/docs/) for extensive documentation.
+
+## Features
+- Human-friendly tap+tap vs. hold+tap interpretation both for MT and LT behavior
+- Deeply customizable behavior for each key (e.g. make an action on hold after multiple taps in a row)
+- Immediate response to tap-dance (you can make an action on tap, not on timeout after last release)
+- Customizable timeouts for each key
+- Customizable feature flags globally or for each key
+- Debugging tools (you can see the state machine stack and active states)
+- QMK's caps word support
+- QMK's combo support (partially)
+- QMK's tap dance emulation (make an action after multiple taps in a row and a short pause)
+
 
 ## Roadmap
-#### `v0.1.0`
-- initial release and testing some basic functionality
-#### `v0.2.0`
-- public beta test
-- API is not stable yet, but it is usable
-#### `v0.2.1`
-- rename `SMTD_ACTION_INIT` → `SMTD_ACTION_TOUCH`
-- remove obsolete `SMTD_ACTION_INIT_UNDO` (use that action within `SMTD_ACTION_TAP` instead)
-- better naming for timeout definitions (see Upgrade instructions)
-- better naming for global definitions (see Upgrade instructions)
-#### `v0.3.0` 
-- bug fix on pressing same macro key on stage SMTD_STAGE_RELEASE 
-- reduce args number for get_smtd_timeout_default and smtd_feature_enabled_default functions (see Upgrade instructions)
-- better stage naming 
-- comprehensive documentation
-#### `v0.3.1`
-- optional delay between simultaneous key presses (see SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS in [feature flags](https://github.com/stasmarkin/sm_td/wiki/2.3:-Customization-guide:-Feature-flags)) 
-#### `v0.4.0` ← we are here
-- simplified installation process (no need to init each key with `SMTD()` macro)
-- added useful `SMTD_MT()`, `SMTD_MTE()`, `SMTD_LT()` macros for easier customization
-- added debugging utilities (see [Debugging Guide](https://github.com/stasmarkin/sm_td/wiki/1.3:-Debugging-guide))
-- fixed several bugs (especially with sticky modifiers)
-- made some memory optimizations (for storing active states)
-#### `v0.4.1`
+
+#### `v0.5.0` (in progress)
+- 3 finger roll interpretation
+- bunch of useful macros
 - fix 'SMTD_KEYCODES_BEGIN' undeclared error on compilation
-#### `v0.5.0` and further `v0.x`
-- feature requests
-- bug fixes
+- some bug fixes
+
+#### `v0.5.1+` and further `v0.x`
+- dynamic timeouts
+- feature requests (there are a lot of them in the [issues](https://github.com/stasmarkin/sm_td/issues))
+
 #### `v1.0.0`
 - stable API
-- debug utilities
 - memory optimizations (on storing active states)
 - memory optimizations (on state machine stack size)
-- bunch of useful macros
 - split into header and source files
-#### `v1.1.0`
-- better 3 finger roll interpretation
 
-See [upgrade instructions](https://github.com/stasmarkin/sm_td/wiki/1.1:-Upgrade-instructions) if already using sm_td library.
 
 ## Installation
 1. Add `DEFERRED_EXEC_ENABLE = yes` to your `rules.mk` file.
 2. Add `#define MAX_DEFERRED_EXECUTORS 10` (or add 10 if you already use it) to your `config.h` file.
 3. Clone the `sm_td.h` repository into your `keymaps/your_keymap` folder (next to your `keymap.c`)
-4. Add `#include "sm_td.h"` to your `keymap.c` file. !!! WARNING !!! There is a bug in v0.4.0 and the library would compile with a "'SMTD_KEYCODES_BEGIN' undeclared" error. You need to put this `#include "sm_td.h"` right after you define your custom keycodes enum (described on p.6).
+4. Add `#include "sm_td.h"` to your `keymap.c` file. !!! WARNING !!! There is a bug in v0.4.0 and the library would compile with a "'SMTD_KEYCODES_BEGIN' undeclared" error. You need to put this `#include "sm_td.h"` right after you define your custom keycodes enum (described in step 6).
 5. Check `!process_smtd` first in your `process_record_user` function like this
    ```c
    bool process_record_user(uint16_t keycode, keyrecord_t *record) {
@@ -75,6 +67,8 @@ See [upgrade instructions](https://github.com/stasmarkin/sm_td/wiki/1.1:-Upgrade
            return false;
        }
        // your code here
+
+      return true;
    }
    ```
    
@@ -107,10 +101,10 @@ See [upgrade instructions](https://github.com/stasmarkin/sm_td/wiki/1.1:-Upgrade
        }
    }
    ```
-   See extensive documentation in the [Customization Guide](https://github.com/stasmarkin/sm_td/wiki/2.0:-Customization-guide) with cool [Examples](https://github.com/stasmarkin/sm_td/wiki/2.1:-Customization-guide:-Examples)
+   See extensive documentation in the [Customization Guide](https://github.com/stasmarkin/sm_td/blob/main/docs/050_customization.md) with cool [Examples](https://github.com/stasmarkin/sm_td/blob/main/docs/060_customization_examples.md).
 
-9. (optional) Add global configuration parameters to your `config.h` file (see [timeouts](https://github.com/stasmarkin/sm_td/wiki/2.2:-Customization-guide:-Timeouts-per-key) and [feature flags](https://github.com/stasmarkin/sm_td/wiki/2.3:-Customization-guide:-Feature-flags)).
-10. (optional) Add per-key configuration (see [timeouts](https://github.com/stasmarkin/sm_td/wiki/2.2:-Customization-guide:-Timeouts-per-key) and [feature flags](https://github.com/stasmarkin/sm_td/wiki/2.3:-Customization-guide:-Feature-flags))
+9. (optional) Add global configuration parameters to your `config.h` file (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
+10. (optional) Add per-key configuration (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
 
 
 ## What is `on_smtd_action()` function?
@@ -148,4 +142,4 @@ For this example, you will get the following `on_smtd_action()` calls:
 - `on_smtd_action(CKC, SMTD_ACTION_TOUCH, 0)` right after pressing `↓CKC` fourth time
 - `on_smtd_action(CKC, SMTD_ACTION_TAP, 0)` right after releasing `↑CKC` (third tap finished)
 
-If you need, there is a deeper documentation on execution flow, please see [state machine description](https://github.com/stasmarkin/sm_td/wiki/3.0:-Deep-explanation:-Stages) and further [one key explanation](https://github.com/stasmarkin/sm_td/wiki/3.1:-Deep-explanation:-One-key-stages), [two key explanation](https://github.com/stasmarkin/sm_td/wiki/3.2:-Deep-explanation:-Two-keys-stages) and [state machine stack](https://github.com/stasmarkin/sm_td/wiki/3.3:-Deep-explanation:-Three-keys-and-states-stack).
+If you need, there is a deeper documentation on execution flow, please see [state machine description](https://github.com/stasmarkin/sm_td/blob/main/docs/090_deep_explanation_stages.md) and further [one key explanation](https://github.com/stasmarkin/sm_td/blob/main/docs/100_deep_explanation_one_stage_example.md), [two key explanation](https://github.com/stasmarkin/sm_td/blob/main/docs/110_deep_explanation_two_stages_example.md) and [state machine stack](https://github.com/stasmarkin/sm_td/blob/main/docs/120_deep_explanation_stack.md).
