@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Version: 0.5.0-RC1
- * Date: 2024-12-26
+ * Version: 0.5.0-RC2
+ * Date: 2025-01-25
  */
 #pragma once
 
@@ -173,7 +173,6 @@ static smtd_state smtd_states_pool[SMTD_POOL_SIZE] = {
 static uint8_t smtd_active_states_size = 0;
 static bool smtd_bypass = false;
 
-
 /* ************************************* *
  *           PUBLIC FUNCTIONS            *
  * ************************************* */
@@ -185,6 +184,8 @@ smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t seq
 __attribute__((weak)) uint32_t get_smtd_timeout(uint16_t keycode, smtd_timeout timeout);
 
 __attribute__((weak)) bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature);
+
+extern const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS];
 
 
 /* ************************************* *
