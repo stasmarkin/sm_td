@@ -22,7 +22,6 @@ The main idea is to pay attention to the time between key releases (instead of k
 So, `↓h` `↓i` `↑h` (tiny pause) `↑i` will be interpreted as `layer_move(1)` + `tap(KC_I)` because as humans we release combo keys almost simultaneously.
 On the other hand, `↓h` `↓i` `↑h` (long pause) `↑i` will be interpreted as `tap(KC_H)` + `tap(KC_I)` because as humans we release sequential keys with a long pause in between.
 
-Please see the [docs](https://github.com/stasmarkin/sm_td/blob/main/docs/) for extensive documentation.
 
 ## Features
 - Human-friendly tap+tap vs. hold+tap interpretation both for MT and LT behavior
@@ -34,6 +33,21 @@ Please see the [docs](https://github.com/stasmarkin/sm_td/blob/main/docs/) for e
 - QMK's caps word support
 - QMK's combo support (partially)
 - QMK's tap dance emulation (make an action after multiple taps in a row and a short pause)
+
+## Documentation
+
+There is a [/docs](https://github.com/stasmarkin/sm_td/blob/main/docs/) folder with extensive documentation.
+
+Also, you may check [my layout](https://github.com/stasmarkin/sm_voyager_keymap) for a real-world example of using this library.
+
+
+## Community
+
+First of all, there are issues and pull requests on this repository. You may ask any questions there.
+
+Then you may join the [SM_TD Discord Channel](https://discord.gg/atuHR39p) for any questions or suggestions.
+
+Also, you may email me or tag/text me on Reddit (u/stasmarkin) or Discord (stasmarkin). 
 
 
 ## Roadmap
