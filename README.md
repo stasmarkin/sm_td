@@ -22,7 +22,6 @@ The main idea is to pay attention to the time between key releases (instead of k
 So, `↓h` `↓i` `↑h` (tiny pause) `↑i` will be interpreted as `layer_move(1)` + `tap(KC_I)` because as humans we release combo keys almost simultaneously.
 On the other hand, `↓h` `↓i` `↑h` (long pause) `↑i` will be interpreted as `tap(KC_H)` + `tap(KC_I)` because as humans we release sequential keys with a long pause in between.
 
-Please see the [docs](https://github.com/stasmarkin/sm_td/blob/main/docs/) for extensive documentation.
 
 ## Features
 - Human-friendly tap+tap vs. hold+tap interpretation both for MT and LT behavior
@@ -34,6 +33,21 @@ Please see the [docs](https://github.com/stasmarkin/sm_td/blob/main/docs/) for e
 - QMK's caps word support
 - QMK's combo support (partially)
 - QMK's tap dance emulation (make an action after multiple taps in a row and a short pause)
+
+## Documentation
+
+There is a [/docs](https://github.com/stasmarkin/sm_td/blob/main/docs/) folder with extensive documentation.
+
+Also, you may check [my layout](https://github.com/stasmarkin/sm_voyager_keymap) for a real-world example of using this library.
+
+
+## Community
+
+First of all, there are issues and pull requests on this repository. You may ask any questions there.
+
+Then you may join the [SM_TD Discord Channel](https://discord.gg/atuHR39p) for any questions or suggestions.
+
+Also, you may email me or tag/text me on Reddit (u/stasmarkin) or Discord (stasmarkin).
 
 
 ## Roadmap
@@ -71,7 +85,7 @@ Please see the [docs](https://github.com/stasmarkin/sm_td/blob/main/docs/) for e
       return true;
    }
    ```
-   
+
 6. Add `SMTD_KEYCODES_BEGIN` and `SMTD_KEYCODES_END` to you custom keycodes, and put each new custom keycode you want to use with `sm_td` between them.
    For example, if you want to use `A`, `S`, `D` and `F` for HRM, you need to create a custom keycode for them like this
    ```c
@@ -126,9 +140,9 @@ There are only two execution flows for the `on_smtd_action' function:
 For a better understanding of the execution flow, please check the following example.
 Let's say you want to tap, tap, hold and tap again a custom key `CKC`. Here are your finger movements:
 
-- `↓CKC` 50ms `↑CKC` (first tap finished) 50ms 
-- `↓CKC` 50ms `↑CKC` (second tap finished) 50ms 
-- `↓CKC` 200ms (holding long enough for hold action) `↑CKC` 50ms 
+- `↓CKC` 50ms `↑CKC` (first tap finished) 50ms
+- `↓CKC` 50ms `↑CKC` (second tap finished) 50ms
+- `↓CKC` 200ms (holding long enough for hold action) `↑CKC` 50ms
 - `↓CKC` 50ms `↑CKC` (third tap finished)
 
 For this example, you will get the following `on_smtd_action()` calls:
