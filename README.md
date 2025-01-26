@@ -157,3 +157,8 @@ For this example, you will get the following `on_smtd_action()` calls:
 - `on_smtd_action(CKC, SMTD_ACTION_TAP, 0)` right after releasing `↑CKC` (third tap finished)
 
 If you need, there is a deeper documentation on execution flow, please see [state machine description](https://github.com/stasmarkin/sm_td/blob/main/docs/090_deep_explanation_stages.md) and further [one key explanation](https://github.com/stasmarkin/sm_td/blob/main/docs/100_deep_explanation_one_stage_example.md), [two key explanation](https://github.com/stasmarkin/sm_td/blob/main/docs/110_deep_explanation_two_stages_example.md) and [state machine stack](https://github.com/stasmarkin/sm_td/blob/main/docs/120_deep_explanation_stack.md).
+
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=stasmarkin/sm_td&type=Date)](https://star-history.com/#stasmarkin/sm_td&Date)
