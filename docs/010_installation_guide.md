@@ -37,7 +37,7 @@
 8. Create a `void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count)` function that would handle all the actions of the custom keycodes you defined in the previous step.
    For example, if you want to use `CKC_A`, `CKC_S`, `CKC_D` and `CKC_F` for HRM, your `on_smtd_action()` function will look like this
    ```c
-   void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) { }
+   void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
        switch (keycode) {
            SMTD_MT(CKC_A, KC_A, KC_LEFT_GUI)
            SMTD_MT(CKC_S, KC_S, KC_LEFT_ALT)
@@ -46,7 +46,7 @@
        }
    }
    ```
-   See extensive documentation in the [Customization Guide](https://github.com/stasmarkin/sm_td/blob/main/docs/050_customization.md) with cool [Examples](https://github.com/stasmarkin/sm_td/blob/main/docs/0 50_customization_examples.md)
+   See extensive documentation in the [Customization Guide](https://github.com/stasmarkin/sm_td/blob/main/docs/050_customization.md) with cool [Examples](https://github.com/stasmarkin/sm_td/blob/main/docs/60_customization_examples.md)
 
 9. (optional) Add global configuration parameters to your `config.h` file (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
 10. (optional) Add per-key configuration (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
