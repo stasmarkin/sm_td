@@ -47,7 +47,7 @@ First of all, there are issues and pull requests on this repository. You may ask
 
 Then you may join the [SM_TD Discord Channel](https://discord.gg/atuHR39p) for any questions or suggestions.
 
-Also, you may email me or tag/text me on Reddit (u/stasmarkin) or Discord (stasmarkin).
+Also, you may email me or tag/text me on Reddit (u/stasmarkin) or Discord (stasmarkin). 
 
 
 ## Roadmap
