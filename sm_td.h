@@ -19,8 +19,12 @@
  */
 #pragma once
 
+#ifndef QMK_DEFERRED_EXEC_H
+#define QMK_DEFERRED_EXEC_H "deferred_exec.h"
+#endif
+
 #include QMK_KEYBOARD_H
-#include "deferred_exec.h"
+#include QMK_DEFERRED_EXEC_H
 
 #ifdef SMTD_DEBUG_ENABLED
 #include <stdint.h>

@@ -1,5 +1,7 @@
 /* Simple implementation file for sm_td to be used with tests */
 
+#include "mock_qmk_deferred_exec.h"
+#include "mock_qmk_headers.h"
 #include "sm_td.h"
 
 // Simple implementation of key functions for testing
