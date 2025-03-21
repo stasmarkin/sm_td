@@ -14,22 +14,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Version: 0.5.0-RC2
- * Date: 2025-01-25
+ * Version: 0.5.0-RC3
+ * Date: 2025-03-21
  */
 #pragma once
 
-#ifndef QMK_DEFERRED_EXEC_H
-#define QMK_DEFERRED_EXEC_H "deferred_exec.h"
+#ifndef SMTD_UNIT_TEST
+#include QMK_KEYBOARD_H
+#include "deferred_exec.h"
 #endif
 
-#ifdef TESTING
-// When testing, include the mock types
+#ifdef SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS
+#include "timer.h"
+#endif
+
+#ifdef SMTD_UNIT_TEST
 #include "mock_qmk_types.h"
-#else
-// Normal QMK includes for firmware builds
-#include QMK_KEYBOARD_H
-#include QMK_DEFERRED_EXEC_H
+#include "mock_qmk_headers.h"
+#include "mock_qmk_deferred_exec.h"
 #endif
 
 #ifdef SMTD_DEBUG_ENABLED
@@ -38,11 +40,6 @@
 #include <stdbool.h>
 #include "print.h"
 #endif
-
-#ifdef SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS
-#include "timer.h"
-#endif
-
 
 /* ************************************* *
  *         GLOBAL CONFIGURATION          *
