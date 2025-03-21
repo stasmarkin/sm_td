@@ -77,9 +77,11 @@ class TestSmTd(unittest.TestCase):
         # Compile and load the actual library
         cls.lib, cls.lib_path = load_smtd_lib()
 
-        # Define the function signatures
         cls.lib.process_smtd.argtypes = [ctypes.c_uint, ctypes.POINTER(KeyRecord)]
         cls.lib.process_smtd.restype = ctypes.c_bool
+
+        cls.lib.set_smtd_bypass.argtypes = [ctypes.c_bool]
+        cls.lib.set_smtd_bypass.restype = None
 
 
     @staticmethod
@@ -108,10 +110,17 @@ class TestSmTd(unittest.TestCase):
         keycode = 0x42  # 'B' key
         record = self.create_keyrecord(2, 2, True)
         record_ptr = ctypes.pointer(record)
+        
+        # Set the smtd_bypass variable to True directly
+        # The variable needs to be defined as a global in the shared library
+        self.lib.set_smtd_bypass(ctypes.c_bool(True))
 
         # Call process_smtd
         result = self.lib.process_smtd(keycode, record_ptr)
-
+        
+        # Reset bypass for other tests
+        self.lib.set_smtd_bypass(ctypes.c_bool(False))
+        
         self.assertTrue(result, "sm_td should return true in bypass mode")
 
     def test_key_sequence(self):

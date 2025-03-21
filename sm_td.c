@@ -9,6 +9,10 @@
 
 uint16_t keymaps[32][MATRIX_ROWS][MATRIX_COLS] = {0};
 
+void set_smtd_bypass(const bool bypass) {
+    smtd_bypass = bypass;
+}
+
 // Implementation of on_smtd_action function
 smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t sequence_len) {
     return SMTD_RESOLUTION_UNHANDLED;
