@@ -23,8 +23,16 @@
 #define QMK_DEFERRED_EXEC_H "deferred_exec.h"
 #endif
 
+#ifdef TESTING
+// When testing, include the mock types
+#include "mock_qmk_types.h"
+#include "mock_qmk_deferred_exec.h"
+#include "mock_qmk_headers.h"
+#else
+// Normal QMK includes for firmware builds
 #include QMK_KEYBOARD_H
 #include QMK_DEFERRED_EXEC_H
+#endif
 
 #ifdef SMTD_DEBUG_ENABLED
 #include <stdint.h>

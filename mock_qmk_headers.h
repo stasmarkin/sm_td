@@ -11,6 +11,8 @@
 #define KC_Z 0x1D
 #define SAFE_RANGE 0xE000
 
+// Mock constants
+#define TAPPING_TERM 200
 
 // Mock deferred execution functions
 typedef void (*deferred_token)(void);

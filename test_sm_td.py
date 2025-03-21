@@ -181,51 +181,22 @@ class SmtdMock:
 
 # Function to load and initialize the shared library
 def load_smtd_lib():
-    # Determine platform-specific file extension and compiler command
-    if sys.platform == "darwin":  # macOS
-        lib_file = "libsm_td.dylib"
-        compile_cmd = ["clang", "-shared",
-                       '-DQMK_KEYBOARD_H="mock_qmk_headers.h"',
-                       '-DQMK_DEFERRED_EXEC_H="mock_qmk_deferred_exec.h"',
-                       "-o", lib_file, "-fPIC", "sm_td.c",
-                       "-I.", "-DTESTING"]
-    elif sys.platform == "linux":  # Linux
-        lib_file = "libsm_td.so"
-        compile_cmd = ["gcc", "-shared",
-                       '-DQMK_KEYBOARD_H="mock_qmk_headers.h"',
-                       '-DQMK_DEFERRED_EXEC_H="mock_qmk_deferred_exec.h"',
-                       "-o", lib_file, "-fPIC", "sm_td.c",
-                       "-I.", "-DTESTING"]
-    elif sys.platform == "win32":  # Windows
-        lib_file = "sm_td.dll"
-        compile_cmd = ["gcc", "-shared",
-                       '-DQMK_KEYBOARD_H="mock_qmk_headers.h"',
-                       '-DQMK_DEFERRED_EXEC_H="mock_qmk_deferred_exec.h"',
-                       "-o", lib_file, "sm_td.c",
-                       "-I.", "-DTESTING"]
-    else:
-        raise RuntimeError(f"Unsupported platform: {sys.platform}")
-
-    # Compile the library
-    lib_path = os.path.abspath(lib_file)
-    print(f"Compiling sm_td library: {' '.join(compile_cmd)}")
-    result = subprocess.run(compile_cmd, capture_output=True, text=True)
-
+    """Compile and load the sm_td shared library"""
+    lib_path = os.path.join(os.path.dirname(__file__), "libsm_td.dylib")
+    
+    # Compile command with TESTING flag
+    compile_cmd = f"clang -shared -DTESTING -DQMK_KEYBOARD_H=\"mock_qmk_headers.h\" -DQMK_DEFERRED_EXEC_H=\"mock_qmk_deferred_exec.h\" -o {lib_path} -fPIC sm_td.c -I. -DTESTING"
+    
+    print(f"Compiling sm_td library: {compile_cmd}")
+    result = subprocess.run(compile_cmd, shell=True, stderr=subprocess.PIPE)
+    
     if result.returncode != 0:
-        print(f"Compilation failed: {result.stderr}")
+        print(f"Compilation failed: {result.stderr.decode()}")
         raise RuntimeError("Failed to compile sm_td library")
-
-    # Register cleanup to remove the compiled library file
-    atexit.register(lambda: os.remove(lib_path) if os.path.exists(lib_path) else None)
-
+    
     # Load the compiled library
-    try:
-        lib = ctypes.CDLL(lib_path)
-        print(f"Successfully loaded sm_td library from {lib_path}")
-        return lib, lib_path
-    except Exception as e:
-        print(f"Failed to load library: {e}")
-        raise
+    lib = ctypes.CDLL(lib_path)
+    return lib, lib_path
 
 
 # Setup callback function types
