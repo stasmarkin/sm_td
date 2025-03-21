@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "mock_qmk_types.h"
 
 // Mock deferred execution functions
 typedef void (*deferred_token)(void);
