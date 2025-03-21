@@ -21,11 +21,7 @@
 
 #define TAPPING_TERM 200
 
-
-uint32_t layer_state = 0;
-uint8_t current_mods = 0;
-uint16_t keymaps[32][MATRIX_ROWS][MATRIX_COLS] = {0};
-
+#define MAX_RECORD_HISTORY 50
 
 typedef struct {
     uint8_t row;
@@ -44,6 +40,13 @@ typedef struct {
 typedef uint32_t (*deferred_exec_callback)(uint32_t trigger_time, void *cb_arg);
 
 typedef uint8_t deferred_token;
+
+
+uint16_t keymaps[32][MATRIX_ROWS][MATRIX_COLS] = {0};
+uint32_t layer_state = 0;
+uint8_t current_mods = 0;
+static keyrecord_t record_history[MAX_RECORD_HISTORY];
+static uint8_t record_count = 0;
 
 
 uint32_t timer_read32(void) {
@@ -96,6 +99,11 @@ void send_keyboard_report(void) {
 }
 
 bool process_record(keyrecord_t *record) {
+    // Save the record to history array if there's space
+    if (record_count < MAX_RECORD_HISTORY) {
+        record_history[record_count] = *record;
+        record_count++;
+    }
     return true;
 }
 
@@ -120,6 +128,22 @@ bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature) {
     return smtd_feature_enabled_default(keycode, feature);
 }
 
+void TEST_reset() {
+    layer_state = 0;
+    current_mods = 0;
+    record_count = 0;
+    for (uint8_t i = 0; i < MAX_RECORD_HISTORY; i++) {
+        record_history[i] = (keyrecord_t){0};
+    }
+}
+
 void TEST_set_smtd_bypass(const bool bypass) {
     smtd_bypass = bypass;
+}
+
+void TEST_get_record_history(keyrecord_t *out_records, uint8_t *out_count) {
+    *out_count = record_count;
+    for (uint8_t i = 0; i < record_count; i++) {
+        out_records[i] = record_history[i];
+    }
 }

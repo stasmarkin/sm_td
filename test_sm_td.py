@@ -8,13 +8,11 @@ import tempfile
 import atexit
 
 
-# Define C structures and enums used by sm_td.h
 class KeyPosition(ctypes.Structure):
     _fields_ = [
         ("row", ctypes.c_uint8),
         ("col", ctypes.c_uint8)
     ]
-
 
 class KeyEvent(ctypes.Structure):
     _fields_ = [
@@ -22,12 +20,10 @@ class KeyEvent(ctypes.Structure):
         ("pressed", ctypes.c_bool)
     ]
 
-
 class KeyRecord(ctypes.Structure):
     _fields_ = [
         ("event", KeyEvent)
     ]
-
 
 # Enum Values
 SMTD_ACTION_TOUCH = 0
@@ -45,6 +41,7 @@ SMTD_TIMEOUT_FOLLOWING_TAP = 2
 SMTD_TIMEOUT_RELEASE = 3
 
 SMTD_FEATURE_AGGREGATE_TAPS = 0
+
 
 # Function to load and initialize the shared library
 def load_smtd_lib():
@@ -82,7 +79,15 @@ class TestSmTd(unittest.TestCase):
 
         cls.lib.TEST_set_smtd_bypass.argtypes = [ctypes.c_bool]
         cls.lib.TEST_set_smtd_bypass.restype = None
-
+        
+        cls.lib.TEST_reset.argtypes = []
+        cls.lib.TEST_reset.restype = None
+        
+        cls.lib.TEST_get_record_history.argtypes = [
+            ctypes.POINTER(KeyRecord),  # out_records
+            ctypes.POINTER(ctypes.c_uint8)  # out_count
+        ]
+        cls.lib.TEST_get_record_history.restype = None
 
     @staticmethod
     def create_keyrecord(row, col, pressed):
@@ -93,6 +98,10 @@ class TestSmTd(unittest.TestCase):
         record.event.pressed = pressed
         return record
 
+    def setUp(self):
+        """Method to run before each test"""
+        self.lib.TEST_reset()
+        
     def test_process_smtd(self):
         """Test that process_smtd function from the actual library works"""
         # Setup
@@ -103,6 +112,16 @@ class TestSmTd(unittest.TestCase):
         # Call the actual library function
         result = self.lib.process_smtd(keycode, record_ptr)
         self.assertFalse(result, "process_smtd should block future key events")
+
+        records = (KeyRecord * 50)()
+        count = ctypes.c_uint8()
+        self.lib.TEST_get_record_history(records, ctypes.byref(count))
+
+        self.assertEquals(count.value, 1)
+        self.assertEquals(records[0].event.key.row, 1)
+        self.assertEquals(records[0].event.key.col, 2)
+        self.assertEquals(records[0].event.pressed, True)
+
 
     def test_bypass_mode(self):
         """Test the actual bypass mode in the library"""
@@ -123,6 +142,12 @@ class TestSmTd(unittest.TestCase):
         
         self.assertTrue(result, "sm_td should return true in bypass mode")
 
+        records = (KeyRecord * 50)()
+        count = ctypes.c_uint8()
+        self.lib.TEST_get_record_history(records, ctypes.byref(count))
+
+        self.assertEquals(count.value, 0)
+
     def test_key_sequence(self):
         """Test a sequence of key presses and releases using the actual library"""
         # Press a key
@@ -136,6 +161,14 @@ class TestSmTd(unittest.TestCase):
         record_release_ptr = ctypes.pointer(record_release)
         self.lib.process_smtd(key_code, record_release_ptr)
 
+        # Get record history
+        records = (KeyRecord * 50)()
+        count = ctypes.c_uint8()
+        self.lib.TEST_get_record_history(records, ctypes.byref(count))
+        
+        # Check the record history
+        self.assertGreater(count.value, 0, "No records were saved")
+        
         # Different events we should see
         touch_event = (key_code, SMTD_ACTION_TOUCH, 0)
         tap_or_release_event = [(key_code, SMTD_ACTION_TAP, 1), (key_code, SMTD_ACTION_RELEASE, 0)]
@@ -148,7 +181,29 @@ class TestSmTd(unittest.TestCase):
         # Check that either TAP or RELEASE happened
         self.assertTrue(any(event in on_smtd_calls for event in tap_or_release_event),
                         f"Neither TAP nor RELEASE event found in {on_smtd_calls}")
-
+                        
+    def test_reset(self):
+        """Test the TEST_reset function"""
+        # First create some records
+        key_code = 0x41  # 'A'
+        record = self.create_keyrecord(1, 1, True)
+        record_ptr = ctypes.pointer(record)
+        self.lib.process_smtd(key_code, record_ptr)
+        
+        # Get record count
+        records = (KeyRecord * 50)()
+        count_before = ctypes.c_uint8()
+        self.lib.TEST_get_record_history(records, ctypes.byref(count_before))
+        
+        # Reset
+        self.lib.TEST_reset()
+        
+        # Check that records were cleared
+        count_after = ctypes.c_uint8()
+        self.lib.TEST_get_record_history(records, ctypes.byref(count_after))
+        
+        self.assertGreater(count_before.value, 0, "No records were created")
+        self.assertEqual(count_after.value, 0, "Records were not cleared after reset")
 
 if __name__ == "__main__":
     unittest.main()
