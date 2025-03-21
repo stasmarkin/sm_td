@@ -28,12 +28,6 @@
 #include "timer.h"
 #endif
 
-#ifdef SMTD_UNIT_TEST
-#include "mock_qmk_types.h"
-#include "mock_qmk_headers.h"
-#include "mock_qmk_deferred_exec.h"
-#endif
-
 #ifdef SMTD_DEBUG_ENABLED
 #include <stdint.h>
 #include <stddef.h>

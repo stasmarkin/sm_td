@@ -80,8 +80,8 @@ class TestSmTd(unittest.TestCase):
         cls.lib.process_smtd.argtypes = [ctypes.c_uint, ctypes.POINTER(KeyRecord)]
         cls.lib.process_smtd.restype = ctypes.c_bool
 
-        cls.lib.set_smtd_bypass.argtypes = [ctypes.c_bool]
-        cls.lib.set_smtd_bypass.restype = None
+        cls.lib.TEST_set_smtd_bypass.argtypes = [ctypes.c_bool]
+        cls.lib.TEST_set_smtd_bypass.restype = None
 
 
     @staticmethod
@@ -113,13 +113,13 @@ class TestSmTd(unittest.TestCase):
         
         # Set the smtd_bypass variable to True directly
         # The variable needs to be defined as a global in the shared library
-        self.lib.set_smtd_bypass(ctypes.c_bool(True))
+        self.lib.TEST_set_smtd_bypass(ctypes.c_bool(True))
 
         # Call process_smtd
         result = self.lib.process_smtd(keycode, record_ptr)
         
         # Reset bypass for other tests
-        self.lib.set_smtd_bypass(ctypes.c_bool(False))
+        self.lib.TEST_set_smtd_bypass(ctypes.c_bool(False))
         
         self.assertTrue(result, "sm_td should return true in bypass mode")
 
