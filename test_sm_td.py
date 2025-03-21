@@ -185,22 +185,22 @@ def load_smtd_lib():
     if sys.platform == "darwin":  # macOS
         lib_file = "libsm_td.dylib"
         compile_cmd = ["clang", "-shared",
-                       '-DQMK_KEYBOARD_H="mock_qmk_keyboard.h"',
-                       '-DQMK_DEFERRED_EXEC_H="mock_qmk_deferred_exec.h"'
+                       '-DQMK_KEYBOARD_H="mock_qmk_headers.h"',
+                       '-DQMK_DEFERRED_EXEC_H="mock_qmk_deferred_exec.h"',
                        "-o", lib_file, "-fPIC", "sm_td.c",
                        "-I.", "-DTESTING"]
     elif sys.platform == "linux":  # Linux
         lib_file = "libsm_td.so"
         compile_cmd = ["gcc", "-shared",
-                       '-DQMK_KEYBOARD_H="mock_qmk_keyboard.h"',
-                       '-DQMK_DEFERRED_EXEC_H="mock_qmk_deferred_exec.h"'
+                       '-DQMK_KEYBOARD_H="mock_qmk_headers.h"',
+                       '-DQMK_DEFERRED_EXEC_H="mock_qmk_deferred_exec.h"',
                        "-o", lib_file, "-fPIC", "sm_td.c",
                        "-I.", "-DTESTING"]
     elif sys.platform == "win32":  # Windows
         lib_file = "sm_td.dll"
         compile_cmd = ["gcc", "-shared",
-                       '-DQMK_KEYBOARD_H="mock_qmk_keyboard.h"',
-                       '-DQMK_DEFERRED_EXEC_H="mock_qmk_deferred_exec.h"'
+                       '-DQMK_KEYBOARD_H="mock_qmk_headers.h"',
+                       '-DQMK_DEFERRED_EXEC_H="mock_qmk_deferred_exec.h"',
                        "-o", lib_file, "sm_td.c",
                        "-I.", "-DTESTING"]
     else:
@@ -366,17 +366,15 @@ class TestSmTd(unittest.TestCase):
         self.smtd_mock.on_smtd_action = original_on_smtd_action
 
     def simulate_process_smtd(self, keycode, record):
-        """Simulate the behavior of process_smtd without actually calling the C function"""
-        # This is a simplified simulation of what process_smtd would do
-        # In a real implementation, you'd call the actual function from the library
-
-        # First, check if on_smtd_action handles the key
-        result = self.smtd_mock.on_smtd_action(keycode, SMTD_ACTION_TOUCH, 0)
-
-        # If unhandled, simulate calling process_record
+        """Helper method to simulate calling process_smtd"""
+        # Call on_smtd_action with TOUCH action for a press or RELEASE for a release
+        action = SMTD_ACTION_TOUCH if record.event.pressed else SMTD_ACTION_RELEASE
+        result = self.smtd_mock.on_smtd_action(keycode, action, 0)
+        
+        # If action is unhandled, call the process_record function
         if result == SMTD_RESOLUTION_UNHANDLED:
             self.qmk_mock.process_record(record)
-
+        
         # Return what process_smtd would return
         return result != SMTD_RESOLUTION_UNHANDLED
 
