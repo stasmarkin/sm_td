@@ -15,23 +15,18 @@
 // Mock constants
 #define TAPPING_TERM 200
 
-// Mock deferred execution functions
-typedef void (*deferred_token)(void);
-typedef void (*deferred_exec_callback)(uint32_t trigger_time, void *cb_arg);
-typedef bool (*deferred_exec_ready_callback)(uint32_t trigger_time, void *cb_arg);
-
-deferred_token defer_exec(uint32_t delay_ms, deferred_exec_callback callback, void *cb_arg) {
-    // In the test environment, this could just return a dummy token
+// Mock timer functions
+uint32_t timer_read32(void) {
     return 0;
 }
 
-deferred_token defer_exec_advanced(uint32_t delay_ms, deferred_exec_callback callback, deferred_exec_ready_callback ready_callback, void *cb_arg);
-void cancel_deferred_exec(deferred_token token);
+uint32_t timer_elapsed32(uint32_t last) {
+    return 0;
+}
 
-// Mock timer functions
-uint32_t timer_read32(void);
-uint32_t timer_elapsed32(uint32_t last);
-void wait_ms(uint16_t ms);
+void wait_ms(uint16_t ms) {
+    // Do nothing in mock
+}
 
 // Mock keyboard functions
 void tap_code16(uint16_t keycode);
@@ -67,8 +62,8 @@ bool is_caps_word_on(void) {
     return false;
 }
 
-// Mock keymap
-uint16_t keymaps[32][MATRIX_ROWS][MATRIX_COLS] = {0};
+// Define keymap differently to avoid conflict
+extern uint16_t keymaps[32][MATRIX_ROWS][MATRIX_COLS];
 
 // Mock mod state
 static uint8_t current_mods = 0;

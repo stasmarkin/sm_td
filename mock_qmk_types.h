@@ -21,9 +21,6 @@ typedef struct {
     keyevent_t event;
 } keyrecord_t;
 
-// Callback type for deferred execution
-typedef void (*deferred_exec_callback)(uint32_t, void*);
-typedef uint32_t deferred_token;
 
 // Define the MAKE_KEYPOS macro
 #define MAKE_KEYPOS(row, col) ((keypos_t){ (row), (col) })
@@ -61,6 +58,3 @@ void send_keyboard_report(void);
 
 // Process record function 
 bool process_record(keyrecord_t *record);
-
-// Deferred execution API
-deferred_token defer_exec(uint32_t delay_ms, deferred_exec_callback callback, void *cb_arg);

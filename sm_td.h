@@ -26,8 +26,6 @@
 #ifdef TESTING
 // When testing, include the mock types
 #include "mock_qmk_types.h"
-#include "mock_qmk_deferred_exec.h"
-#include "mock_qmk_headers.h"
 #else
 // Normal QMK includes for firmware builds
 #include QMK_KEYBOARD_H
@@ -197,7 +195,7 @@ __attribute__((weak)) uint32_t get_smtd_timeout(uint16_t keycode, smtd_timeout t
 
 __attribute__((weak)) bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature);
 
-extern const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS];
+extern uint16_t keymaps[32][MATRIX_ROWS][MATRIX_COLS];
 
 
 /* ************************************* *
