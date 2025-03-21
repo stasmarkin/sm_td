@@ -114,7 +114,7 @@ deferred_token defer_exec(uint32_t delay_ms, deferred_exec_callback callback, vo
 void cancel_deferred_exec(deferred_token token) {
 }
 
-#include "sm_td.h"
+#include "../sm_td.h"
 
 smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t sequence_len) {
     return SMTD_RESOLUTION_UNHANDLED;
