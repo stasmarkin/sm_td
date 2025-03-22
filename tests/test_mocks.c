@@ -169,6 +169,12 @@ void TEST_reset() {
     for (uint8_t i = 0; i < MAX_DEFERRED_EXECS; i++) {
         deferred_execs[i] = (deferred_exec_info_t){0};
     }
+    for (uint8_t i = 0; i < SMTD_POOL_SIZE; i++) {
+        smtd_active_states[i] = NULL;
+        reset_state(&smtd_states_pool[i]);
+    }
+    smtd_active_states_size = 0;
+    smtd_bypass = false;
 }
 
 void TEST_set_smtd_bypass(const bool bypass) {

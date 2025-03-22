@@ -677,6 +677,21 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
     return true;
 }
 
+void reset_state(smtd_state *state) {
+    state->pressed_keyposition = MAKE_KEYPOS(0, 0);
+    state->pressed_keycode = 0;
+    state->desired_keycode = 0;
+    state->saved_mods = 0;
+    state->sequence_len = 0;
+    state->pressed_time = 0;
+    state->released_time = 0;
+    state->timeout = INVALID_DEFERRED_TOKEN;
+    state->resolution = SMTD_RESOLUTION_UNCERTAIN;
+    state->idx = 0;
+    state->next_action = SMTD_ACTION_TOUCH;
+    state->need_next_action = false;
+}
+
 void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
     SMTD_DEBUG("      %s stage -> %s\n",
                smtd_state_to_str(state),
@@ -695,19 +710,7 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
 
             smtd_active_states_size--;
             smtd_active_states[smtd_active_states_size] = NULL;
-
-            state->pressed_keyposition = MAKE_KEYPOS(0, 0);
-            state->pressed_keycode = 0;
-            state->desired_keycode = 0;
-            state->saved_mods = 0;
-            state->sequence_len = 0;
-            state->pressed_time = 0;
-            state->released_time = 0;
-            state->timeout = INVALID_DEFERRED_TOKEN;
-            state->resolution = SMTD_RESOLUTION_UNCERTAIN;
-            state->idx = 0;
-            state->next_action = SMTD_ACTION_TOUCH;
-            state->need_next_action = false;
+            reset_state(state);
             break;
 
         case SMTD_STAGE_TOUCH:

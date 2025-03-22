@@ -18,22 +18,20 @@ class TestSmTd(unittest.TestCase):
 
     def test_process_smtd(self):
         """Test that process_smtd function from the actual library works"""
-        self.assertFalse(Keycode.L0_KC4.press(), "process_smtd should block future key events")
+        self.assertFalse(Keycode.L0_KC0.press(), "process_smtd should block future key events")
 
         records = get_record_history()
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]["row"], 0)
-        self.assertEqual(records[0]["col"], 4)
+        self.assertEqual(records[0]["col"], 0)
         self.assertEqual(records[0]["pressed"], True)
 
     def test_bypass_mode(self):
         """Test the actual bypass mode in the library"""
         set_bypass(True)
-
         self.assertTrue(Keycode.L0_KC0.press(), "sm_td should return true in bypass mode")
 
-        records = get_record_history()
-        self.assertEqual(len(records), 0)
+        self.assertEqual(len(get_record_history()), 0)
 
     def test_reset(self):
         """Test the reset function"""
@@ -48,8 +46,19 @@ class TestSmTd(unittest.TestCase):
 
     def test_generic_tap(self):
         """Test the generic tap function"""
+        self.assertFalse(Keycode.L0_KC1.press(), "press should block future key events")
+        records = get_record_history()
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]["row"], 0)
+        self.assertEqual(records[0]["col"], 1)
+        self.assertEqual(records[0]["pressed"], True)
 
-        pass
+        self.assertFalse(Keycode.L0_KC1.release(), "release should block future key events")
+        records = get_record_history()
+        self.assertEqual(len(records), 2)
+        self.assertEqual(records[1]["row"], 0)
+        self.assertEqual(records[1]["col"], 1)
+        self.assertEqual(records[1]["pressed"], False)
 
 
 if __name__ == "__main__":
