@@ -4,8 +4,9 @@ import unittest
 import sys
 import os
 
-# Add the tests directory to the Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'tests'))
+# Add the parent directory to the Python path
+project_root = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, project_root)
 
 # Import the test module
 from tests import test_sm_td

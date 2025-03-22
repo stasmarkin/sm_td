@@ -1,0 +1,166 @@
+import ctypes
+import os
+import subprocess
+import atexit
+
+# Structure definitions
+class KeyPosition(ctypes.Structure):
+    _fields_ = [
+        ("row", ctypes.c_uint8),
+        ("col", ctypes.c_uint8)
+    ]
+
+class KeyEvent(ctypes.Structure):
+    _fields_ = [
+        ("key", KeyPosition),
+        ("pressed", ctypes.c_bool)
+    ]
+
+class KeyRecord(ctypes.Structure):
+    _fields_ = [
+        ("event", KeyEvent)
+    ]
+
+class DeferredExecInfo(ctypes.Structure):
+    _fields_ = [
+        ("delay_ms", ctypes.c_uint32),
+        ("callback", ctypes.c_void_p),  # Using void pointer for function pointer
+        ("cb_arg", ctypes.c_void_p),
+        ("active", ctypes.c_bool)
+    ]
+
+# Enum Values
+SMTD_ACTION_TOUCH = 0
+SMTD_ACTION_TAP = 1
+SMTD_ACTION_HOLD = 2
+SMTD_ACTION_RELEASE = 3
+
+SMTD_RESOLUTION_UNCERTAIN = 0
+SMTD_RESOLUTION_UNHANDLED = 1
+SMTD_RESOLUTION_DETERMINED = 2
+
+SMTD_TIMEOUT_TAP = 0
+SMTD_TIMEOUT_SEQUENCE = 1
+SMTD_TIMEOUT_FOLLOWING_TAP = 2
+SMTD_TIMEOUT_RELEASE = 3
+
+SMTD_FEATURE_AGGREGATE_TAPS = 0
+
+# Compile and load the shared library
+def _load_smtd_lib():
+    """Compile and load the sm_td shared library"""
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    lib_path = os.path.join(project_root, "libsm_td.dylib")
+
+    # Compile command with SMTD_UNIT_TEST flag
+    compile_cmd = (f"clang -shared "
+                   f"-DSMTD_UNIT_TEST "
+                   f"-o {lib_path} "
+                   f"-fPIC {os.path.join(project_root,'tests/test_mocks.c')} "
+                   f"-I{project_root} ")
+
+    print(f"Compiling sm_td library: {compile_cmd}")
+    result = subprocess.run(compile_cmd, shell=True, stderr=subprocess.PIPE)
+
+    if result.returncode != 0:
+        print(f"Compilation failed: {result.stderr.decode()}")
+        raise RuntimeError("Failed to compile sm_td library")
+
+    # Load the compiled library
+    lib = ctypes.CDLL(lib_path)
+    
+    # Register cleanup to remove the library file
+    def cleanup():
+        try:
+            if os.path.exists(lib_path):
+                os.remove(lib_path)
+        except Exception as e:
+            print(f"Failed to clean up shared library: {e}")
+    
+    atexit.register(cleanup)
+    
+    return lib, lib_path
+
+# Load the library and set up function definitions
+lib, lib_path = _load_smtd_lib()
+
+# Define function prototypes
+lib.process_smtd.argtypes = [ctypes.c_uint, ctypes.POINTER(KeyRecord)]
+lib.process_smtd.restype = ctypes.c_bool
+
+lib.TEST_set_smtd_bypass.argtypes = [ctypes.c_bool]
+lib.TEST_set_smtd_bypass.restype = None
+
+lib.TEST_reset.argtypes = []
+lib.TEST_reset.restype = None
+
+lib.TEST_get_record_history.argtypes = [
+    ctypes.POINTER(KeyRecord),  # out_records
+    ctypes.POINTER(ctypes.c_uint8)  # out_count
+]
+lib.TEST_get_record_history.restype = None
+
+lib.TEST_get_deferred_execs.argtypes = [
+    ctypes.POINTER(DeferredExecInfo),  # out_execs
+    ctypes.POINTER(ctypes.c_uint8)  # out_count
+]
+lib.TEST_get_deferred_execs.restype = None
+
+lib.TEST_execute_deferred.argtypes = [ctypes.c_uint8]  # deferred_token
+lib.TEST_execute_deferred.restype = None
+
+# Helper functions
+def create_keyrecord(row, col, pressed):
+    """Helper to create a keyrecord structure"""
+    record = KeyRecord()
+    record.event.key.row = row
+    record.event.key.col = col
+    record.event.pressed = pressed
+    return record
+
+def process_key(keycode, row, col, pressed):
+    """Process a key with the given keycode, position, and state"""
+    record = create_keyrecord(row, col, pressed)
+    record_ptr = ctypes.pointer(record)
+    return lib.process_smtd(keycode, record_ptr)
+
+def set_bypass(enabled):
+    """Set the smtd_bypass flag"""
+    lib.TEST_set_smtd_bypass(ctypes.c_bool(enabled))
+
+def reset():
+    """Reset the test state"""
+    lib.TEST_reset()
+
+def get_record_history():
+    """Get the history of key records processed"""
+    records = (KeyRecord * 100)()  # MAX_RECORD_HISTORY is 100
+    count = ctypes.c_uint8(0)
+    lib.TEST_get_record_history(records, ctypes.byref(count))
+    
+    result = []
+    for i in range(count.value):
+        result.append({
+            "row": records[i].event.key.row,
+            "col": records[i].event.key.col,
+            "pressed": records[i].event.pressed
+        })
+    return result
+
+def get_deferred_execs():
+    """Get the list of deferred executions scheduled in the test environment"""
+    execs_array = (DeferredExecInfo * 100)()  # MAX_DEFERRED_EXECS is 100
+    count = ctypes.c_uint8(0)
+    lib.TEST_get_deferred_execs(execs_array, ctypes.byref(count))
+    
+    result = []
+    for i in range(count.value):
+        result.append({
+            "delay_ms": execs_array[i].delay_ms,
+            "active": execs_array[i].active
+        })
+    return result
+
+def execute_deferred(token):
+    """Execute a specific deferred execution by its token"""
+    lib.TEST_execute_deferred(ctypes.c_uint8(token))

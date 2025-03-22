@@ -150,6 +150,7 @@ bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature) {
 }
 
 void TEST_reset() {
+    smtd_bypass = false;
     layer_state = 0;
     current_mods = 0;
     record_count = 0;
