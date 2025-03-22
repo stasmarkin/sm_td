@@ -14,13 +14,13 @@ from tests import sm_td_bindings as smtd
 class TestSmTd(unittest.TestCase):
     def setUp(self):
         """Method to run before each test"""
-        smtd.reset()
+        reset()
 
     def test_process_smtd(self):
         """Test that process_smtd function from the actual library works"""
         self.assertFalse(Keycode.L0_KC4.press(), "process_smtd should block future key events")
 
-        records = smtd.get_record_history()
+        records = get_record_history()
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]["row"], 0)
         self.assertEqual(records[0]["col"], 4)
@@ -28,20 +28,20 @@ class TestSmTd(unittest.TestCase):
 
     def test_bypass_mode(self):
         """Test the actual bypass mode in the library"""
-        smtd.set_bypass(True)
+        set_bypass(True)
 
         self.assertTrue(Keycode.L0_KC0.press(), "sm_td should return true in bypass mode")
 
-        records = smtd.get_record_history()
+        records = get_record_history()
         self.assertEqual(len(records), 0)
 
     def test_reset(self):
         """Test the reset function"""
         Keycode.L0_KC0.press()
-        records_before = smtd.get_record_history()
+        records_before = get_record_history()
 
-        smtd.reset()
-        records_after = smtd.get_record_history()
+        reset()
+        records_after = get_record_history()
 
         self.assertGreater(len(records_before), 0, "No records were created")
         self.assertEqual(len(records_after), 0, "Records were not cleared after reset")
