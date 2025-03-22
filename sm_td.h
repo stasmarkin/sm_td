@@ -186,7 +186,7 @@ __attribute__((weak)) uint32_t get_smtd_timeout(uint16_t keycode, smtd_timeout t
 
 __attribute__((weak)) bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature);
 
-extern uint16_t keymaps[32][MATRIX_ROWS][MATRIX_COLS];
+extern uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS];
 
 
 /* ************************************* *

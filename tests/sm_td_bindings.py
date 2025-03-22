@@ -2,6 +2,8 @@ import ctypes
 import os
 import subprocess
 import atexit
+from enum import Enum
+
 
 # Structure definitions
 class KeyPosition(ctypes.Structure):
@@ -45,6 +47,57 @@ SMTD_TIMEOUT_FOLLOWING_TAP = 2
 SMTD_TIMEOUT_RELEASE = 3
 
 SMTD_FEATURE_AGGREGATE_TAPS = 0
+
+class Layer(Enum):
+    L0 = 0
+    L1 = 1
+    L2 = 2
+
+class Keycode(Enum):
+    L0_KC0 = 100
+    L0_KC1 = 101
+    L0_KC2 = 102
+    L0_KC3 = 103
+    L0_KC4 = 104
+    L0_KC5 = 105
+    L0_KC6 = 106
+    L0_KC7 = 107
+
+    L1_KC0 = 200
+    L1_KC1 = 201
+    L1_KC2 = 202
+    L1_KC3 = 203
+    L1_KC4 = 204
+    L1_KC5 = 205
+    L1_KC6 = 206
+    L1_KC7 = 207
+
+    L2_KC0 = 300
+    L2_KC1 = 301
+    L2_KC2 = 302
+    L2_KC3 = 303
+    L2_KC4 = 304
+    L2_KC5 = 305
+    L2_KC6 = 306
+    L2_KC7 = 307
+
+    @classmethod
+    def reset(cls):
+        for member in cls:
+            member._pressed = False
+
+    def __init__(self, value):
+        self._pressed = False
+
+    def press(self):
+        assert self._pressed == False
+        self._pressed = True
+        return process_key(self, True)
+
+    def release(self):
+        assert self._pressed == True
+        self._pressed = False
+        return process_key(self, False)
 
 # Compile and load the shared library
 def _load_smtd_lib():
@@ -118,11 +171,11 @@ def create_keyrecord(row, col, pressed):
     record.event.pressed = pressed
     return record
 
-def process_key(keycode, row, col, pressed):
+def process_key(keycode: Keycode, pressed: bool):
     """Process a key with the given keycode, position, and state"""
-    record = create_keyrecord(row, col, pressed)
+    record = create_keyrecord(0, int(keycode.name[5:]), pressed)
     record_ptr = ctypes.pointer(record)
-    return lib.process_smtd(keycode, record_ptr)
+    return lib.process_smtd(ctypes.c_uint(keycode.value), record_ptr)
 
 def set_bypass(enabled):
     """Set the smtd_bypass flag"""
@@ -131,6 +184,7 @@ def set_bypass(enabled):
 def reset():
     """Reset the test state"""
     lib.TEST_reset()
+    Keycode.reset()
 
 def get_record_history():
     """Get the history of key records processed"""

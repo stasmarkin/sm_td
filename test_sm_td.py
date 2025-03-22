@@ -95,7 +95,7 @@ class TestSmTd(unittest.TestCase):
         record = KeyRecord()
         record.event.key.row = row
         record.event.key.col = col
-        record.event.pressed = pressed
+        record.event._pressed = pressed
         return record
 
     def setUp(self):
@@ -120,7 +120,7 @@ class TestSmTd(unittest.TestCase):
         self.assertEquals(count.value, 1)
         self.assertEquals(records[0].event.key.row, 1)
         self.assertEquals(records[0].event.key.col, 2)
-        self.assertEquals(records[0].event.pressed, True)
+        self.assertEquals(records[0].event._pressed, True)
 
 
     def test_bypass_mode(self):

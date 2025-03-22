@@ -12,12 +12,8 @@
 #define LSFT(kc) ((kc) | 0x1000)
 #define PROGMEM
 
-#define MATRIX_ROWS 8
+#define MATRIX_ROWS 1
 #define MATRIX_COLS 8
-
-#define KC_A 0x04
-#define KC_Z 0x1D
-#define SAFE_RANGE 0xE000
 
 #define TAPPING_TERM 200
 
@@ -50,14 +46,26 @@ typedef struct {
     bool active;
 } deferred_exec_info_t;
 
+enum LAYERS { L0 = 0, L1 = 1, L2 = 2 };
 
-uint16_t keymaps[32][MATRIX_ROWS][MATRIX_COLS] = {0};
+enum KEYCODES {
+    L0_KC0 = 100, L0_KC1, L0_KC2, L0_KC3, L0_KC4, L0_KC5, L0_KC6, L0_KC7, //
+    L1_KC0 = 200, L1_KC1, L1_KC2, L1_KC3, L1_KC4, L1_KC5, L1_KC6, L1_KC7, //
+    L2_KC0 = 300, L2_KC1, L2_KC2, L2_KC3, L2_KC4, L2_KC5, L2_KC6, L2_KC7, //
+};
+
 uint32_t layer_state = 0;
 uint8_t current_mods = 0;
 static keyrecord_t record_history[MAX_RECORD_HISTORY];
 static uint8_t record_count = 0;
 static deferred_exec_info_t deferred_execs[MAX_DEFERRED_EXECS] = {0};
 static uint8_t deferred_exec_count = 0;
+uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
+    [L0] = { L0_KC0, L0_KC1, L0_KC2, L0_KC3, L0_KC4, L0_KC5, L0_KC6, L0_KC7, },
+    [L1] = { L1_KC0, L1_KC1, L1_KC2, L1_KC3, L1_KC4, L1_KC5, L1_KC6, L1_KC7, },
+    [L2] = { L2_KC0, L2_KC1, L2_KC2, L2_KC3, L2_KC4, L2_KC5, L2_KC6, L2_KC7, },
+};
+
 
 uint32_t timer_read32(void) {
     return 0;
