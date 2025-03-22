@@ -21,7 +21,9 @@
 
 #define TAPPING_TERM 200
 
-#define MAX_RECORD_HISTORY 50
+#define MAX_RECORD_HISTORY 100
+#define MAX_DEFERRED_EXECS 100
+
 
 typedef struct {
     uint8_t row;
@@ -41,13 +43,21 @@ typedef uint32_t (*deferred_exec_callback)(uint32_t trigger_time, void *cb_arg);
 
 typedef uint8_t deferred_token;
 
+typedef struct {
+    uint32_t delay_ms;
+    deferred_exec_callback callback;
+    void *cb_arg;
+    bool active;
+} deferred_exec_info_t;
+
 
 uint16_t keymaps[32][MATRIX_ROWS][MATRIX_COLS] = {0};
 uint32_t layer_state = 0;
 uint8_t current_mods = 0;
 static keyrecord_t record_history[MAX_RECORD_HISTORY];
 static uint8_t record_count = 0;
-
+static deferred_exec_info_t deferred_execs[MAX_DEFERRED_EXECS] = {0};
+static uint8_t deferred_exec_count = 0;
 
 uint32_t timer_read32(void) {
     return 0;
@@ -108,10 +118,21 @@ bool process_record(keyrecord_t *record) {
 }
 
 deferred_token defer_exec(uint32_t delay_ms, deferred_exec_callback callback, void *cb_arg) {
+    if (deferred_exec_count < MAX_DEFERRED_EXECS) {
+        deferred_execs[deferred_exec_count].delay_ms = delay_ms;
+        deferred_execs[deferred_exec_count].callback = callback;
+        deferred_execs[deferred_exec_count].cb_arg = cb_arg;
+        deferred_execs[deferred_exec_count].active = true;
+        deferred_exec_count++;
+        return deferred_exec_count; // Return non-zero token
+    }
     return 0;
 }
 
 void cancel_deferred_exec(deferred_token token) {
+    if (token > 0 && token <= deferred_exec_count) {
+        deferred_execs[token - 1].active = false;
+    }
 }
 
 #include "../sm_td.h"
@@ -132,8 +153,12 @@ void TEST_reset() {
     layer_state = 0;
     current_mods = 0;
     record_count = 0;
+    deferred_exec_count = 0;
     for (uint8_t i = 0; i < MAX_RECORD_HISTORY; i++) {
         record_history[i] = (keyrecord_t){0};
+    }
+    for (uint8_t i = 0; i < MAX_DEFERRED_EXECS; i++) {
+        deferred_execs[i] = (deferred_exec_info_t){0};
     }
 }
 
@@ -145,5 +170,22 @@ void TEST_get_record_history(keyrecord_t *out_records, uint8_t *out_count) {
     *out_count = record_count;
     for (uint8_t i = 0; i < record_count; i++) {
         out_records[i] = record_history[i];
+    }
+}
+
+void TEST_get_deferred_execs(deferred_exec_info_t *out_execs, uint8_t *out_count) {
+    *out_count = deferred_exec_count;
+    for (uint8_t i = 0; i < deferred_exec_count; i++) {
+        out_execs[i] = deferred_execs[i];
+    }
+}
+
+void TEST_execute_deferred(deferred_token token) {
+    if (token > 0 && token <= deferred_exec_count && deferred_execs[token - 1].active) {
+        deferred_exec_callback callback = deferred_execs[token - 1].callback;
+        void *cb_arg = deferred_execs[token - 1].cb_arg;
+        if (callback != NULL) {
+            callback(0, cb_arg);
+        }
     }
 }
