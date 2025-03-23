@@ -100,20 +100,32 @@ class Keycode(Enum):
     @classmethod
     def reset(cls):
         for member in cls:
-            member._pressed = False
+            member.__init__(member._value)
 
     def __init__(self, value):
+        self._value = value
         self._pressed = False
+        self._defer_idx = None
 
     def press(self):
         assert self._pressed == False
         self._pressed = True
-        return process_key(self, True)
+        result, defer_idx = process_key_and_timeout(self, True)
+        self._defer_idx = defer_idx
+        return result
 
     def release(self):
         assert self._pressed == True
         self._pressed = False
-        return process_key(self, False)
+        result, defer_idx = process_key_and_timeout(self, False)
+        self._defer_idx = defer_idx
+        return result
+
+    def prolong(self):
+        assert self._defer_idx is not None
+        execute_deferred(self._defer_idx)
+        self._defer_idx = None
+
 
 
 # Compile and load the shared library
@@ -180,6 +192,9 @@ lib.TEST_get_deferred_execs.restype = None
 lib.TEST_execute_deferred.argtypes = [ctypes.c_uint8]  # deferred_token
 lib.TEST_execute_deferred.restype = None
 
+lib.get_mods.argtypes = []  # No arguments
+lib.get_mods.restype = ctypes.c_uint8  # Returns uint8_t
+
 
 # Helper functions
 def create_keyrecord(row, col, pressed):
@@ -192,11 +207,18 @@ def create_keyrecord(row, col, pressed):
     return record
 
 
-def process_key(keycode: Keycode, pressed: bool):
-    """Process a key with the given keycode, position, and state"""
+def process_key_and_timeout(keycode: Keycode, pressed: bool):
+    execs_before = get_deferred_execs()
     record = create_keyrecord(0, int(keycode.name[5:]), pressed)
     record_ptr = ctypes.pointer(record)
-    return lib.process_smtd(ctypes.c_uint(keycode.value), record_ptr)
+    result = lib.process_smtd(ctypes.c_uint(keycode.value), record_ptr)
+    execs_after = get_deferred_execs()
+    execs_diff = execs_after[len(execs_before):]
+    if len(execs_diff) is 0: return result, None
+    if len(execs_diff) is 1: return result, execs_diff[0]["idx"]
+
+    raise RuntimeError("Unexpected number of deferred executions")
+
 
 
 def set_bypass(enabled):
@@ -236,12 +258,20 @@ def get_deferred_execs():
     result = []
     for i in range(count.value):
         result.append({
+            "idx": i + 1,
             "delay_ms": execs_array[i].delay_ms,
             "active": execs_array[i].active
         })
     return result
 
 
-def execute_deferred(token):
-    """Execute a specific deferred execution by its token"""
-    lib.TEST_execute_deferred(ctypes.c_uint8(token))
+def execute_deferred(idx):
+    """Execute a specific deferred execution by its id"""
+    assert get_deferred_execs()[idx-1]["active"] == True
+    lib.TEST_execute_deferred(ctypes.c_uint8(idx))
+    assert get_deferred_execs()[idx-1]["active"] == False
+
+
+def get_mods():
+    """Get the current modifier state"""
+    return lib.get_mods()

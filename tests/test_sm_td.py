@@ -63,11 +63,14 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(records[1]["keycode"], 0)
         self.assertEqual(records[1]["pressed"], False)
 
-    def test_basic_MT(self):
+    def test_basic_MT_tap(self):
         """Test the basic MT function"""
         self.assertFalse(Keycode.L0_KC2.press(), "press should block future key events")
         records = get_record_history()
         self.assertEqual(len(records), 0)
+        # fixme test mods
+        # fixme test hold
+        # fixme test double tap+hold
 
         self.assertFalse(Keycode.L0_KC2.release(), "release should return true")
         records = get_record_history()
@@ -80,6 +83,22 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(records[1]["col"], 255)
         self.assertEqual(records[1]["keycode"], Keycode.MACRO2.value)
         self.assertEqual(records[1]["pressed"], False)
+
+    def test_basic_MT_hold(self):
+        """Test the basic MT function"""
+        self.assertFalse(Keycode.L0_KC2.press(), "press should block future key events")
+        get_active_mods()
+
+        records = get_record_history()
+        self.assertEqual(len(records), 0)
+        # fixme test mods
+        # fixme test hold
+        # fixme test double tap+hold
+
+        self.assertFalse(Keycode.L0_KC2.release(), "release should return true")
+        records = get_record_history()
+        self.assertEqual(len(records), 0)
+
 
 
 if __name__ == "__main__":

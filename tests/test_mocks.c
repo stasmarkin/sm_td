@@ -152,17 +152,17 @@ bool process_record(keyrecord_t *record) {
 }
 
 deferred_token defer_exec(uint32_t delay_ms, deferred_exec_callback callback, void *cb_arg) {
-    deferred_execs[deferred_exec_count].delay_ms = delay_ms;
-    deferred_execs[deferred_exec_count].callback = callback;
-    deferred_execs[deferred_exec_count].cb_arg = cb_arg;
-    deferred_execs[deferred_exec_count].active = true;
     deferred_exec_count++;
-    return deferred_exec_count; // Return non-zero token
+    deferred_execs[deferred_exec_count-1].delay_ms = delay_ms;
+    deferred_execs[deferred_exec_count-1].callback = callback;
+    deferred_execs[deferred_exec_count-1].cb_arg = cb_arg;
+    deferred_execs[deferred_exec_count-1].active = true;
+    return deferred_exec_count;
 }
 
 void cancel_deferred_exec(deferred_token token) {
     if (token > 0 && token <= deferred_exec_count) {
-        deferred_execs[token - 1].active = false;
+        deferred_execs[token-1].active = false;
     }
 }
 
@@ -222,11 +222,12 @@ void TEST_get_deferred_execs(deferred_exec_info_t *out_execs, uint8_t *out_count
 }
 
 void TEST_execute_deferred(deferred_token token) {
-    if (token > 0 && token <= deferred_exec_count && deferred_execs[token - 1].active) {
-        deferred_exec_callback callback = deferred_execs[token - 1].callback;
-        void *cb_arg = deferred_execs[token - 1].cb_arg;
+    if (token > 0 && token <= deferred_exec_count && deferred_execs[token-1].active) {
+        deferred_exec_callback callback = deferred_execs[token-1].callback;
+        void *cb_arg = deferred_execs[token-1].cb_arg;
         if (callback != NULL) {
             callback(0, cb_arg);
         }
+        deferred_execs[token-1].active = false;
     }
 }
