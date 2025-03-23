@@ -5,7 +5,7 @@
 #include <stddef.h>
 
 #define MAKE_KEYPOS(row, col) ((keypos_t){ (row), (col) })
-#define MAKE_KEYEVENT(row, col, pressed) ((keyevent_t){ MAKE_KEYPOS((row), (col)), (pressed) })
+#define MAKE_KEYEVENT(row, col, pressed) ((keyevent_t){ MAKE_KEYPOS((row), (col)), 0, (pressed) })
 #define INVALID_DEFERRED_TOKEN ((deferred_token)0)
 
 #define MOD_BIT(mod) (1 << (mod))
@@ -28,6 +28,7 @@ typedef struct {
 
 typedef struct {
     keypos_t key;
+    uint16_t keycode;
     bool pressed;
 } keyevent_t;
 
@@ -52,6 +53,17 @@ enum KEYCODES {
     L0_KC0 = 100, L0_KC1, L0_KC2, L0_KC3, L0_KC4, L0_KC5, L0_KC6, L0_KC7, //
     L1_KC0 = 200, L1_KC1, L1_KC2, L1_KC3, L1_KC4, L1_KC5, L1_KC6, L1_KC7, //
     L2_KC0 = 300, L2_KC1, L2_KC2, L2_KC3, L2_KC4, L2_KC5, L2_KC6, L2_KC7, //
+    MACRO0 = 400, MACRO1, MACRO2, MACRO3, MACRO4, MACRO5, MACRO6, MACRO7, //
+};
+
+enum MODIFIERS {
+    KC_LEFT_CTRL = 0x00E0,
+    KC_LEFT_SHIFT = 0x00E1,
+    KC_LEFT_ALT = 0x00E2,
+    KC_LEFT_GUI = 0x00E3,
+    KC_RIGHT_CTRL = 0x00E4,
+    KC_RIGHT_SHIFT = 0x00E5,
+    KC_RIGHT_ALT = 0x00E6,
 };
 
 uint32_t layer_state = 0;
@@ -116,25 +128,36 @@ void send_keyboard_report(void) {
     // No-op in mock
 }
 
+void unregister_code16(uint16_t keycode) {
+    record_history[record_count] = (keyrecord_t)
+         { .event = { .key = MAKE_KEYPOS(255, 255), .keycode = keycode, .pressed = false } };
+    record_count++;
+}
+
+void register_code16(uint16_t keycode) {
+    record_history[record_count] = (keyrecord_t)
+            { .event = { .key = MAKE_KEYPOS(255, 255),  .keycode = keycode, .pressed = true } };
+    record_count++;
+}
+
+void tap_code16(uint16_t keycode) {
+    register_code16(keycode);
+    unregister_code16(keycode);
+}
+
 bool process_record(keyrecord_t *record) {
-    // Save the record to history array if there's space
-    if (record_count < MAX_RECORD_HISTORY) {
-        record_history[record_count] = *record;
-        record_count++;
-    }
+    record_history[record_count] = *record;
+    record_count++;
     return true;
 }
 
 deferred_token defer_exec(uint32_t delay_ms, deferred_exec_callback callback, void *cb_arg) {
-    if (deferred_exec_count < MAX_DEFERRED_EXECS) {
-        deferred_execs[deferred_exec_count].delay_ms = delay_ms;
-        deferred_execs[deferred_exec_count].callback = callback;
-        deferred_execs[deferred_exec_count].cb_arg = cb_arg;
-        deferred_execs[deferred_exec_count].active = true;
-        deferred_exec_count++;
-        return deferred_exec_count; // Return non-zero token
-    }
-    return 0;
+    deferred_execs[deferred_exec_count].delay_ms = delay_ms;
+    deferred_execs[deferred_exec_count].callback = callback;
+    deferred_execs[deferred_exec_count].cb_arg = cb_arg;
+    deferred_execs[deferred_exec_count].active = true;
+    deferred_exec_count++;
+    return deferred_exec_count; // Return non-zero token
 }
 
 void cancel_deferred_exec(deferred_token token) {
@@ -145,7 +168,10 @@ void cancel_deferred_exec(deferred_token token) {
 
 #include "../sm_td.h"
 
-smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t sequence_len) {
+smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
+    switch (keycode) {
+        SMTD_MT_ON_MKEY(L0_KC2, MACRO2, KC_LEFT_GUI)
+    }
     return SMTD_RESOLUTION_UNHANDLED;
 }
 

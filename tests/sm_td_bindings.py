@@ -12,16 +12,20 @@ class KeyPosition(ctypes.Structure):
         ("col", ctypes.c_uint8)
     ]
 
+
 class KeyEvent(ctypes.Structure):
     _fields_ = [
         ("key", KeyPosition),
+        ("keycode", ctypes.c_uint16),
         ("pressed", ctypes.c_bool)
     ]
+
 
 class KeyRecord(ctypes.Structure):
     _fields_ = [
         ("event", KeyEvent)
     ]
+
 
 class DeferredExecInfo(ctypes.Structure):
     _fields_ = [
@@ -30,6 +34,7 @@ class DeferredExecInfo(ctypes.Structure):
         ("cb_arg", ctypes.c_void_p),
         ("active", ctypes.c_bool)
     ]
+
 
 # Enum Values
 SMTD_ACTION_TOUCH = 0
@@ -48,10 +53,12 @@ SMTD_TIMEOUT_RELEASE = 3
 
 SMTD_FEATURE_AGGREGATE_TAPS = 0
 
+
 class Layer(Enum):
     L0 = 0
     L1 = 1
     L2 = 2
+
 
 class Keycode(Enum):
     L0_KC0 = 100
@@ -81,6 +88,15 @@ class Keycode(Enum):
     L2_KC6 = 306
     L2_KC7 = 307
 
+    MACRO0 = 400
+    MACRO1 = 401
+    MACRO2 = 402
+    MACRO3 = 403
+    MACRO4 = 404
+    MACRO5 = 405
+    MACRO6 = 406
+    MACRO7 = 407
+
     @classmethod
     def reset(cls):
         for member in cls:
@@ -99,6 +115,7 @@ class Keycode(Enum):
         self._pressed = False
         return process_key(self, False)
 
+
 # Compile and load the shared library
 def _load_smtd_lib():
     """Compile and load the sm_td shared library"""
@@ -109,7 +126,7 @@ def _load_smtd_lib():
     compile_cmd = (f"clang -shared "
                    f"-DSMTD_UNIT_TEST "
                    f"-o {lib_path} "
-                   f"-fPIC {os.path.join(project_root,'tests/test_mocks.c')} "
+                   f"-fPIC {os.path.join(project_root, 'tests/test_mocks.c')} "
                    f"-I{project_root} ")
 
     print(f"Compiling sm_td library: {compile_cmd}")
@@ -121,7 +138,7 @@ def _load_smtd_lib():
 
     # Load the compiled library
     lib = ctypes.CDLL(lib_path)
-    
+
     # Register cleanup to remove the library file
     def cleanup():
         try:
@@ -129,10 +146,11 @@ def _load_smtd_lib():
                 os.remove(lib_path)
         except Exception as e:
             print(f"Failed to clean up shared library: {e}")
-    
+
     atexit.register(cleanup)
-    
+
     return lib, lib_path
+
 
 # Load the library and set up function definitions
 lib, lib_path = _load_smtd_lib()
@@ -162,14 +180,17 @@ lib.TEST_get_deferred_execs.restype = None
 lib.TEST_execute_deferred.argtypes = [ctypes.c_uint8]  # deferred_token
 lib.TEST_execute_deferred.restype = None
 
+
 # Helper functions
 def create_keyrecord(row, col, pressed):
     """Helper to create a keyrecord structure"""
     record = KeyRecord()
     record.event.key.row = row
     record.event.key.col = col
+    record.event.keycode = 0
     record.event.pressed = pressed
     return record
+
 
 def process_key(keycode: Keycode, pressed: bool):
     """Process a key with the given keycode, position, and state"""
@@ -177,36 +198,41 @@ def process_key(keycode: Keycode, pressed: bool):
     record_ptr = ctypes.pointer(record)
     return lib.process_smtd(ctypes.c_uint(keycode.value), record_ptr)
 
+
 def set_bypass(enabled):
     """Set the smtd_bypass flag"""
     lib.TEST_set_smtd_bypass(ctypes.c_bool(enabled))
+
 
 def reset():
     """Reset the test state"""
     lib.TEST_reset()
     Keycode.reset()
 
+
 def get_record_history():
     """Get the history of key records processed"""
     records = (KeyRecord * 100)()  # MAX_RECORD_HISTORY is 100
     count = ctypes.c_uint8(0)
     lib.TEST_get_record_history(records, ctypes.byref(count))
-    
+
     result = []
     for i in range(count.value):
         result.append({
             "row": records[i].event.key.row,
             "col": records[i].event.key.col,
+            "keycode": records[i].event.keycode,
             "pressed": records[i].event.pressed
         })
     return result
+
 
 def get_deferred_execs():
     """Get the list of deferred executions scheduled in the test environment"""
     execs_array = (DeferredExecInfo * 100)()  # MAX_DEFERRED_EXECS is 100
     count = ctypes.c_uint8(0)
     lib.TEST_get_deferred_execs(execs_array, ctypes.byref(count))
-    
+
     result = []
     for i in range(count.value):
         result.append({
@@ -214,6 +240,7 @@ def get_deferred_execs():
             "active": execs_array[i].active
         })
     return result
+
 
 def execute_deferred(token):
     """Execute a specific deferred execution by its token"""

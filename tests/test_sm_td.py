@@ -24,6 +24,7 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]["row"], 0)
         self.assertEqual(records[0]["col"], 0)
+        self.assertEqual(records[0]["keycode"], 0)
         self.assertEqual(records[0]["pressed"], True)
 
     def test_bypass_mode(self):
@@ -51,6 +52,7 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]["row"], 0)
         self.assertEqual(records[0]["col"], 1)
+        self.assertEqual(records[0]["keycode"], 0)
         self.assertEqual(records[0]["pressed"], True)
 
         self.assertFalse(Keycode.L0_KC1.release(), "release should block future key events")
@@ -58,6 +60,25 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(len(records), 2)
         self.assertEqual(records[1]["row"], 0)
         self.assertEqual(records[1]["col"], 1)
+        self.assertEqual(records[1]["keycode"], 0)
+        self.assertEqual(records[1]["pressed"], False)
+
+    def test_basic_MT(self):
+        """Test the basic MT function"""
+        self.assertFalse(Keycode.L0_KC2.press(), "press should block future key events")
+        records = get_record_history()
+        self.assertEqual(len(records), 0)
+
+        self.assertFalse(Keycode.L0_KC2.release(), "release should return true")
+        records = get_record_history()
+        self.assertEqual(len(records), 2, "tap should happer after release")
+        self.assertEqual(records[0]["row"], 255)
+        self.assertEqual(records[0]["col"], 255)
+        self.assertEqual(records[0]["keycode"], Keycode.MACRO2.value)
+        self.assertEqual(records[0]["pressed"], True)
+        self.assertEqual(records[1]["row"], 255)
+        self.assertEqual(records[1]["col"], 255)
+        self.assertEqual(records[1]["keycode"], Keycode.MACRO2.value)
         self.assertEqual(records[1]["pressed"], False)
 
 
