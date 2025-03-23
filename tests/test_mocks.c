@@ -8,7 +8,7 @@
 #define MAKE_KEYEVENT(row, col, pressed) ((keyevent_t){ MAKE_KEYPOS((row), (col)), 0, (pressed) })
 #define INVALID_DEFERRED_TOKEN ((deferred_token)0)
 
-#define MOD_BIT(mod) (1 << (mod))
+#define MOD_BIT(code) (1 << ((code) & 0x07))
 #define LSFT(kc) ((kc) | 0x1000)
 #define PROGMEM
 
@@ -64,6 +64,7 @@ enum MODIFIERS {
     KC_RIGHT_CTRL = 0x00E4,
     KC_RIGHT_SHIFT = 0x00E5,
     KC_RIGHT_ALT = 0x00E6,
+    KC_RIGHT_GUI = 0x00E7,
 };
 
 uint32_t layer_state = 0;
@@ -120,7 +121,15 @@ void register_mods(uint8_t mods) {
     current_mods |= mods;
 }
 
+void add_mods(uint8_t mods) {
+    current_mods |= mods;
+}
+
 void unregister_mods(uint8_t mods) {
+    current_mods &= ~mods;
+}
+
+void del_mods(uint8_t mods) {
     current_mods &= ~mods;
 }
 

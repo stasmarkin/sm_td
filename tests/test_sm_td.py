@@ -68,9 +68,6 @@ class TestSmTd(unittest.TestCase):
         self.assertFalse(Keycode.L0_KC2.press(), "press should block future key events")
         records = get_record_history()
         self.assertEqual(len(records), 0)
-        # fixme test mods
-        # fixme test hold
-        # fixme test double tap+hold
 
         self.assertFalse(Keycode.L0_KC2.release(), "release should return true")
         records = get_record_history()
@@ -87,17 +84,50 @@ class TestSmTd(unittest.TestCase):
     def test_basic_MT_hold(self):
         """Test the basic MT function"""
         self.assertFalse(Keycode.L0_KC2.press(), "press should block future key events")
-        get_active_mods()
+        self.assertEqual(len(get_record_history()), 0)
+        self.assertEquals(get_mods(), 0)
 
-        records = get_record_history()
-        self.assertEqual(len(records), 0)
-        # fixme test mods
-        # fixme test hold
-        # fixme test double tap+hold
+        Keycode.L0_KC2.prolong()
+        self.assertEqual(len(get_record_history()), 0)
+        self.assertEquals(get_mods(), 8)
 
         self.assertFalse(Keycode.L0_KC2.release(), "release should return true")
+        self.assertEqual(len(get_record_history()), 0)
+        self.assertEquals(get_mods(), 0)
+
+    def test_basic_MT_taphold(self):
+        self.assertFalse(Keycode.L0_KC2.press(), "press should block future key events")
+        self.assertEqual(len(get_record_history()), 0)
+
+        self.assertFalse(Keycode.L0_KC2.release(), "release should return true")
+        self.assertEqual(len(get_record_history()), 2)
+
+        self.assertFalse(Keycode.L0_KC2.press(), "press should block future key events")
+        self.assertEqual(len(get_record_history()), 2)
+
+        Keycode.L0_KC2.prolong()
+        self.assertEqual(len(get_record_history()), 3)
+
+        self.assertFalse(Keycode.L0_KC2.release(), "release should return true")
+        self.assertEqual(len(get_record_history()), 4)
+
         records = get_record_history()
-        self.assertEqual(len(records), 0)
+        self.assertEqual(records[0]["row"], 255)
+        self.assertEqual(records[0]["col"], 255)
+        self.assertEqual(records[0]["keycode"], Keycode.MACRO2.value)
+        self.assertEqual(records[0]["pressed"], True)
+        self.assertEqual(records[1]["row"], 255)
+        self.assertEqual(records[1]["col"], 255)
+        self.assertEqual(records[1]["keycode"], Keycode.MACRO2.value)
+        self.assertEqual(records[1]["pressed"], False)
+        self.assertEqual(records[2]["row"], 255)
+        self.assertEqual(records[2]["col"], 255)
+        self.assertEqual(records[2]["keycode"], Keycode.MACRO2.value)
+        self.assertEqual(records[2]["pressed"], True)
+        self.assertEqual(records[3]["row"], 255)
+        self.assertEqual(records[3]["col"], 255)
+        self.assertEqual(records[3]["keycode"], Keycode.MACRO2.value)
+        self.assertEqual(records[3]["pressed"], False)
 
 
 
