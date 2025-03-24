@@ -5,7 +5,7 @@
 #include <stddef.h>
 
 #define MAKE_KEYPOS(row, col) ((keypos_t){ (row), (col) })
-#define MAKE_KEYEVENT(row, col, pressed) ((keyevent_t){ MAKE_KEYPOS((row), (col)), 0, (pressed) })
+#define MAKE_KEYEVENT(row, col, pressed) ((keyevent_t){ MAKE_KEYPOS((row), (col)), (pressed) })
 #define INVALID_DEFERRED_TOKEN ((deferred_token)0)
 
 #define MOD_BIT(code) (1 << ((code) & 0x07))
@@ -28,13 +28,22 @@ typedef struct {
 
 typedef struct {
     keypos_t key;
-    uint16_t keycode;
     bool pressed;
 } keyevent_t;
 
 typedef struct {
     keyevent_t event;
 } keyrecord_t;
+
+// Flatten structure to store history events
+typedef struct {
+    uint8_t row;
+    uint8_t col;
+    uint16_t keycode;
+    bool pressed;         // Whether key was pressed or released
+    uint8_t mods;         // Modifier state at the time of the event
+    uint32_t layer_state; // Layer state at the time of the event
+} history_t;
 
 typedef uint32_t (*deferred_exec_callback)(uint32_t trigger_time, void *cb_arg);
 
@@ -69,7 +78,7 @@ enum MODIFIERS {
 
 uint32_t layer_state = 0;
 uint8_t current_mods = 0;
-static keyrecord_t record_history[MAX_RECORD_HISTORY];
+static history_t record_history[MAX_RECORD_HISTORY];
 static uint8_t record_count = 0;
 static deferred_exec_info_t deferred_execs[MAX_DEFERRED_EXECS] = {0};
 static uint8_t deferred_exec_count = 0;
@@ -138,14 +147,26 @@ void send_keyboard_report(void) {
 }
 
 void unregister_code16(uint16_t keycode) {
-    record_history[record_count] = (keyrecord_t)
-         { .event = { .key = MAKE_KEYPOS(255, 255), .keycode = keycode, .pressed = false } };
+    record_history[record_count] = (history_t) {
+        .row = 255,
+        .col = 255,
+        .keycode = keycode,
+        .pressed = false,
+        .mods = current_mods,
+        .layer_state = layer_state
+    };
     record_count++;
 }
 
 void register_code16(uint16_t keycode) {
-    record_history[record_count] = (keyrecord_t)
-            { .event = { .key = MAKE_KEYPOS(255, 255),  .keycode = keycode, .pressed = true } };
+    record_history[record_count] = (history_t) {
+        .row = 255,
+        .col = 255,
+        .keycode = keycode,
+        .pressed = true,
+        .mods = current_mods,
+        .layer_state = layer_state
+    };
     record_count++;
 }
 
@@ -155,7 +176,14 @@ void tap_code16(uint16_t keycode) {
 }
 
 bool process_record(keyrecord_t *record) {
-    record_history[record_count] = *record;
+    record_history[record_count] = (history_t) {
+        .row = record->event.key.row,
+        .col = record->event.key.col,
+        .keycode = 65535,
+        .pressed = record->event.pressed,
+        .mods = current_mods,
+        .layer_state = layer_state,
+    };
     record_count++;
     return true;
 }
@@ -199,7 +227,7 @@ void TEST_reset() {
     record_count = 0;
     deferred_exec_count = 0;
     for (uint8_t i = 0; i < MAX_RECORD_HISTORY; i++) {
-        record_history[i] = (keyrecord_t){0};
+        record_history[i] = (history_t){0};
     }
     for (uint8_t i = 0; i < MAX_DEFERRED_EXECS; i++) {
         deferred_execs[i] = (deferred_exec_info_t){0};
@@ -216,7 +244,7 @@ void TEST_set_smtd_bypass(const bool bypass) {
     smtd_bypass = bypass;
 }
 
-void TEST_get_record_history(keyrecord_t *out_records, uint8_t *out_count) {
+void TEST_get_record_history(history_t *out_records, uint8_t *out_count) {
     *out_count = record_count;
     for (uint8_t i = 0; i < record_count; i++) {
         out_records[i] = record_history[i];

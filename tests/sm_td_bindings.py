@@ -16,7 +16,6 @@ class KeyPosition(ctypes.Structure):
 class KeyEvent(ctypes.Structure):
     _fields_ = [
         ("key", KeyPosition),
-        ("keycode", ctypes.c_uint16),
         ("pressed", ctypes.c_bool)
     ]
 
@@ -33,6 +32,17 @@ class DeferredExecInfo(ctypes.Structure):
         ("callback", ctypes.c_void_p),  # Using void pointer for function pointer
         ("cb_arg", ctypes.c_void_p),
         ("active", ctypes.c_bool)
+    ]
+
+
+class History(ctypes.Structure):
+    _fields_ = [
+        ("row", ctypes.c_uint8),
+        ("col", ctypes.c_uint8),
+        ("keycode", ctypes.c_uint16),
+        ("pressed", ctypes.c_bool),
+        ("mods", ctypes.c_uint8),
+        ("layer_state", ctypes.c_uint32)
     ]
 
 
@@ -178,7 +188,7 @@ lib.TEST_reset.argtypes = []
 lib.TEST_reset.restype = None
 
 lib.TEST_get_record_history.argtypes = [
-    ctypes.POINTER(KeyRecord),  # out_records
+    ctypes.POINTER(History),  # out_records
     ctypes.POINTER(ctypes.c_uint8)  # out_count
 ]
 lib.TEST_get_record_history.restype = None
@@ -234,17 +244,19 @@ def reset():
 
 def get_record_history():
     """Get the history of key records processed"""
-    records = (KeyRecord * 100)()  # MAX_RECORD_HISTORY is 100
+    records = (History * 100)()  # MAX_RECORD_HISTORY is 100
     count = ctypes.c_uint8(0)
     lib.TEST_get_record_history(records, ctypes.byref(count))
 
     result = []
     for i in range(count.value):
         result.append({
-            "row": records[i].event.key.row,
-            "col": records[i].event.key.col,
-            "keycode": records[i].event.keycode,
-            "pressed": records[i].event.pressed
+            "row": records[i].row,
+            "col": records[i].col,
+            "keycode": records[i].keycode,
+            "pressed": records[i].pressed,
+            "mods": records[i].mods,
+            "layer_state": records[i].layer_state
         })
     return result
 
