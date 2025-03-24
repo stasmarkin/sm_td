@@ -31,7 +31,7 @@ class DeferredExecInfo(ctypes.Structure):
         ("delay_ms", ctypes.c_uint32),
         ("callback", ctypes.c_void_p),  # Using void pointer for function pointer
         ("cb_arg", ctypes.c_void_p),
-        ("active", ctypes.c_bool)
+        ("active", ctypes.c_bool),
     ]
 
 
@@ -42,7 +42,8 @@ class History(ctypes.Structure):
         ("keycode", ctypes.c_uint16),
         ("pressed", ctypes.c_bool),
         ("mods", ctypes.c_uint8),
-        ("layer_state", ctypes.c_uint32)
+        ("layer_state", ctypes.c_uint32),
+        ("smtd_bypass", ctypes.c_bool),
     ]
 
 
@@ -256,7 +257,8 @@ def get_record_history():
             "keycode": records[i].keycode,
             "pressed": records[i].pressed,
             "mods": records[i].mods,
-            "layer_state": records[i].layer_state
+            "layer_state": records[i].layer_state,
+            "smtd_bypass": records[i].smtd_bypass,
         })
     return result
 

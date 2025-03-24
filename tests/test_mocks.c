@@ -43,6 +43,7 @@ typedef struct {
     bool pressed;         // Whether key was pressed or released
     uint8_t mods;         // Modifier state at the time of the event
     uint32_t layer_state; // Layer state at the time of the event
+    bool smtd_bypass;
 } history_t;
 
 typedef uint32_t (*deferred_exec_callback)(uint32_t trigger_time, void *cb_arg);
@@ -146,6 +147,8 @@ void send_keyboard_report(void) {
     // No-op in mock
 }
 
+bool get_smtd_bypass();
+
 void unregister_code16(uint16_t keycode) {
     record_history[record_count] = (history_t) {
         .row = 255,
@@ -153,7 +156,8 @@ void unregister_code16(uint16_t keycode) {
         .keycode = keycode,
         .pressed = false,
         .mods = current_mods,
-        .layer_state = layer_state
+        .layer_state = layer_state,
+        .smtd_bypass = get_smtd_bypass(),
     };
     record_count++;
 }
@@ -165,7 +169,8 @@ void register_code16(uint16_t keycode) {
         .keycode = keycode,
         .pressed = true,
         .mods = current_mods,
-        .layer_state = layer_state
+        .layer_state = layer_state,
+        .smtd_bypass = get_smtd_bypass(),
     };
     record_count++;
 }
@@ -183,6 +188,7 @@ bool process_record(keyrecord_t *record) {
         .pressed = record->event.pressed,
         .mods = current_mods,
         .layer_state = layer_state,
+        .smtd_bypass = get_smtd_bypass(),
     };
     record_count++;
     return true;
@@ -237,7 +243,10 @@ void TEST_reset() {
         reset_state(&smtd_states_pool[i]);
     }
     smtd_active_states_size = 0;
-    smtd_bypass = false;
+}
+
+bool get_smtd_bypass() {
+  return smtd_bypass;
 }
 
 void TEST_set_smtd_bypass(const bool bypass) {
