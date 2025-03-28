@@ -16,6 +16,7 @@ class TestSmTd(unittest.TestCase):
     def setUp(self):
         """Method to run before each test"""
         reset()
+        clear_debug_buffer()  # Clear debug output before each test
 
     def assertEvent(self, event, rowcol=(255, 255), keycode=65535, pressed=True, mods=0, layer_state=0,
                     smtd_bypass=False):
@@ -147,6 +148,18 @@ class TestSmTd(unittest.TestCase):
 
             records = get_record_history()
             print(records)
+
+    def test_debug_output(self):
+        """Test that debug output is working"""
+        Keycode.L0_KC0.press()
+        Keycode.L0_KC0.release()
+        
+        debug_output = get_debug_output()
+        self.assertIn("GOT KEY", debug_output)
+        self.assertIn("EMULATE", debug_output)
+        
+        print("\nDebug output from test_debug_output:")
+        print(debug_output)
 
 
 if __name__ == "__main__":

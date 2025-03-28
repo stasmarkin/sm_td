@@ -3,9 +3,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+#include <stdlib.h>
 
-#define SMTD_DEBUG(...)
-#define SMTD_SNDEBUG(...)
+#define SMTD_DEBUG(...) TEST_print(__VA_ARGS__)
+#define SMTD_SNDEBUG(bffr, ...) TEST_snprintf(bffr, sizeof(bffr), __VA_ARGS__)
 
 #define MAKE_KEYPOS(row, col) ((keypos_t){ (row), (col) })
 #define MAKE_KEYEVENT(row, col, pressed) ((keyevent_t){ MAKE_KEYPOS((row), (col)), (pressed) })
@@ -23,6 +27,7 @@
 #define MAX_RECORD_HISTORY 100
 #define MAX_DEFERRED_EXECS 100
 
+#define DEBUG_BUFFER_SIZE 65536
 
 typedef struct {
     uint8_t row;
@@ -210,6 +215,52 @@ void cancel_deferred_exec(deferred_token token) {
     if (token > 0 && token <= deferred_exec_count) {
         deferred_execs[token-1].active = false;
     }
+}
+
+
+// Debug output buffer
+static char debug_buffer[DEBUG_BUFFER_SIZE];
+static size_t debug_buffer_pos = 0;
+
+// Debug output functions
+void TEST_print(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+
+    // Print to stdout for immediate feedback
+    vprintf(format, args);
+
+    // Also capture to our buffer
+    char temp_buffer[1024];
+    vsnprintf(temp_buffer, sizeof(temp_buffer), format, args);
+
+    // Append to debug buffer if there's space
+    size_t len = strlen(temp_buffer);
+    if (debug_buffer_pos + len < DEBUG_BUFFER_SIZE - 1) {
+        memcpy(debug_buffer + debug_buffer_pos, temp_buffer, len);
+        debug_buffer_pos += len;
+        debug_buffer[debug_buffer_pos] = '\0';
+    }
+
+    va_end(args);
+}
+
+void TEST_snprintf(char* buffer, size_t size, const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, size, format, args);
+    va_end(args);
+}
+
+// Function to get the debug output
+const char* TEST_get_debug_output() {
+    return debug_buffer;
+}
+
+// Function to clear the debug buffer
+void TEST_clear_debug_buffer() {
+    debug_buffer[0] = '\0';
+    debug_buffer_pos = 0;
 }
 
 #include "../sm_td.h"
