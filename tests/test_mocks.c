@@ -4,6 +4,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#define SMTD_DEBUG(...)
+#define SMTD_SNDEBUG(...)
+
 #define MAKE_KEYPOS(row, col) ((keypos_t){ (row), (col) })
 #define MAKE_KEYEVENT(row, col, pressed) ((keyevent_t){ MAKE_KEYPOS((row), (col)), (pressed) })
 #define INVALID_DEFERRED_TOKEN ((deferred_token)0)
@@ -231,6 +234,10 @@ uint32_t get_smtd_timeout(uint16_t keycode, smtd_timeout timeout) {
 
 bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature) {
     return smtd_feature_enabled_default(keycode, feature);
+}
+
+char* smtd_keycode_to_str_user(uint16_t keycode) {
+    return "fixme-sm";
 }
 
 void TEST_reset() {

@@ -186,7 +186,6 @@ def _load_smtd_lib():
 
     return lib, lib_path
 
-
 # Load the library and set up function definitions
 lib, lib_path = _load_smtd_lib()
 

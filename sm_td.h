@@ -35,6 +35,10 @@
 #include "print.h"
 #endif
 
+#ifdef SMTD_UNIT_TEST
+#define SMTD_DEBUG_ENABLED
+#endif
+
 /* ************************************* *
  *         GLOBAL CONFIGURATION          *
  * ************************************* */
@@ -233,7 +237,13 @@ bool smtd_feature_enabled_or_default(smtd_state *state, smtd_feature feature);
 
 uint32_t last_key_timer = 0;
 
+#ifndef SMTD_DEBUG
 #define SMTD_DEBUG(...) printf(__VA_ARGS__)
+#endif
+
+#ifndef SMTD_SNDEBUG
+#define SMTD_SNDEBUG(buffer, ...) snprintf(buffer, sizeof(buffer), __VA_ARGS__)
+#endif
 
 char *smtd_stage_to_str(smtd_stage stage) {
     switch (stage) {
@@ -287,12 +297,12 @@ char* smtd_keycode_to_str_uncertain(uint16_t keycode, bool uncertain) {
     if (smtd_keycode_to_str_user) {
         char* result = smtd_keycode_to_str_user(keycode);
         if (result) {
-            snprintf(buffer_keycode, sizeof(buffer_keycode), uncertain ? "?%s" : "%s", result);
+            SMTD_SNDEBUG(buffer_keycode, uncertain ? "?%s" : "%s", result);
             return result;
         }
     }
 
-    snprintf(buffer_keycode, sizeof(buffer_keycode), uncertain ? "?KC_%d" : "KC_%d", keycode);
+    SMTD_SNDEBUG(buffer_keycode, uncertain ? "?KC_%d" : "KC_%d", keycode);
     return buffer_keycode;
 }
 
@@ -303,7 +313,7 @@ char* smtd_keycode_to_str(uint16_t keycode) {
 char* smtd_state_to_str(smtd_state *state) {
     static char buffer_state[64];
 
-    snprintf(buffer_state, sizeof(buffer_state), "S[%d](@%d.%d#%s->%s){%s/%s,m=%x}",
+    SMTD_SNDEBUG(buffer_state, "S[%d](@%d.%d#%s->%s){%s/%s,m=%x}",
              state->idx,
              state->pressed_keyposition.row,
              state->pressed_keyposition.col,
@@ -319,7 +329,7 @@ char* smtd_state_to_str(smtd_state *state) {
 char* smtd_state_to_str2(smtd_state *state) {
     static char buffer_state2[64];
 
-    snprintf(buffer_state2, sizeof(buffer_state2), "S[%d](@%d.%d#%s->%s){%s/%s,m=%x}",
+    SMTD_SNDEBUG(buffer_state2, "S[%d](@%d.%d#%s->%s){%s/%s,m=%x}",
              state->idx,
              state->pressed_keyposition.row,
              state->pressed_keyposition.col,
@@ -335,7 +345,7 @@ char* smtd_state_to_str2(smtd_state *state) {
 char* smtd_record_to_str(keyrecord_t *record) {
     static char buffer_record[16];
 
-    snprintf(buffer_record, sizeof(buffer_record), "R(@%d#%d %s)",
+    SMTD_SNDEBUG(buffer_record, "R(@%d#%d %s)",
              record->event.key.row,
              record->event.key.col,
              record->event.pressed ? "|*|" : "|O|");

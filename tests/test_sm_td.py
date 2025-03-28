@@ -127,6 +127,27 @@ class TestSmTd(unittest.TestCase):
         self.assertRegister(records[2], Keycode.MACRO2.value)
         self.assertUnregister(records[3], Keycode.MACRO2.value)
 
+    def test_complex_hotkey(self):
+        presses = [Keycode.L0_KC3, Keycode.L0_KC4, Keycode.L0_KC5]
+        releases = [Keycode.L0_KC3, Keycode.L0_KC4, Keycode.L0_KC5, Keycode.L0_KC0]
+
+        # sex, hehe
+        seqs = []
+        for press_seq in itertools.permutations(presses):
+            press_seq = press_seq + (Keycode.L0_KC0,)  # L0_KC0 must be the last key pressed
+            for release_seq in itertools.permutations(releases):
+                seqs += [(press_seq, release_seq,)]
+
+        for seq in seqs:
+            reset()
+            press_seq, release_seq = seq
+
+            for key in press_seq: key.press()
+            for key in release_seq: key.release()
+
+            records = get_record_history()
+            print(records)
+
 
 if __name__ == "__main__":
     unittest.main()
