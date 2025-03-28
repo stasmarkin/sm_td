@@ -214,6 +214,13 @@ void cancel_deferred_exec(deferred_token token) {
 smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
     switch (keycode) {
         SMTD_MT_ON_MKEY(L0_KC2, MACRO2, KC_LEFT_GUI)
+
+        SMTD_MT(L0_KC3, KC_LEFT_ALT)
+        SMTD_MT(L1_KC3, KC_LEFT_ALT)
+        SMTD_MT(L0_KC4, KC_LEFT_CTRL)
+        SMTD_MT(L1_KC4, KC_LEFT_CTRL)
+        SMTD_LT(L0_KC5, L1)
+
     }
     return SMTD_RESOLUTION_UNHANDLED;
 }
@@ -227,11 +234,12 @@ bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature) {
 }
 
 void TEST_reset() {
-    smtd_bypass = false;
     layer_state = 0;
     current_mods = 0;
     record_count = 0;
     deferred_exec_count = 0;
+    return_layer = RETURN_LAYER_NOT_SET;
+    return_layer_cnt = 0;
     for (uint8_t i = 0; i < MAX_RECORD_HISTORY; i++) {
         record_history[i] = (history_t){0};
     }
@@ -243,6 +251,7 @@ void TEST_reset() {
         reset_state(&smtd_states_pool[i]);
     }
     smtd_active_states_size = 0;
+    smtd_bypass = false;
 }
 
 bool get_smtd_bypass() {

@@ -1,6 +1,7 @@
 import unittest
 import os
 import sys
+import itertools
 
 from tests.sm_td_bindings import *
 
@@ -78,7 +79,7 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(len(records), 2)
         self.assertEmulateRelease(records[1], Keycode.L0_KC1)
 
-    def test_basic_MT_tap(self):
+    def test_basic_MT_ON_MKEY_tap(self):
         """Test the basic MT function"""
         self.assertFalse(Keycode.L0_KC2.press(), "press should block future key events")
         records = get_record_history()
@@ -90,7 +91,7 @@ class TestSmTd(unittest.TestCase):
         self.assertRegister(records[0], Keycode.MACRO2.value)
         self.assertUnregister(records[1], Keycode.MACRO2.value)
 
-    def test_basic_MT_hold(self):
+    def test_basic_MT_ON_MKEY_hold(self):
         """Test the basic MT function"""
         self.assertFalse(Keycode.L0_KC2.press(), "press should block future key events")
         self.assertEqual(len(get_record_history()), 0)
@@ -104,7 +105,7 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(len(get_record_history()), 0)
         self.assertEqual(get_mods(), 0)
 
-    def test_basic_MT_taphold(self):
+    def test_basic_MT_ON_MKEY_taphold(self):
         self.assertFalse(Keycode.L0_KC2.press(), "press should block future key events")
         self.assertEqual(len(get_record_history()), 0)
 

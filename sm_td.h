@@ -1020,6 +1020,12 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
 #ifndef OVERLOAD4
 #define OVERLOAD4(_1, _2, _3, _4, NAME, ...) NAME
 #endif
+#ifndef OVERLOAD3
+#define OVERLOAD3(_1, _2, _3, NAME, ...) NAME
+#endif
+#ifndef OVERLOAD2
+#define OVERLOAD2(_1, _2, NAME, ...) NAME
+#endif
 #ifndef EXEC
 #define EXEC(code) do { code } while(0)
 #endif
@@ -1038,7 +1044,10 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
         break;                                                                          \
     }
 
-
+#define SMTD_MT(...) OVERLOAD4(__VA_ARGS__, SMTD_MT4, SMTD_MT3, SMTD_MT2)(__VA_ARGS__)
+#define SMTD_MT2(key, mod) SMTD_MT3_ON_MKEY(key, key, mod)
+#define SMTD_MT3(key, mod, threshold) SMTD_MT4_ON_MKEY(key, key, mod, threshold)
+#define SMTD_MT4(key, mod, threshold, use_cl) SMTD_MT5_ON_MKEY(key, key, mod, threshold, use_cl)
 #define SMTD_MT_ON_MKEY(...) OVERLOAD5(__VA_ARGS__, SMTD_MT5_ON_MKEY, SMTD_MT4_ON_MKEY, SMTD_MT3_ON_MKEY)(__VA_ARGS__)
 #define SMTD_MT3_ON_MKEY(...) SMTD_MT4_ON_MKEY(__VA_ARGS__, 1)
 #define SMTD_MT4_ON_MKEY(...) SMTD_MT5_ON_MKEY(__VA_ARGS__, true)
@@ -1057,43 +1066,10 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
             send_keyboard_report()                           \
     )
 
-#define SMTD_MT_ON_MKEY(...) OVERLOAD5(__VA_ARGS__, SMTD_MT5_ON_MKEY, SMTD_MT4_ON_MKEY, SMTD_MT3_ON_MKEY)(__VA_ARGS__)
-#define SMTD_MT3_ON_MKEY(...) SMTD_MT4_ON_MKEY(__VA_ARGS__, 1)
-#define SMTD_MT4_ON_MKEY(...) SMTD_MT5_ON_MKEY(__VA_ARGS__, true)
-#define SMTD_MT5_ON_MKEY(macro_key, tap_key, mod, threshold, use_cl) \
-    SMTD_DANCE(macro_key,                                    \
-        NOTHING,                                             \
-        SMTD_TAP_16(use_cl, tap_key),                        \
-        SMTD_LIMIT(threshold,                                \
-            register_mods(MOD_BIT(mod));                     \
-            send_keyboard_report(),                          \
-            SMTD_REGISTER_16(use_cl, tap_key)),              \
-        SMTD_LIMIT(threshold,                                \
-            unregister_mods(MOD_BIT(mod));                   \
-            send_keyboard_report(),                          \
-            SMTD_UNREGISTER_16(use_cl, tap_key));            \
-            send_keyboard_report()                           \
-    )
-
-
-#define SMTD_MT_ON_MKEY(...) OVERLOAD5(__VA_ARGS__, SMTD_MT5_ON_MKEY, SMTD_MT4_ON_MKEY, SMTD_MT3_ON_MKEY)(__VA_ARGS__)
-#define SMTD_MT3_ON_MKEY(...) SMTD_MT4_ON_MKEY(__VA_ARGS__, 1)
-#define SMTD_MT4_ON_MKEY(...) SMTD_MT5_ON_MKEY(__VA_ARGS__, true)
-#define SMTD_MT5_ON_MKEY(macro_key, tap_key, mod, threshold, use_cl) \
-    SMTD_DANCE(macro_key,                                    \
-        NOTHING,                                             \
-        SMTD_TAP_16(use_cl, tap_key),                        \
-        SMTD_LIMIT(threshold,                                \
-            register_mods(MOD_BIT(mod));                     \
-            send_keyboard_report(),                          \
-            SMTD_REGISTER_16(use_cl, tap_key)),              \
-        SMTD_LIMIT(threshold,                                \
-            unregister_mods(MOD_BIT(mod));                   \
-            send_keyboard_report(),                          \
-            SMTD_UNREGISTER_16(use_cl, tap_key));            \
-            send_keyboard_report()                           \
-    )
-
+#define SMTD_MTE(...) OVERLOAD4(__VA_ARGS__, SMTD_MTE4, SMTD_MTE3, SMTD_MTE2)(__VA_ARGS__)
+#define SMTD_MTE2(key, mod) SMTD_MTE3_ON_MKEY(key, key, mod)
+#define SMTD_MTE3(key, mod, threshold) SMTD_MTE4_ON_MKEY(key, key, mod, threshold)
+#define SMTD_MTE4(key, mod, threshold, use_cl) SMTD_MTE5_ON_MKEY(key, key, mod, threshold, use_cl)
 #define SMTD_MTE_ON_MKEY(...) OVERLOAD5(__VA_ARGS__, SMTD_MTE5_ON_MKEY, SMTD_MTE4_ON_MKEY, SMTD_MTE3_ON_MKEY)(__VA_ARGS__)
 #define SMTD_MTE3_ON_MKEY(...) SMTD_MTE4_ON_MKEY(__VA_ARGS__, 1)
 #define SMTD_MTE4_ON_MKEY(...) SMTD_MTE5_ON_MKEY(__VA_ARGS__, true)
@@ -1124,6 +1100,10 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
         )                                                    \
     )
 
+#define SMTD_LT(...) OVERLOAD4(__VA_ARGS__, SMTD_LT4, SMTD_LT3, SMTD_LT2)(__VA_ARGS__)
+#define SMTD_LT2(key, layer) SMTD_LT3_ON_MKEY(key, key, layer)
+#define SMTD_LT3(key, layer, threshold) SMTD_LT4_ON_MKEY(key, key, layer, threshold)
+#define SMTD_LT4(key, layer, threshold, use_cl) SMTD_LT5_ON_MKEY(key, key, layer, threshold, use_cl)
 #define SMTD_LT_ON_MKEY(...) OVERLOAD5(__VA_ARGS__, SMTD_LT5_ON_MKEY, SMTD_LT4_ON_MKEY, SMTD_LT3_ON_MKEY)(__VA_ARGS__)
 #define SMTD_LT3_ON_MKEY(...) SMTD_LT4_ON_MKEY(__VA_ARGS__, 1)
 #define SMTD_LT4_ON_MKEY(...) SMTD_LT5_ON_MKEY(__VA_ARGS__, true)
@@ -1154,6 +1134,7 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
             SMTD_UNREGISTER_16(use_cl, tap_key))                 \
     )
 
+// fixme-sm SMTD_TK and others without ON_MKEY
 // multi-tap activated key
 #define SMTD_TK_ON_MKEY(...) OVERLOAD4(__VA_ARGS__, SMTD_TK4_ON_MKEY, SMTD_TK3_ON_MKEY, SMTD_TK2_ON_MKEY)(__VA_ARGS__)
 #define SMTD_TK2_ON_MKEY(...) SMTD_TK3_ON_MKEY(__VA_ARGS__, 1)

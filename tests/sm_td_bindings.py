@@ -144,6 +144,11 @@ class Keycode(Enum):
             return (0, self.value % 100)
         raise "MACRO keycodes are not supported"
 
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.name
 
 
 # Compile and load the shared library
@@ -233,10 +238,7 @@ def process_key_and_timeout(keycode: Keycode, pressed: bool):
     execs_after = get_deferred_execs()
     execs_diff = execs_after[len(execs_before):]
     if len(execs_diff) is 0: return result, None
-    if len(execs_diff) is 1: return result, execs_diff[0]["idx"]
-
-    raise RuntimeError("Unexpected number of deferred executions")
-
+    return result, execs_diff[-1]["idx"]
 
 
 def set_bypass(enabled):
@@ -288,9 +290,9 @@ def get_deferred_execs():
 
 def execute_deferred(idx):
     """Execute a specific deferred execution by its id"""
-    assert get_deferred_execs()[idx-1]["active"] == True
+    assert get_deferred_execs()[idx - 1]["active"] == True
     lib.TEST_execute_deferred(ctypes.c_uint8(idx))
-    assert get_deferred_execs()[idx-1]["active"] == False
+    assert get_deferred_execs()[idx - 1]["active"] == False
 
 
 def get_mods():
