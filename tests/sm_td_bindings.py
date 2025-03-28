@@ -137,6 +137,13 @@ class Keycode(Enum):
         execute_deferred(self._defer_idx)
         self._defer_idx = None
 
+    # noinspection PyRedundantParentheses
+    def rowcol(self):
+        """Convert the keycode to row and column"""
+        if self.value < 400:
+            return (0, self.value % 100)
+        raise "MACRO keycodes are not supported"
+
 
 
 # Compile and load the shared library
