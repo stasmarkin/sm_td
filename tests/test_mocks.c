@@ -288,7 +288,41 @@ bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature) {
 }
 
 char* smtd_keycode_to_str_user(uint16_t keycode) {
-    return "fixme-sm";
+    switch (keycode) {
+        case L0_KC0: return "L0_KC0";
+        case L0_KC1: return "L0_KC1";
+        case L0_KC2: return "L0_KC2";
+        case L0_KC3: return "L0_KC3";
+        case L0_KC4: return "L0_KC4";
+        case L0_KC5: return "L0_KC5";
+        case L0_KC6: return "L0_KC6";
+        case L0_KC7: return "L0_KC7";
+        case L1_KC0: return "L1_KC0";
+        case L1_KC1: return "L1_KC1";
+        case L1_KC2: return "L1_KC2";
+        case L1_KC3: return "L1_KC3";
+        case L1_KC4: return "L1_KC4";
+        case L1_KC5: return "L1_KC5";
+        case L1_KC6: return "L1_KC6";
+        case L1_KC7: return "L1_KC7";
+        case L2_KC0: return "L2_KC0";
+        case L2_KC1: return "L2_KC1";
+        case L2_KC2: return "L2_KC2";
+        case L2_KC3: return "L2_KC3";
+        case L2_KC4: return "L2_KC4";
+        case L2_KC5: return "L2_KC5";
+        case L2_KC6: return "L2_KC6";
+        case L2_KC7: return "L2_KC7";
+        case MACRO0: return "MACRO0";
+        case MACRO1: return "MACRO1";
+        case MACRO2: return "MACRO2";
+        case MACRO3: return "MACRO3";
+        case MACRO4: return "MACRO4";
+        case MACRO5: return "MACRO5";
+        case MACRO6: return "MACRO6";
+        case MACRO7: return "MACRO7";
+        default:     return "UNKNWN";
+    }
 }
 
 void TEST_reset() {

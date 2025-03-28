@@ -688,6 +688,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
 }
 
 void reset_state(smtd_state *state) {
+    state->stage = SMTD_STAGE_NONE;
     state->pressed_keyposition = MAKE_KEYPOS(0, 0);
     state->pressed_keycode = 0;
     state->desired_keycode = 0;
