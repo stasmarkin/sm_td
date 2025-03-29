@@ -109,6 +109,22 @@ class Keycode(Enum):
     MACRO7 = 407
 
     @classmethod
+    def from_rowcol(cls, rowcol):
+        return cls.from_layer_rowcol(get_layer_state(), rowcol)
+
+    @classmethod
+    def from_layer_rowcol(cls, layer, rowcol):
+        return cls.from_value(100 + layer * 100 + rowcol[0] * 10 + rowcol[1])
+
+    @classmethod
+    def from_value(cls, value):
+        """Get the enum member from its value"""
+        for member in cls:
+            if member.value == value:
+                return member
+        raise ValueError(f"No enum member with value {value}")
+
+    @classmethod
     def reset(cls):
         for member in cls:
             member.__init__(member._value)
@@ -120,6 +136,7 @@ class Keycode(Enum):
 
     def press(self):
         assert self._pressed == False
+        assert get_layer_state() == self.layer()
         self._pressed = True
         result, defer_idx = process_key_and_timeout(self, True)
         self._defer_idx = defer_idx
@@ -136,6 +153,12 @@ class Keycode(Enum):
         assert self._defer_idx is not None
         execute_deferred(self._defer_idx)
         self._defer_idx = None
+
+    def layer(self):
+        """Get the layer of the keycode"""
+        if self.value < 400:
+            return -1 + self.value // 100
+        raise "MACRO keycodes are not supported"
 
     # noinspection PyRedundantParentheses
     def rowcol(self):
@@ -220,6 +243,9 @@ lib.get_mods.restype = ctypes.c_uint8  # Returns uint8_t
 lib.TEST_get_debug_output.argtypes = []
 lib.TEST_get_debug_output.restype = ctypes.c_char_p
 
+lib.TEST_get_layer_state.argtypes = []
+lib.TEST_get_layer_state.restype = ctypes.c_uint8
+
 lib.TEST_clear_debug_buffer.argtypes = []
 lib.TEST_clear_debug_buffer.restype = None
 
@@ -303,6 +329,10 @@ def execute_deferred(idx):
 def get_mods():
     """Get the current modifier state"""
     return lib.get_mods()
+
+def get_layer_state():
+    """Get the current layer state"""
+    return lib.TEST_get_layer_state()
 
 def get_debug_output():
     """Get the accumulated debug output"""

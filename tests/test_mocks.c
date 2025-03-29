@@ -350,11 +350,15 @@ void TEST_reset() {
 }
 
 bool get_smtd_bypass() {
-  return smtd_bypass;
+    return smtd_bypass;
 }
 
 void TEST_set_smtd_bypass(const bool bypass) {
     smtd_bypass = bypass;
+}
+
+bool TEST_get_layer_state() {
+    return layer_state;
 }
 
 void TEST_get_record_history(history_t *out_records, uint8_t *out_count) {
