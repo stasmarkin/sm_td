@@ -149,6 +149,21 @@ class TestSmTd(unittest.TestCase):
             records = get_record_history()
             print(records)
 
+    def test_LT_MT(self):
+        Keycode.L0_KC5.press()
+        Keycode.L0_KC0.press()
+        Keycode.L0_KC0.release()
+        Keycode.L0_KC5.release()
+
+        records = get_record_history()
+        self.assertEqual(len(records), 3)
+        # fixme
+
+    def test_instant_bypass(self):
+        Keycode.L0_KC0.press() # fixme вот тут можно было бы и отпускать процесс, а не стопорить и эмулировать нажатие
+        Keycode.L0_KC0.release()
+        # fixme
+
     def test_debug_output(self):
         """Test that debug output is working"""
         Keycode.L0_KC0.press()

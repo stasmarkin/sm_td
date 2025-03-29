@@ -633,7 +633,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 return false;
             }
 
-            // if (!is_state_key && record->event.pressed) { -- is_state_key == false always here
+        // if (!is_state_key && record->event.pressed) { -- is_state_key == false always here
             if (record->event.pressed) {
                 break;
             }
@@ -783,9 +783,15 @@ void smtd_handle_action(smtd_state *state, smtd_action action) {
     smtd_execute_action(state, action);
     smtd_resolution resolution_after_action = state->resolution;
 
-    if (!(resolution_before_action < SMTD_RESOLUTION_DETERMINED &&
-          SMTD_RESOLUTION_DETERMINED == resolution_after_action)) {
-        SMTD_DEBUG("        %s action is complete by not just got determined with %s\n",
+    if (resolution_before_action == SMTD_RESOLUTION_DETERMINED) {
+        SMTD_DEBUG("        %s action was already determined before %s\n",
+                   smtd_state_to_str(state),
+                   smtd_action_to_str(action));
+        return;
+    }
+
+    if (resolution_after_action != SMTD_RESOLUTION_DETERMINED) {
+        SMTD_DEBUG("        %s action is not yet determined %s\n",
                    smtd_state_to_str(state),
                    smtd_action_to_str(action));
         return;
@@ -1111,6 +1117,7 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
         )                                                    \
     )
 
+//fixme попробовать отказаться от самописной смены слоя
 #define SMTD_LT(...) OVERLOAD4(__VA_ARGS__, SMTD_LT4, SMTD_LT3, SMTD_LT2)(__VA_ARGS__)
 #define SMTD_LT2(key, layer) SMTD_LT3_ON_MKEY(key, key, layer)
 #define SMTD_LT3(key, layer, threshold) SMTD_LT4_ON_MKEY(key, key, layer, threshold)
@@ -1127,7 +1134,7 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
             SMTD_REGISTER_16(use_cl, tap_key)),               \
         SMTD_LIMIT(threshold,                                 \
             LAYER_RESTORE(),                                  \
-            NOTHING); SMTD_UNREGISTER_16(use_cl, tap_key)     \
+            SMTD_UNREGISTER_16(use_cl, tap_key));             \
     )
 
 #define SMTD_TD_ON_MKEY(...) OVERLOAD5(__VA_ARGS__, SMTD_TD5_ON_MKEY, SMTD_TD4_ON_MKEY, SMTD_TD3_ON_MKEY)(__VA_ARGS__)

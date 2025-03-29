@@ -27,7 +27,8 @@
 #define MAX_RECORD_HISTORY 100
 #define MAX_DEFERRED_EXECS 100
 
-#define DEBUG_BUFFER_SIZE 65536
+#define DEBUG_BUFFER_SIZE 65535
+
 
 typedef struct {
     uint8_t row;
@@ -97,6 +98,8 @@ uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [L2] = { L2_KC0, L2_KC1, L2_KC2, L2_KC3, L2_KC4, L2_KC5, L2_KC6, L2_KC7, },
 };
 
+void TEST_print(const char* format, ...);
+void TEST_snprintf(char* buffer, size_t size, const char* format, ...);
 
 uint32_t timer_read32(void) {
     return 0;
@@ -120,7 +123,7 @@ uint8_t get_highest_layer(uint32_t state) {
 }
 
 void layer_move(uint8_t layer) {
-    layer_state = (1UL << layer);
+    layer_state = layer;
 }
 
 bool is_caps_word_on(void) {
