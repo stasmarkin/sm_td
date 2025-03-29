@@ -13,17 +13,18 @@ from tests import sm_td_bindings as smtd
 
 
 class Key(Enum):
-    A = (0, 0)  # no special behaviour
-    S = (0, 1)  # no special behaviour
-    D = (0, 2)  # SMTD_MT_ON_MKEY(L0_KC2, MACRO2, KC_LEFT_GUI)
-    F = (0, 3)  # SMTD_MT(L0_KC3, KC_LEFT_ALT), SMTD_MT(L1_KC3, KC_LEFT_ALT)
-    J = (0, 4)  # SMTD_MT(L0_KC4, KC_LEFT_CTRL), SMTD_MT(L1_KC4, KC_LEFT_CTRL)
-    K = (0, 5)  # SMTD_LT(L0_KC5, L1)
-    L = (0, 6)  # no special behaviour
-    N = (0, 7)  # Ñ in Spanish layout, no special behaviour
+    A = (0, 0, "no special behaviour")
+    S = (0, 1, "no special behaviour")
+    D = (0, 2, "SMTD_MT_ON_MKEY(L0_KC2, MACRO2, KC_LEFT_GUI)")
+    F = (0, 3, "SMTD_MT(L0_KC3, KC_LEFT_ALT), SMTD_MT(L1_KC3, KC_LEFT_ALT)")
+    J = (0, 4, "SMTD_MT(L0_KC4, KC_LEFT_CTRL), SMTD_MT(L1_KC4, KC_LEFT_CTRL)")
+    K = (0, 5, "SMTD_LT(L0_KC5, L1)")
+    L = (0, 6, "no special behaviour")
+    N = (0, 7, "Ñ in Spanish layout, no special behaviour")
 
-    def __init__(self, row, col):
+    def __init__(self, row, col, comment):
         self._rowcol = (row, col)
+        self._comment = comment
         self._keycode = None
 
     @classmethod
@@ -49,6 +50,12 @@ class Key(Enum):
 
     def rowcol(self):
         return self._rowcol
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return f"Key.{self.name} # {self._comment}"
 
 
 class TestSmTd(unittest.TestCase):
@@ -168,14 +175,14 @@ class TestSmTd(unittest.TestCase):
         self.assertRegister(records[2], Keycode.MACRO2.value)
         self.assertUnregister(records[3], Keycode.MACRO2.value)
 
-    def test_complex_hotkey(self):
-        presses = [Keycode.L0_KC3, Keycode.L0_KC4, Keycode.L0_KC5]
-        releases = [Keycode.L0_KC3, Keycode.L0_KC4, Keycode.L0_KC5, Keycode.L0_KC0]
+    def test_LT_MT_permutations(self):
+        presses = [Key.F, Key.K]
+        releases = [Key.F, Key.K, Key.A]
 
         # sex, hehe
         seqs = []
         for press_seq in itertools.permutations(presses):
-            press_seq = press_seq + (Keycode.L0_KC0,)  # L0_KC0 must be the last key pressed
+            press_seq = press_seq + (Key.A,)  # Key.A must be the last key pressed
             for release_seq in itertools.permutations(releases):
                 seqs += [(press_seq, release_seq,)]
 
@@ -186,36 +193,49 @@ class TestSmTd(unittest.TestCase):
             for key in press_seq: key.press()
             for key in release_seq: key.release()
 
+            print("\n\npresses:")
+            for p in press_seq: print(f" -- {p}")
+            print("\nreleases:")
+            for r in release_seq: print(f" -- {r}")
+
+            print("\nevents:")
             records = get_record_history()
-            print(records)
+            for r in records: print(f"{r}")
 
-    def test_LT_layer_switch(self):
-        Keycode.L0_KC5.press()
-        Keycode.L0_KC0.press()
-        Keycode.L0_KC0.release()
-        Keycode.L0_KC5.release()
+            self.assertEmulatePress(records[0], Key.A, layer_state=1, mods=4)
+            self.assertEmulateRelease(records[1], Key.A, layer_state=1, mods=4)
+            print("\n\n----------------------------------------------------\n\n")
 
-        records = get_record_history()
-        self.assertEqual(len(records), 2)
-        self.assertEmulatePress(records[0], Key.A, layer_state=1)
-        self.assertEmulateRelease(records[1], Key.A, layer_state=1)
 
-    def test_instant_bypass(self):
-        Keycode.L0_KC0.press()  # fixme вот тут можно было бы и отпускать процесс, а не стопорить и эмулировать нажатие
-        Keycode.L0_KC0.release()
-        # fixme
+def test_LT_layer_switch(self):
+    Key.K.press()
+    Key.A.press()
+    Key.A.release()
+    Key.K.release()
 
-    def test_debug_output(self):
-        """Test that debug output is working"""
-        Keycode.L0_KC0.press()
-        Keycode.L0_KC0.release()
+    records = get_record_history()
+    self.assertEqual(len(records), 2)
+    self.assertEmulatePress(records[0], Key.A, layer_state=1)
+    self.assertEmulateRelease(records[1], Key.A, layer_state=1)
 
-        debug_output = get_debug_output()
-        self.assertIn("GOT KEY", debug_output)
-        self.assertIn("EMULATE", debug_output)
 
-        print("\nDebug output from test_debug_output:")
-        print(debug_output)
+def test_instant_bypass(self):
+    Key.A.press()  # fixme вот тут можно было бы и отпускать процесс, а не стопорить и эмулировать нажатие
+    Key.A.release()
+    # fixme
+
+
+def test_debug_output(self):
+    """Test that debug output is working"""
+    Key.A.press()
+    Key.A.release()
+
+    debug_output = get_debug_output()
+    self.assertIn("GOT KEY", debug_output)
+    self.assertIn("EMULATE", debug_output)
+
+    print("\nDebug output from test_debug_output:")
+    print(debug_output)
 
 
 if __name__ == "__main__":

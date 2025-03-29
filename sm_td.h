@@ -82,7 +82,7 @@ typedef enum {
     SMTD_STAGE_NONE,
     SMTD_STAGE_TOUCH,
     SMTD_STAGE_SEQUENCE,
-    SMTD_STAGE_FOLLOWING_TOUCH,
+    SMTD_STAGE_FOLLOWING_TOUCH, //fixme seems I can delete this stage
     SMTD_STAGE_HOLD,
     SMTD_STAGE_RELEASE,
 } smtd_stage;
