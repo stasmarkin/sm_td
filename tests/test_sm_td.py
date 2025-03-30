@@ -176,7 +176,7 @@ class TestSmTd(unittest.TestCase):
 
     def test_tmp(self):
         presses = [Key.F, Key.K, Key.A]
-        releases = [Key.K, Key.F, Key.A]
+        releases = [Key.F, Key.K, Key.A]
 
         for p in presses: p.press()
         for r in releases: r.release()

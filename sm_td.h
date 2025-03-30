@@ -610,6 +610,13 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 break;
             }
 
+            smtd_state *following_key_state3 = find_following_key(state, pressed_keycode, record);
+            if (following_key_state3 == NULL) {
+                // Some previously pressed key has been released
+                // We don't need to do anything here
+                break;
+            }
+
             if (!is_state_key && !record->event.pressed) {
                 // Following key is released. Now we definitely know that macro key is held
                 // we need to execute hold the macro key and let following state handle the key release
