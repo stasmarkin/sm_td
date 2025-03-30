@@ -253,7 +253,12 @@ uint32_t last_key_timer = 0;
 #endif
 
 #ifndef SMTD_DEBUG
-#define SMTD_DEBUG(...) SMTD_PRINT("\n"); SMTD_DEBUG_PRINT_OFFSETS; SMTD_PRINT(__VA_ARGS__);
+#define SMTD_DEBUG(...) do { \
+SMTD_PRINT("\n"); \
+SMTD_PRINT("[%4d] ", __LINE__); \
+SMTD_DEBUG_PRINT_OFFSETS; \
+SMTD_PRINT(__VA_ARGS__); \
+} while (0)
 #endif
 
 #ifndef SMTD_SNDEBUG
