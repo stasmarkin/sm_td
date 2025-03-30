@@ -72,6 +72,7 @@
 #ifndef SMTD_GLOBAL_AGGREGATE_TAPS
 #define SMTD_GLOBAL_AGGREGATE_TAPS false
 #endif
+#include <stdint.h>
 
 
 /* ************************************* *
@@ -477,14 +478,14 @@ bool smtd_process_desired(uint16_t pressed_keycode, keyrecord_t *record, uint16_
         return true;
     }
 
-    #ifdef SMTD_DEBUG_ENABLED
+#ifdef SMTD_DEBUG_ENABLED
     SMTD_DEBUG("");
     SMTD_DEBUG(">> +%lums %s GOT KEY %s",
                timer_elapsed32(last_key_timer),
                smtd_record_to_str(record),
                smtd_keycode_to_str_uncertain(pressed_keycode, desired_keycode == 0));
     last_key_timer = timer_read32();
-    #endif
+#endif
 
     smtd_apply_to_stack(0, pressed_keycode, record, desired_keycode);
     return false;
@@ -567,6 +568,21 @@ void smtd_create_state(uint16_t pressed_keycode, keyrecord_t *record, uint16_t d
                smtd_state_to_str(state));
 }
 
+smtd_state *find_following_key(smtd_state *state, uint16_t pressed_keycode, keyrecord_t *record) {
+    for (uint8_t i = state->idx + 1; i < smtd_active_states_size; i++) {
+        bool is_following_state_key =
+                (record->event.key.row == smtd_active_states[i]->pressed_keyposition.row &&
+                 record->event.key.col == smtd_active_states[i]->pressed_keyposition.col) &&
+                (pressed_keycode == smtd_active_states[i]->pressed_keycode ||
+                 pressed_keycode == smtd_active_states[i]->desired_keycode);
+        if (is_following_state_key) {
+            return &smtd_active_states[i];
+        }
+    }
+
+    return NULL;
+}
+
 bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_keycode,
                       keyrecord_t *record, uint16_t desired_keycode) {
     SMTD_DEBUG("--%s apply_event with %s, is_state_key=%d",
@@ -643,19 +659,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
 
             if (!is_state_key && !record->event.pressed) {
                 // Another key has been released
-                smtd_state *following_key_state = NULL;
-                for (uint8_t i = state->idx + 1; i < smtd_active_states_size; i++) {
-                    bool is_following_state_key =
-                            (record->event.key.row == smtd_active_states[i]->pressed_keyposition.row &&
-                             record->event.key.col == smtd_active_states[i]->pressed_keyposition.col) &&
-                            (pressed_keycode == smtd_active_states[i]->pressed_keycode ||
-                             pressed_keycode == smtd_active_states[i]->desired_keycode);
-                    if (is_following_state_key) {
-                        following_key_state = smtd_active_states[i];
-                        break;
-                    }
-                }
-
+                smtd_state *following_key_state = find_following_key(state, pressed_keycode, record);
                 if (following_key_state == NULL) {
                     // Some previously pressed key has been released
                     // We don't need to do anything here
@@ -710,7 +714,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 return false;
             }
 
-            // is_state_key == false  here
+        // is_state_key == false  here
             if (record->event.pressed) {
                 break;
             }
@@ -731,37 +735,27 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 return false;
             }
 
-            smtd_state *following_key_state = NULL;
-            for (uint8_t i = state->idx + 1; i < smtd_active_states_size; i++) {
-                bool is_following_state_key =
-                        (record->event.key.row == smtd_active_states[i]->pressed_keyposition.row &&
-                         record->event.key.col == smtd_active_states[i]->pressed_keyposition.col) &&
-                        (pressed_keycode == smtd_active_states[i]->pressed_keycode ||
-                         pressed_keycode == smtd_active_states[i]->desired_keycode);
-                if (is_following_state_key) {
-                    following_key_state = smtd_active_states[i];
-                    break;
-                }
+            smtd_state *following_key_state = find_following_key(state, pressed_keycode, record);
+            if (following_key_state == NULL) {
+                // Some previously pressed key has been released
+                // We don't need to do anything here
+                break;
             }
 
-            if (following_key_state != NULL) {
-                // Following key is released. Now we definitely know that macro key is held
-                // we need to execute hold the macro key and let following state handle the key release
+            // Following key is released. Now we definitely know that macro key is held
+            // we need to execute hold the macro key and let following state handle the key release
+            SMTD_DEBUG_OFFSET_INC;
+            smtd_apply_stage(state, SMTD_STAGE_HOLD);
+            smtd_handle_action(state, SMTD_ACTION_HOLD);
+            SMTD_SIMULTANEOUS_PRESSES_DELAY
 
-                SMTD_DEBUG_OFFSET_INC;
-                smtd_apply_stage(state, SMTD_STAGE_HOLD);
-                smtd_handle_action(state, SMTD_ACTION_HOLD);
-                SMTD_SIMULTANEOUS_PRESSES_DELAY
+            smtd_apply_to_stack(state->idx + 1, pressed_keycode, record, desired_keycode);
+            SMTD_SIMULTANEOUS_PRESSES_DELAY
 
-                smtd_apply_to_stack(state->idx + 1, pressed_keycode, record, desired_keycode);
-                SMTD_SIMULTANEOUS_PRESSES_DELAY
-
-                smtd_handle_action(state, SMTD_ACTION_RELEASE);
-                smtd_apply_stage(state, SMTD_STAGE_NONE);
-                SMTD_DEBUG_OFFSET_DEC;
-                return false;
-            }
-            break;
+            smtd_handle_action(state, SMTD_ACTION_RELEASE);
+            smtd_apply_stage(state, SMTD_STAGE_NONE);
+            SMTD_DEBUG_OFFSET_DEC;
+            return false;
     }
 
     return true;
