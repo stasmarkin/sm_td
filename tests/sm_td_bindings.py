@@ -240,14 +240,8 @@ lib.TEST_execute_deferred.restype = None
 lib.get_mods.argtypes = []  # No arguments
 lib.get_mods.restype = ctypes.c_uint8  # Returns uint8_t
 
-lib.TEST_get_debug_output.argtypes = []
-lib.TEST_get_debug_output.restype = ctypes.c_char_p
-
 lib.TEST_get_layer_state.argtypes = []
 lib.TEST_get_layer_state.restype = ctypes.c_uint8
-
-lib.TEST_clear_debug_buffer.argtypes = []
-lib.TEST_clear_debug_buffer.restype = None
 
 
 # Helper functions
@@ -333,11 +327,3 @@ def get_mods():
 def get_layer_state():
     """Get the current layer state"""
     return lib.TEST_get_layer_state()
-
-def get_debug_output():
-    """Get the accumulated debug output"""
-    return lib.TEST_get_debug_output().decode('utf-8')
-
-def clear_debug_buffer():
-    """Clear the debug output buffer"""
-    lib.TEST_clear_debug_buffer()

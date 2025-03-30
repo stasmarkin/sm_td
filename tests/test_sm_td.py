@@ -62,7 +62,6 @@ class TestSmTd(unittest.TestCase):
     def setUp(self):
         """Method to run before each test"""
         reset()
-        clear_debug_buffer()  # Clear debug output before each test
         Key.reset()
 
     def assertEvent(self, event, rowcol=(255, 255), keycode=65535, pressed=True, mods=0, layer_state=0,
@@ -206,6 +205,9 @@ class TestSmTd(unittest.TestCase):
             self.assertEmulateRelease(records[1], Key.A, layer_state=1, mods=4)
             print("\n\n----------------------------------------------------\n\n")
 
+            self.assertEqual(get_mods(), 0)  # fixme every test should test it
+            self.assertEqual(get_layer_state(), 1)
+
 
 def test_LT_layer_switch(self):
     Key.K.press()
@@ -223,19 +225,6 @@ def test_instant_bypass(self):
     Key.A.press()  # fixme вот тут можно было бы и отпускать процесс, а не стопорить и эмулировать нажатие
     Key.A.release()
     # fixme
-
-
-def test_debug_output(self):
-    """Test that debug output is working"""
-    Key.A.press()
-    Key.A.release()
-
-    debug_output = get_debug_output()
-    self.assertIn("GOT KEY", debug_output)
-    self.assertIn("EMULATE", debug_output)
-
-    print("\nDebug output from test_debug_output:")
-    print(debug_output)
 
 
 if __name__ == "__main__":
