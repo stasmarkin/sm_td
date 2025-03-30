@@ -477,18 +477,16 @@ bool smtd_process_desired(uint16_t pressed_keycode, keyrecord_t *record, uint16_
         return true;
     }
 
-#ifdef SMTD_DEBUG_ENABLED
+    #ifdef SMTD_DEBUG_ENABLED
     SMTD_DEBUG("");
     SMTD_DEBUG(">> +%lums %s GOT KEY %s",
                timer_elapsed32(last_key_timer),
                smtd_record_to_str(record),
                smtd_keycode_to_str_uncertain(pressed_keycode, desired_keycode == 0));
     last_key_timer = timer_read32();
-#endif
+    #endif
 
-    SMTD_DEBUG_OFFSET_INC;
     smtd_apply_to_stack(0, pressed_keycode, record, desired_keycode);
-    SMTD_DEBUG_OFFSET_DEC;
     return false;
 }
 
