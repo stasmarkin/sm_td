@@ -514,7 +514,7 @@ smtd_apply_to_stack(uint8_t starting_idx, uint16_t pressed_keycode, keyrecord_t 
         SMTD_DEBUG_OFFSET_DEC;
 
         if (!can_process_next) {
-            SMTD_DEBUG("%s TERM STATE with %s",
+            SMTD_DEBUG("%s term state with %s",
                        smtd_record_to_str(record),
                        smtd_state_to_str(state));
             break;
