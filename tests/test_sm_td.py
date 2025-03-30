@@ -175,7 +175,7 @@ class TestSmTd(unittest.TestCase):
         self.assertUnregister(records[3], Keycode.MACRO2.value)
 
     def test_tmp(self):
-        presses = [Key.F, Key.K, Key.A]
+        presses = [Key.K, Key.F, Key.A]
         releases = [Key.F, Key.K, Key.A]
 
         for p in presses: p.press()

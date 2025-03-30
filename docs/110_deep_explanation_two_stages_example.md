@@ -102,7 +102,7 @@ FOLLOWING_TAP_TERM - - │ - - │ │ - - │ - - - - - - - - - - - - - - - - -
 
 ## Almost simultaneous release
 
-The third option of resolving stage SMTD_STAGE_FOLLOWING_TOUCH is releasing macro key before it become interpreted as held. In that case following key is still being pressed and state machine is not yet able to make a decision if macro was held or tapped. So state machine goes to stage SMTD_STAGE_RELEASE and just wait for next user input. In case if you release following key fast enough (within RELEASE_TERM millis) it would be counted the same way as it was released while pressing macro key. So stage will go to SMTD_STAGE_NONE and following action will be performed: fire SMTD_ACTION_HOLD, tap following key and fire SMTD_ACTION_RELEASE.
+The third option of resolving stage SMTD_STAGE_FOLLOWING_TOUCH is releasing macro key before it become interpreted as held. In that case following key is still being pressed and state machine is not yet able to make a decision if macro was held or tapped. So state machine goes to stage SMTD_STAGE_TOUCH_RELEASE and just wait for next user input. In case if you release following key fast enough (within RELEASE_TERM millis) it would be counted the same way as it was released while pressing macro key. So stage will go to SMTD_STAGE_NONE and following action will be performed: fire SMTD_ACTION_HOLD, tap following key and fire SMTD_ACTION_RELEASE.
 
 
 ```
@@ -116,7 +116,7 @@ The third option of resolving stage SMTD_STAGE_FOLLOWING_TOUCH is releasing macr
                        │     │ │ key │  
                        │     │ │     │
 20ms - - - - - - - - - └—————┘ │ - - │ - - - - - - - - - - - - - - - - -
-                               │     │  SMTD_STAGE_RELEASE
+                               │     │  SMTD_STAGE_TOUCH_RELEASE
                                │     │
 30ms - - - - - - - - - - - - - └—————┘ - - - - - - - - - - - - - - - - -
                                         SMTD_STAGE_NONE
@@ -128,7 +128,7 @@ The third option of resolving stage SMTD_STAGE_FOLLOWING_TOUCH is releasing macr
 
 ## Release following key much later after tapping macro key
 
-Let's see what would happed, if you continue holding following key on SMTD_STAGE_RELEASE. Macro key is already released, but state machine hasn't make a decision whether it was a tap or hold. So, holding following key for long time (RELEASE_TERM millis) will lead to sequential taps decision. So after RELEASE_TERM state machine will go to stage SMTD_STAGE_NONE, fire action SMTD_ACTION_TAP and press (without releasing) following key. Please, note that sending press event of following key to OS happens much later than user physically press a key, so sm_td "delays" that press until it is absolutely sure how to interpret this.
+Let's see what would happed, if you continue holding following key on SMTD_STAGE_TOUCH_RELEASE. Macro key is already released, but state machine hasn't make a decision whether it was a tap or hold. So, holding following key for long time (RELEASE_TERM millis) will lead to sequential taps decision. So after RELEASE_TERM state machine will go to stage SMTD_STAGE_NONE, fire action SMTD_ACTION_TAP and press (without releasing) following key. Please, note that sending press event of following key to OS happens much later than user physically press a key, so sm_td "delays" that press until it is absolutely sure how to interpret this.
 
 ```
                                         SMTD_STAGE_NONE
@@ -142,7 +142,7 @@ Let's see what would happed, if you continue holding following key on SMTD_STAGE
                        │     │ │ key │  
                        │     │ │     │
 20ms - - - - - - - - - └—————┘ │ - - │ - - - - - - - - - - - - - - - - -
-                               │     │  SMTD_STAGE_RELEASE
+                               │     │  SMTD_STAGE_TOUCH_RELEASE
                                │     │
                                │     │
                                │     │

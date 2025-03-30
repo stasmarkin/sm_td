@@ -40,7 +40,7 @@ On this stage we have macro and following keys pressed. State machine is not sur
 
 * On waiting stage will be change to SMTD_STAGE_HOLD. Action SMTD_ACTION_HOLD will be executed and then sm_td will send following key press to quantum.
 * On macro key press nothing will happen since macro is already assumed as pressed.
-* On macro key release stage moves to SMTD_STAGE_RELEASE stage. sm_td still can interpret this.
+* On macro key release stage moves to SMTD_STAGE_TOUCH_RELEASE stage. sm_td still can interpret this.
 * On following key press nothing will happen since following key is already assumed as pressed.
 * On following key release stage will change to SMTD_STAGE_HOLD. Action SMTD_ACTION_HOLD will be executed and then sm_td will send following key press and release to quantum.
 * On other key press stage will be changed to SMTD_STAGE_HOLD. Action SMTD_ACTION_HOLD will be executed and then sm_td will send following key press to quantum.
@@ -56,7 +56,7 @@ On this stage we know, that macro key is press long enough to interpret this as 
 * On macro key release action SMTD_ACTION_RELEASE will be fired. Stage will change to SMTD_STAGE_NONE.
 * On other key press or release event will be bypassed.
 
-## SMTD_STAGE_RELEASE
+## SMTD_STAGE_TOUCH_RELEASE
 
 On this stage we have macro key just release and following key is still being pressed. If user will release following key quick enough, it will be interpret as hold+tap.
 
