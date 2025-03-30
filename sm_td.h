@@ -710,7 +710,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 return false;
             }
 
-        // if (!is_state_key && record->event.pressed) { -- is_state_key == false always here
+            // is_state_key == false  here
             if (record->event.pressed) {
                 break;
             }
