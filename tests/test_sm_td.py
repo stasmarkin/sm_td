@@ -174,6 +174,33 @@ class TestSmTd(unittest.TestCase):
         self.assertRegister(records[2], Keycode.MACRO2.value)
         self.assertUnregister(records[3], Keycode.MACRO2.value)
 
+    def test_tmp(self):
+        presses = [Key.F, Key.K, Key.A]
+        releases = [Key.K, Key.F, Key.A]
+
+        for p in presses: p.press()
+        for r in releases: r.release()
+
+        print("\n\npresses:")
+        for p in presses: print(f" -- {p}")
+        print("\nreleases:")
+        for r in releases: print(f" -- {r}")
+
+        print("\nevents:")
+        records = get_record_history()
+        for r in records: print(f"{r}")
+
+        self.assertEmulatePress(records[0], Key.A, layer_state=1, mods=4)
+        self.assertEmulateRelease(records[1], Key.A, layer_state=1, mods=4)
+        print("\n\n----------------------------------------------------\n\n")
+
+        self.assertEqual(get_mods(), 0)  # fixme every test should test it
+        self.assertEqual(get_layer_state(), 0)
+
+
+
+
+
     def test_LT_MT_permutations(self):
         presses = [Key.F, Key.K]
         releases = [Key.F, Key.K, Key.A]
@@ -206,7 +233,7 @@ class TestSmTd(unittest.TestCase):
             print("\n\n----------------------------------------------------\n\n")
 
             self.assertEqual(get_mods(), 0)  # fixme every test should test it
-            self.assertEqual(get_layer_state(), 1)
+            self.assertEqual(get_layer_state(), 0)
 
 
 def test_LT_layer_switch(self):
