@@ -9,7 +9,7 @@
 - optional delay between simultaneous key presses (see SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS in [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md))
 
 #### `v0.3.0`
-- bug fix on pressing same macro key on stage SMTD_STAGE_RELEASE
+- bug fix on pressing same macro key on stage SMTD_STAGE_TOUCH_RELEASE
 - reduce args number for get_smtd_timeout_default and smtd_feature_enabled_default functions (see Upgrade instructions)
 - better stage naming
 - comprehensive documentation
