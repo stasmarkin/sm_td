@@ -59,8 +59,7 @@ SMTD_RESOLUTION_DETERMINED = 2
 
 SMTD_TIMEOUT_TAP = 0
 SMTD_TIMEOUT_SEQUENCE = 1
-SMTD_TIMEOUT_FOLLOWING_TAP = 2
-SMTD_TIMEOUT_RELEASE = 3
+SMTD_TIMEOUT_RELEASE = 2
 
 SMTD_FEATURE_AGGREGATE_TAPS = 0
 
@@ -262,7 +261,7 @@ def process_key_and_timeout(keycode: Keycode, pressed: bool):
     result = lib.process_smtd(ctypes.c_uint(keycode.value), record_ptr)
     execs_after = get_deferred_execs()
     execs_diff = execs_after[len(execs_before):]
-    if len(execs_diff) is 0: return result, None
+    if len(execs_diff) == 0: return result, None
     return result, execs_diff[-1]["idx"]
 
 

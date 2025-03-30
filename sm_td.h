@@ -61,10 +61,6 @@
 #define SMTD_GLOBAL_SEQUENCE_TERM TAPPING_TERM / 2
 #endif
 
-#ifndef SMTD_GLOBAL_FOLLOWING_TAP_TERM
-#define SMTD_GLOBAL_FOLLOWING_TAP_TERM TAPPING_TERM
-#endif
-
 #ifndef SMTD_GLOBAL_RELEASE_TERM
 #define SMTD_GLOBAL_RELEASE_TERM TAPPING_TERM / 4
 #endif
@@ -83,7 +79,6 @@ typedef enum {
     SMTD_STAGE_NONE,
     SMTD_STAGE_TOUCH,
     SMTD_STAGE_SEQUENCE,
-    SMTD_STAGE_FOLLOWING_TOUCH, //fixme seems I can delete this stage
     SMTD_STAGE_HOLD,
     SMTD_STAGE_RELEASE,
 } smtd_stage;
@@ -104,7 +99,6 @@ typedef enum {
 typedef enum {
     SMTD_TIMEOUT_TAP,
     SMTD_TIMEOUT_SEQUENCE,
-    SMTD_TIMEOUT_FOLLOWING_TAP,
     SMTD_TIMEOUT_RELEASE,
 } smtd_timeout;
 
@@ -276,8 +270,6 @@ char *smtd_stage_to_str(smtd_stage stage) {
             return "S_TCH";
         case SMTD_STAGE_SEQUENCE:
             return "S_SEQ";
-        case SMTD_STAGE_FOLLOWING_TOUCH:
-            return "S_FOL";
         case SMTD_STAGE_HOLD:
             return "S_HLD";
         case SMTD_STAGE_RELEASE:
@@ -431,21 +423,6 @@ uint32_t timeout_sequence(uint32_t trigger_time, void *cb_arg) {
     return 0;
 }
 
-uint32_t timeout_following_touch(uint32_t trigger_time, void *cb_arg) {
-    smtd_state *state = (smtd_state *) cb_arg;
-    SMTD_DEBUG("");
-    SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG("%s timeout_following_touch", smtd_state_to_str(state));
-    smtd_apply_stage(state, SMTD_STAGE_HOLD);
-    smtd_handle_action(state, SMTD_ACTION_HOLD, true);
-    SMTD_DEBUG_OFFSET_DEC;
-    SMTD_DEBUG_OFFSET_DEC;
-    SMTD_DEBUG_OFFSET_DEC;
-    return 0;
-}
-
 uint32_t timeout_release(uint32_t trigger_time, void *cb_arg) {
     smtd_state *state = (smtd_state *) cb_arg;
     SMTD_DEBUG("");
@@ -577,7 +554,7 @@ smtd_state *find_following_key(smtd_state *state, uint16_t pressed_keycode, keyr
                 (pressed_keycode == smtd_active_states[i]->pressed_keycode ||
                  pressed_keycode == smtd_active_states[i]->desired_keycode);
         if (is_following_state_key) {
-            return &smtd_active_states[i];
+            return smtd_active_states[i];
         }
     }
 
@@ -604,23 +581,40 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
             break;
 
         case SMTD_STAGE_TOUCH:
-            if (is_state_key && !record->event.pressed) {
-                SMTD_DEBUG_OFFSET_INC;
-                if (!smtd_feature_enabled_or_default(state, SMTD_FEATURE_AGGREGATE_TAPS)) {
-                    smtd_handle_action(state, SMTD_ACTION_TAP, true);
+            if (state->idx + 1 == smtd_active_states_size) { // last state in stack
+                if (is_state_key && !record->event.pressed) {
+                    SMTD_DEBUG_OFFSET_INC;
+                    if (!smtd_feature_enabled_or_default(state, SMTD_FEATURE_AGGREGATE_TAPS)) {
+                        smtd_handle_action(state, SMTD_ACTION_TAP, true);
+                    }
+
+                    smtd_apply_stage(state, SMTD_STAGE_SEQUENCE);
+                    SMTD_DEBUG_OFFSET_DEC;
+                    break;
                 }
 
-                smtd_apply_stage(state, SMTD_STAGE_SEQUENCE);
+                break;
+            }
+
+            if (is_state_key && !record->event.pressed) {
+                // Macro key is released, moving to the next stage
+                SMTD_DEBUG_OFFSET_INC;
+                smtd_apply_stage(state, SMTD_STAGE_RELEASE);
                 SMTD_DEBUG_OFFSET_DEC;
                 break;
             }
 
-            if (!is_state_key && record->event.pressed) {
+            if (!is_state_key && !record->event.pressed) {
+                // Following key is released. Now we definitely know that macro key is held
+                // we need to execute hold the macro key and let following state handle the key release
                 SMTD_DEBUG_OFFSET_INC;
-                smtd_apply_stage(state, SMTD_STAGE_FOLLOWING_TOUCH);
+                smtd_apply_stage(state, SMTD_STAGE_HOLD);
+                smtd_handle_action(state, SMTD_ACTION_HOLD, true);
                 SMTD_DEBUG_OFFSET_DEC;
+                SMTD_SIMULTANEOUS_PRESSES_DELAY
                 break;
             }
+
             break;
 
         case SMTD_STAGE_SEQUENCE:
@@ -644,39 +638,6 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 SMTD_DEBUG_OFFSET_DEC;
                 break;
             }
-            break;
-
-        case SMTD_STAGE_FOLLOWING_TOUCH:
-            // At this stage, we have already pressed the macro key and the following key
-            // none of them is assumed to be held yet
-
-            if (is_state_key && !record->event.pressed) {
-                // Macro key is released, moving to the next stage
-                SMTD_DEBUG_OFFSET_INC;
-                smtd_apply_stage(state, SMTD_STAGE_RELEASE);
-                SMTD_DEBUG_OFFSET_DEC;
-                break;
-            }
-
-            if (!is_state_key && !record->event.pressed) {
-                // Another key has been released
-                smtd_state *following_key_state = find_following_key(state, pressed_keycode, record);
-                if (following_key_state == NULL) {
-                    // Some previously pressed key has been released
-                    // We don't need to do anything here
-                    break;
-                }
-
-                // Following key is released. Now we definitely know that macro key is held
-                // we need to execute hold the macro key and let following state handle the key release
-                SMTD_DEBUG_OFFSET_INC;
-                smtd_apply_stage(state, SMTD_STAGE_HOLD);
-                smtd_handle_action(state, SMTD_ACTION_HOLD, true);
-                SMTD_DEBUG_OFFSET_DEC;
-                SMTD_SIMULTANEOUS_PRESSES_DELAY
-                break;
-            }
-
             break;
 
         case SMTD_STAGE_HOLD:
@@ -744,8 +705,8 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 break;
             }
 
-            // Following key is released. Now we definitely know that macro key is held
-            // we need to execute hold the macro key and let following state handle the key release
+        // Following key is released. Now we definitely know that macro key is held
+        // we need to execute hold the macro key and let following state handle the key release
             SMTD_DEBUG_OFFSET_INC;
             smtd_apply_stage(state, SMTD_STAGE_HOLD);
             smtd_handle_action(state, SMTD_ACTION_HOLD, true);
@@ -821,13 +782,6 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
         case SMTD_STAGE_HOLD:
             break;
 
-        case SMTD_STAGE_FOLLOWING_TOUCH:
-            state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_FOLLOWING_TAP),
-                                        timeout_following_touch, state);
-            SMTD_DEBUG("%s timeout_following_touch in %lums", smtd_state_to_str(state),
-                       get_smtd_timeout_or_default(state, SMTD_TIMEOUT_FOLLOWING_TAP));
-            break;
-
         case SMTD_STAGE_RELEASE:
             state->released_time = timer_read32();
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE),
@@ -883,9 +837,9 @@ void smtd_handle_action(smtd_state *state, smtd_action action, bool propagate) {
         smtd_state *next_state = smtd_active_states[i];
 
         SMTD_DEBUG("%s action with %s runs deferred %s",
-               smtd_state_to_str(state),
-               smtd_action_to_str(action),
-               smtd_state_to_str2(next_state));
+                   smtd_state_to_str(state),
+                   smtd_action_to_str(action),
+                   smtd_state_to_str2(next_state));
 
         next_state->need_next_action = false;
 
@@ -1062,8 +1016,6 @@ uint32_t get_smtd_timeout_default(smtd_timeout timeout) {
             return SMTD_GLOBAL_TAP_TERM;
         case SMTD_TIMEOUT_SEQUENCE:
             return SMTD_GLOBAL_SEQUENCE_TERM;
-        case SMTD_TIMEOUT_FOLLOWING_TAP:
-            return SMTD_GLOBAL_FOLLOWING_TAP_TERM;
         case SMTD_TIMEOUT_RELEASE:
             return SMTD_GLOBAL_RELEASE_TERM;
     }
