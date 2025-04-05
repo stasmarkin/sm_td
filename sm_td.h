@@ -147,6 +147,9 @@ typedef struct {
 
     /** The index of the state in the active states array */
     uint8_t idx;
+
+    /** The state is no longer available for handling its key or keycode */
+    bool dead;
 } smtd_state;
 
 #define EMPTY_STATE {                               \
@@ -162,7 +165,8 @@ typedef struct {
         .resolution = SMTD_RESOLUTION_UNCERTAIN,    \
         .next_action = SMTD_ACTION_TOUCH,           \
         .need_next_action = false,                  \
-        .idx = 0                                    \
+        .idx = 0,                                   \
+        .dead = false                               \
 }
 
 #define SMTD_POOL_SIZE 10
@@ -485,7 +489,8 @@ smtd_apply_to_stack(uint8_t starting_idx, uint16_t pressed_keycode, keyrecord_t 
     for (uint8_t i = starting_idx; i < smtd_active_states_size; i++) {
         smtd_state *state = smtd_active_states[i];
 
-        bool is_state_key = (record->event.key.row == state->pressed_keyposition.row &&
+        bool is_state_key = !state->dead &&
+                            (record->event.key.row == state->pressed_keyposition.row &&
                              record->event.key.col == state->pressed_keyposition.col) &&
                             (pressed_keycode == state->pressed_keycode ||
                              pressed_keycode == state->desired_keycode);
@@ -555,6 +560,7 @@ void smtd_create_state(uint16_t pressed_keycode, keyrecord_t *record, uint16_t d
 smtd_state *find_following_key(smtd_state *state, uint16_t pressed_keycode, keyrecord_t *record) {
     for (uint8_t i = state->idx + 1; i < smtd_active_states_size; i++) {
         bool is_following_state_key =
+                !smtd_active_states[i]->dead &&
                 (record->event.key.row == smtd_active_states[i]->pressed_keyposition.row &&
                  record->event.key.col == smtd_active_states[i]->pressed_keyposition.col) &&
                 (pressed_keycode == smtd_active_states[i]->pressed_keycode ||
@@ -746,35 +752,19 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
         } // case SMTD_STAGE_TOUCH_RELEASE
 
         // -----------------------------------------------------------------------------------------
-         case SMTD_STAGE_HOLD_RELEASE: {
+        case SMTD_STAGE_HOLD_RELEASE: {
             // At this stage we have just released the macro key (which was held)
             // and still holding the following key (or keys)
+            // state is dead here
 
             if (is_state_key) {
-                if (!record->event.pressed) {
-                    // Macro key is released again. We should not be here, since we have already release state
-                    SMTD_DEBUG("%s how could that happen? %s, is_state_key=%d",
-                               smtd_state_to_str(state),
-                               smtd_record_to_str(record),
-                               is_state_key);
-                    break;
-                }
-
-                // Same key has just pressed again. We consider that we are in a sequence of taps
-                // So current state is interpreted as tap action. And next tap should be handled in another state.
-                uint8_t idx = state->idx;
-                SMTD_DEBUG_OFFSET_INC;
-                smtd_handle_action(state, SMTD_ACTION_TAP, true);
-                smtd_apply_stage(state, SMTD_STAGE_NONE);
-                SMTD_SIMULTANEOUS_PRESSES_DELAY
-
-                // let that new press event be processed by the next state
-                smtd_apply_to_stack(idx, pressed_keycode, record, desired_keycode);
-                SMTD_DEBUG_OFFSET_DEC;
-                return false;
+                SMTD_DEBUG("%s how could that happen? %s, is_state_key=%d",
+                           smtd_state_to_str(state),
+                           smtd_record_to_str(record),
+                           is_state_key);
+                break;
             }
 
-            // is_state_key == false  here
             if (record->event.pressed) {
                 break;
             }
@@ -836,6 +826,7 @@ void reset_state(smtd_state *state) {
     state->idx = 0;
     state->next_action = SMTD_ACTION_TOUCH;
     state->need_next_action = false;
+    state->dead = false;
 }
 
 void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
