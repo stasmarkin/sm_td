@@ -98,14 +98,23 @@ class Keycode(Enum):
     L2_KC6 = 306
     L2_KC7 = 307
 
-    MACRO0 = 400
-    MACRO1 = 401
-    MACRO2 = 402
-    MACRO3 = 403
-    MACRO4 = 404
-    MACRO5 = 405
-    MACRO6 = 406
-    MACRO7 = 407
+    L3_KC0 = 400
+    L3_KC1 = 401
+    L3_KC2 = 402
+    L3_KC3 = 403
+    L3_KC4 = 404
+    L3_KC5 = 405
+    L3_KC6 = 406
+    L3_KC7 = 407
+
+    MACRO0 = 500
+    MACRO1 = 501
+    MACRO2 = 502
+    MACRO3 = 503
+    MACRO4 = 504
+    MACRO5 = 505
+    MACRO6 = 506
+    MACRO7 = 507
 
     @classmethod
     def from_rowcol(cls, rowcol):
@@ -155,14 +164,14 @@ class Keycode(Enum):
 
     def layer(self):
         """Get the layer of the keycode"""
-        if self.value < 400:
+        if self.value < 500:
             return -1 + self.value // 100
         raise "MACRO keycodes are not supported"
 
     # noinspection PyRedundantParentheses
     def rowcol(self):
         """Convert the keycode to row and column"""
-        if self.value < 400:
+        if self.value < 500:
             return (0, self.value % 100)
         raise "MACRO keycodes are not supported"
 

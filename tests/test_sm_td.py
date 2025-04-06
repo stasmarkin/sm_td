@@ -15,12 +15,12 @@ from tests import sm_td_bindings as smtd
 class Key(Enum):
     A = (0, 0, "no special behaviour")
     S = (0, 1, "no special behaviour")
-    D = (0, 2, "SMTD_MT_ON_MKEY(L0_KC2, MACRO2, KC_LEFT_GUI)")
-    F = (0, 3, "SMTD_MT(L0_KC3, KC_LEFT_ALT), SMTD_MT(L1_KC3, KC_LEFT_ALT)")
-    J = (0, 4, "SMTD_MT(L0_KC4, KC_LEFT_CTRL), SMTD_MT(L1_KC4, KC_LEFT_CTRL)")
-    K = (0, 5, "SMTD_LT(L0_KC5, L1)")
-    L = (0, 6, "no special behaviour")
-    N = (0, 7, "Ñ in Spanish layout, no special behaviour")
+    D = (0, 2, "SMTD_MT_ON_MKEY(L0_KC2, MACRO2, KC_LEFT_GUI, 2)")
+    F = (0, 3, "SMTD_MT(L*_KC3, KC_LEFT_ALT)")
+    J = (0, 4, "SMTD_MT(L*_KC4, KC_LEFT_CTRL)")
+    K = (0, 5, "SMTD_LT(L0_KC5, L1), SMTD_LT(L2_KC5, L3)")
+    L = (0, 6, "SMTD_LT(L0_KC5, L2), SMTD_LT(L1_KC5, L3)")
+    N = (0, 7, "no special behaviour") # Ñ in Spanish layout,
 
     def __init__(self, row, col, comment):
         self._rowcol = (row, col)
