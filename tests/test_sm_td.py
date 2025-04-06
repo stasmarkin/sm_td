@@ -2,6 +2,7 @@ import unittest
 import os
 import sys
 import itertools
+from dataclasses import dataclass
 
 from tests.sm_td_bindings import *
 
@@ -63,6 +64,32 @@ class Key(Enum):
     def __str__(self):
         return f"Key.{self.name} # {self._comment}"
 
+@dataclass
+class Register:
+    keycode: Keycode
+    bypass: bool = False
+    mods: int = 0
+    layer: int = 0
+
+@dataclass
+class Unregister:
+    keycode: Keycode
+    bypass: bool = False
+    mods: int = 0
+    layer: int = 0
+
+@dataclass
+class EmulatePress:
+    key: Key
+    mods: int = 0
+    layer: int = 0
+
+@dataclass
+class EmulateRelease:
+    key: Key
+    mods: int = 0
+    layer: int = 0
+
 
 class TestSmTd(unittest.TestCase):
     def setUp(self):
@@ -83,16 +110,33 @@ class TestSmTd(unittest.TestCase):
         assert get_mods() == 0
         assert get_layer_state() == 0
 
+    def assertHistory(self, *args):
+        history = get_record_history()
+        assert len(history) == len(args)
+
+        for i, a in enumerate(args):
+            if isinstance(a, EmulatePress):
+                self.assertEmulatePress(history[i], a.key, a.mods, a.layer)
+            elif isinstance(a, EmulateRelease):
+                self.assertEmulateRelease(history[i], a.key, a.mods, a.layer)
+            elif isinstance(a, Register):
+                self.assertRegister(history[i], a.keycode, a.mods, a.layer, a.bypass)
+            elif isinstance(a, Unregister):
+                self.assertUnregister(history[i], a.keycode, a.mods, a.layer, a.bypass)
+            else:
+                raise ValueError(f"Unknown type in assertHistory {a}")
+
+
 
     def assertEvent(self, event, rowcol=(255, 255), keycodeValue=65535, pressed=True, mods=0, layer_state=0,
                     smtd_bypass=False):
-        self.assertEqual(event["row"], rowcol[0])
-        self.assertEqual(event["col"], rowcol[1])
-        self.assertEqual(event["keycode"], keycodeValue)
-        self.assertEqual(event["pressed"], pressed)
-        self.assertEqual(event["mods"], mods)
-        self.assertEqual(event["layer_state"], layer_state)
-        self.assertEqual(event["smtd_bypass"], smtd_bypass)
+        self.assertEqual(event["row"], rowcol[0], f"{event} doesn't match rowcol={rowcol}")
+        self.assertEqual(event["col"], rowcol[1], f"{event} doesn't match rowcol={rowcol}")
+        self.assertEqual(event["keycode"], keycodeValue, f"{event} doesn't match keycodeValue={keycodeValue}")
+        self.assertEqual(event["pressed"], pressed, f"{event} doesn't match pressed={pressed}")
+        self.assertEqual(event["mods"], mods, f"{event} doesn't match mods={mods}")
+        self.assertEqual(event["layer_state"], layer_state, f"{event} doesn't match layer_state={layer_state}")
+        self.assertEqual(event["smtd_bypass"], smtd_bypass, f"{event} doesn't match smtd_bypass={smtd_bypass}")
 
     def assertRegister(self, event, keycode, mods=0, layer_state=0, smtd_bypass=False):
         self.assertEvent(event, keycodeValue=keycode.value, pressed=True, mods=mods,
@@ -231,6 +275,33 @@ class TestSmTd(unittest.TestCase):
         self.assertUnregister(records[3], Keycode.MACRO2)
         self.assertRegister(records[4], Keycode.MACRO2)
         self.assertUnregister(records[5], Keycode.MACRO2)
+
+
+    def test_MTE_hold(self):
+        self.assertFalse(Key.MTE.press())
+        self.assertHistory()
+        self.assertEqual(get_mods(), 2)
+
+        Key.MTE.prolong()
+        self.assertHistory()
+        self.assertEqual(get_mods(), 2)
+
+        Key.MTE.release()
+        self.assertHistory()
+        self.assertEqual(get_mods(), 0)
+
+
+    def test_MTE_tap(self):
+        self.assertFalse(Key.MTE.press())
+        self.assertHistory()
+        self.assertEqual(get_mods(), 2)
+
+        Key.MTE.release()
+        self.assertEqual(get_mods(), 0)
+        self.assertHistory(
+            Register(Keycode.L0_KC7),
+            Unregister(Keycode.L0_KC7),
+        )
 
 
     def test_LT_MT_KEY_DOWN__MT_LT_KEY_UP(self):
