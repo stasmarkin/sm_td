@@ -119,7 +119,7 @@ typedef struct {
     uint16_t desired_keycode;
 
     /** The mods that were active on last key action */
-    uint8_t saved_mods;
+    uint8_t saved_mods;  //fixme can delete this after hold_release stage
 
     /** The length of the sequence of same key taps */
     uint8_t sequence_len;
@@ -270,6 +270,10 @@ SMTD_PRINT(__VA_ARGS__); \
 #define SMTD_SNDEBUG(bffr, bsize, ...) SMTD_SNPRINT(bffr, bsize, __VA_ARGS__);
 #endif
 
+#ifndef SMTD_DEBUG_FULL
+#define SMTD_DEBUG_FULL() for(int asdf=0; asdf<smtd_active_states_size; asdf++) { SMTD_DEBUG("** %s", smtd_state_to_str(smtd_active_states[asdf])); }
+#endif
+
 static uint8_t smtd_debug_offset = 0;
 
 char *smtd_stage_to_str(smtd_stage stage) {
@@ -283,7 +287,9 @@ char *smtd_stage_to_str(smtd_stage stage) {
         case SMTD_STAGE_HOLD:
             return "S_HLD";
         case SMTD_STAGE_TOUCH_RELEASE:
-            return "S_RLS";
+            return "S_TRL";
+        case SMTD_STAGE_HOLD_RELEASE:
+            return "S_HRL";
     }
     return "S_???";
 }
@@ -379,6 +385,7 @@ char* smtd_record_to_str(keyrecord_t *record) {
 #define SMTD_DEBUG(...)
 #define SMTD_DEBUG_OFFSET_INC
 #define SMTD_DEBUG_OFFSET_DEC
+#define SMTD_DEBUG_FULL(...)
 
 #endif
 
@@ -433,14 +440,29 @@ uint32_t timeout_sequence(uint32_t trigger_time, void *cb_arg) {
     return 0;
 }
 
-uint32_t timeout_release(uint32_t trigger_time, void *cb_arg) {
+uint32_t timeout_touch_release(uint32_t trigger_time, void *cb_arg) {
     smtd_state *state = (smtd_state *) cb_arg;
     SMTD_DEBUG("");
     SMTD_DEBUG_OFFSET_INC;
     SMTD_DEBUG_OFFSET_INC;
     SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG("%s timeout_release", smtd_state_to_str(state));
+    SMTD_DEBUG("%s timeout_touch_release", smtd_state_to_str(state));
     smtd_handle_action(state, SMTD_ACTION_TAP, true);
+    smtd_apply_stage(state, SMTD_STAGE_NONE);
+    SMTD_DEBUG_OFFSET_DEC;
+    SMTD_DEBUG_OFFSET_DEC;
+    SMTD_DEBUG_OFFSET_DEC;
+    return 0;
+}
+
+uint32_t timeout_hold_release(uint32_t trigger_time, void *cb_arg) {
+    smtd_state *state = (smtd_state *) cb_arg;
+    SMTD_DEBUG("");
+    SMTD_DEBUG_OFFSET_INC;
+    SMTD_DEBUG_OFFSET_INC;
+    SMTD_DEBUG_OFFSET_INC;
+    SMTD_DEBUG("%s timeout_touch_release", smtd_state_to_str(state));
+    smtd_handle_action(state, SMTD_ACTION_RELEASE, true);
     smtd_apply_stage(state, SMTD_STAGE_NONE);
     SMTD_DEBUG_OFFSET_DEC;
     SMTD_DEBUG_OFFSET_DEC;
@@ -508,8 +530,39 @@ smtd_apply_to_stack(uint8_t starting_idx, uint16_t pressed_keycode, keyrecord_t 
         }
     }
 
+    SMTD_DEBUG_OFFSET_INC;
+    uint8_t idx = smtd_active_states_size;
+    while (idx > 0) {
+        smtd_state* state = smtd_active_states[idx-1];
+        if (state->stage == SMTD_STAGE_TOUCH_RELEASE) {
+            SMTD_DEBUG("%s clean up", smtd_state_to_str(state));
+            smtd_handle_action(state, SMTD_ACTION_TAP, false);
+            smtd_apply_stage(state, SMTD_STAGE_NONE);
+            idx = smtd_active_states_size;
+            continue;
+        }
+
+        if (state->stage == SMTD_STAGE_HOLD_RELEASE) {
+            SMTD_DEBUG("%s clean up", smtd_state_to_str(state));
+            smtd_handle_action(state, SMTD_ACTION_RELEASE, false);
+            smtd_apply_stage(state, SMTD_STAGE_NONE);
+            idx = smtd_active_states_size;
+            continue;
+        }
+
+        if (state->stage == SMTD_STAGE_SEQUENCE) {
+            idx--;
+            continue;
+        }
+
+        SMTD_DEBUG("%s clean up is not required", smtd_state_to_str(state));
+        break;
+    }
+    SMTD_DEBUG_OFFSET_DEC;
+
     if (processed_state) {
         SMTD_DEBUG("<< %s STATE PROCESSED", smtd_record_to_str(record));
+        SMTD_DEBUG_FULL();
         return;
     }
 
@@ -520,6 +573,7 @@ void smtd_create_state(uint16_t pressed_keycode, keyrecord_t *record, uint16_t d
     // may be start a new state? A key must be just pressed
     if (!record->event.pressed) {
         SMTD_DEBUG("<< %s BYPASS KEY RELEASE", smtd_record_to_str(record));
+        SMTD_DEBUG_FULL();
         return;
     }
 
@@ -535,6 +589,7 @@ void smtd_create_state(uint16_t pressed_keycode, keyrecord_t *record, uint16_t d
     if (!state || state == NULL) {
         SMTD_DEBUG("<< %s NO FREE STATES",
                    smtd_record_to_str(record));
+        SMTD_DEBUG_FULL();
         return;
     }
 
@@ -554,6 +609,7 @@ void smtd_create_state(uint16_t pressed_keycode, keyrecord_t *record, uint16_t d
     SMTD_DEBUG("<< %s CREATE STATE %s",
                smtd_record_to_str(record),
                smtd_state_to_str(state));
+    SMTD_DEBUG_FULL();
 }
 
 //fixme find a better place for this
@@ -669,10 +725,15 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
         // -----------------------------------------------------------------------------------------
         case SMTD_STAGE_HOLD: {
             if (is_state_key && !record->event.pressed) {
-                SMTD_DEBUG_OFFSET_INC;
-                smtd_handle_action(state, SMTD_ACTION_RELEASE, false);
-                smtd_apply_stage(state, SMTD_STAGE_NONE);
-                SMTD_DEBUG_OFFSET_DEC;
+                if (state->idx == smtd_active_states_size - 1) {
+                    SMTD_DEBUG_OFFSET_INC;
+                    smtd_handle_action(state, SMTD_ACTION_RELEASE, false);
+                    smtd_apply_stage(state, SMTD_STAGE_NONE);
+                    SMTD_DEBUG_OFFSET_DEC;
+                    break;
+                }
+
+                smtd_apply_stage(state, SMTD_STAGE_HOLD_RELEASE);;
                 break;
             }
 
@@ -713,8 +774,8 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
             }
 
             if (timer_elapsed32(state->released_time) >= get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE)) {
-                // Timeout has been reached, but timeout_release has not been executed yet
-                SMTD_DEBUG("%s timeout_release has not been executed yet",
+                // Timeout has been reached, but timeout_touch_release has not been executed yet
+                SMTD_DEBUG("%s timeout_touch_release has not been executed yet",
                            smtd_state_to_str(state));
 
                 uint8_t idx = state->idx;
@@ -757,51 +818,13 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
             // and still holding the following key (or keys)
             // state is dead here
 
-            if (is_state_key) {
-                SMTD_DEBUG("%s how could that happen? %s, is_state_key=%d",
-                           smtd_state_to_str(state),
-                           smtd_record_to_str(record),
-                           is_state_key);
+            if (!record->event.pressed && state->idx != smtd_active_states_size - 1) {
                 break;
             }
 
-            if (record->event.pressed) {
-                break;
-            }
-
-            if (timer_elapsed32(state->released_time) >= get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE)) {
-                // Timeout has been reached, but timeout_release has not been executed yet
-                SMTD_DEBUG("%s timeout_release has not been executed yet",
-                           smtd_state_to_str(state));
-
-                uint8_t idx = state->idx;
-                SMTD_DEBUG_OFFSET_INC;
-                smtd_handle_action(state, SMTD_ACTION_TAP, true);
-                SMTD_SIMULTANEOUS_PRESSES_DELAY
-                smtd_apply_stage(state, SMTD_STAGE_NONE);
-
-                smtd_apply_to_stack(idx, pressed_keycode, record, desired_keycode);
-                SMTD_DEBUG_OFFSET_DEC;
-                return false;
-            }
-
-            smtd_state *following_key_state = find_following_key(state, pressed_keycode, record);
-            if (following_key_state == NULL) {
-                // Some previously pressed key has been released
-                // We don't need to do anything here
-                break;
-            }
-
-            // Following key is released. Now we definitely know that macro key is held
-            // we need to execute hold the macro key and let following state handle the key release
+            // A key was pressed. Can't hold current state anymore
             SMTD_DEBUG_OFFSET_INC;
-            smtd_apply_stage(state, SMTD_STAGE_HOLD);
-            smtd_handle_action(state, SMTD_ACTION_HOLD, true);
-            SMTD_SIMULTANEOUS_PRESSES_DELAY
-
             smtd_apply_to_stack(state->idx + 1, pressed_keycode, record, desired_keycode);
-            SMTD_SIMULTANEOUS_PRESSES_DELAY
-
             smtd_handle_action(state, SMTD_ACTION_RELEASE, false);
             smtd_apply_stage(state, SMTD_STAGE_NONE);
             SMTD_DEBUG_OFFSET_DEC;
@@ -874,8 +897,16 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
         case SMTD_STAGE_TOUCH_RELEASE:
             state->released_time = timer_read32();
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE),
-                                        timeout_release, state);
-            SMTD_DEBUG("%s timeout_release in %lums", smtd_state_to_str(state),
+                                        timeout_touch_release, state);
+            SMTD_DEBUG("%s timeout_touch_release in %lums", smtd_state_to_str(state),
+                       get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE));
+            break;
+
+        case SMTD_STAGE_HOLD_RELEASE:
+            state->released_time = timer_read32();
+            state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE),
+                                        timeout_hold_release, state);
+            SMTD_DEBUG("%s timeout_hold_release in %lums", smtd_state_to_str(state),
                        get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE));
             break;
     }

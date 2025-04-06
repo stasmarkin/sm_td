@@ -25,28 +25,34 @@ class Key(Enum):
     def __init__(self, row, col, comment):
         self._rowcol = (row, col)
         self._comment = comment
-        self._keycode = None
+        self._pressed = None
+        self._released = None
 
     @classmethod
     def reset(cls):
         """Reset all keys to their initial state"""
         for key in cls:
-            key._keycode = None
+            key._pressed = None
+            key._released = None
 
     def press(self):
-        assert self._keycode is None
-        self._keycode = Keycode.from_rowcol(self.rowcol())
-        return self._keycode.press()
+        assert self._pressed is None
+        self._released = None
+        self._pressed = Keycode.from_rowcol(self.rowcol())
+        return self._pressed.press()
 
     def release(self):
-        assert self._keycode is not None
-        result = self._keycode.release()
-        self._keycode = None
+        assert self._pressed is not None
+        assert self._released is None
+        result = self._pressed.release()
+        self._released = self._pressed
+        self._pressed = None
         return result
 
     def prolong(self):
-        assert self._keycode is not None
-        return self._keycode.prolong()
+        if self._pressed: return self._pressed.prolong()
+        if self._released: return self._released.prolong()
+        raise "both _pressed and _released are None"
 
     def rowcol(self):
         return self._rowcol
@@ -64,22 +70,22 @@ class TestSmTd(unittest.TestCase):
         reset()
         Key.reset()
 
-    def assertEvent(self, event, rowcol=(255, 255), keycode=65535, pressed=True, mods=0, layer_state=0,
+    def assertEvent(self, event, rowcol=(255, 255), keycodeValue=65535, pressed=True, mods=0, layer_state=0,
                     smtd_bypass=False):
         self.assertEqual(event["row"], rowcol[0])
         self.assertEqual(event["col"], rowcol[1])
-        self.assertEqual(event["keycode"], keycode)
+        self.assertEqual(event["keycode"], keycodeValue)
         self.assertEqual(event["pressed"], pressed)
         self.assertEqual(event["mods"], mods)
         self.assertEqual(event["layer_state"], layer_state)
         self.assertEqual(event["smtd_bypass"], smtd_bypass)
 
     def assertRegister(self, event, keycode, mods=0, layer_state=0, smtd_bypass=False):
-        self.assertEvent(event, keycode=keycode, pressed=True, mods=mods,
+        self.assertEvent(event, keycodeValue=keycode.value, pressed=True, mods=mods,
                          layer_state=layer_state, smtd_bypass=smtd_bypass)
 
     def assertUnregister(self, event, keycode, mods=0, layer_state=0, smtd_bypass=False):
-        self.assertEvent(event, keycode=keycode, pressed=False, mods=mods,
+        self.assertEvent(event, keycodeValue=keycode.value, pressed=False, mods=mods,
                          layer_state=layer_state, smtd_bypass=smtd_bypass)
 
     def assertEmulatePress(self, event, key, mods=0, layer_state=0):
@@ -135,8 +141,8 @@ class TestSmTd(unittest.TestCase):
         self.assertFalse(Key.D.release(), "release should return true")
         records = get_record_history()
         self.assertEqual(len(records), 2, "tap should happer after release")
-        self.assertRegister(records[0], Keycode.MACRO2.value)
-        self.assertUnregister(records[1], Keycode.MACRO2.value)
+        self.assertRegister(records[0], Keycode.MACRO2)
+        self.assertUnregister(records[1], Keycode.MACRO2)
 
     def test_basic_MT_ON_MKEY_hold(self):
         """Test the basic MT function"""
@@ -152,7 +158,7 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(len(get_record_history()), 0)
         self.assertEqual(get_mods(), 0)
 
-    def test_basic_MT_ON_MKEY_taphold(self):
+    def test_basic_MT_taphold(self):
         self.assertFalse(Key.D.press(), "press should block future key events")
         self.assertEqual(len(get_record_history()), 0)
 
@@ -162,19 +168,53 @@ class TestSmTd(unittest.TestCase):
         self.assertFalse(Key.D.press(), "press should block future key events")
         self.assertEqual(len(get_record_history()), 2)
 
+        self.assertEqual(get_mods(), 0)
         Key.D.prolong()
-        self.assertEqual(len(get_record_history()), 3)
+        self.assertEqual(get_mods(), 8)
+        self.assertFalse(Key.D.release(), "release should return true")
+        self.assertEqual(get_mods(), 0)
+
+        print("\nevents:")
+        records = get_record_history()
+        for r in records: print(f"{r}")
+
+        self.assertEqual(len(records), 2)
+        self.assertRegister(records[0], Keycode.MACRO2)
+        self.assertUnregister(records[1], Keycode.MACRO2)
+
+
+
+    def test_basic_MT_taptaptap(self):
+        self.assertFalse(Key.D.press(), "press should block future key events")
+        self.assertEqual(len(get_record_history()), 0)
+
+        self.assertFalse(Key.D.release(), "release should return true")
+        self.assertEqual(len(get_record_history()), 2)
+
+        self.assertFalse(Key.D.press(), "press should block future key events")
+        self.assertEqual(len(get_record_history()), 2)
 
         self.assertFalse(Key.D.release(), "release should return true")
         self.assertEqual(len(get_record_history()), 4)
 
-        records = get_record_history()
-        self.assertRegister(records[0], Keycode.MACRO2.value)
-        self.assertUnregister(records[1], Keycode.MACRO2.value)
-        self.assertRegister(records[2], Keycode.MACRO2.value)
-        self.assertUnregister(records[3], Keycode.MACRO2.value)
+        self.assertFalse(Key.D.press(), "press should block future key events")
+        self.assertEqual(len(get_record_history()), 4)
 
-    def test_tmp(self):
+        Key.D.prolong()
+        self.assertEqual(len(get_record_history()), 5)
+
+        self.assertFalse(Key.D.release(), "release should return true")
+        self.assertEqual(len(get_record_history()), 6)
+
+        records = get_record_history()
+        self.assertRegister(records[0], Keycode.MACRO2)
+        self.assertUnregister(records[1], Keycode.MACRO2)
+        self.assertRegister(records[2], Keycode.MACRO2)
+        self.assertUnregister(records[3], Keycode.MACRO2)
+        self.assertRegister(records[4], Keycode.MACRO2)
+        self.assertUnregister(records[5], Keycode.MACRO2)
+
+    def test_LT_MT_KEY_DOWN__MT_LT_KEY_UP(self):
         presses = [Key.K, Key.F, Key.A]
         releases = [Key.F, Key.K, Key.A]
 
@@ -198,6 +238,46 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(get_layer_state(), 0)
 
 
+    def test_LT_MT_KEY_DOWN__LT_MT_KEY_UP(self):
+        presses = [Key.K, Key.F, Key.A]
+        releases = [Key.K, Key.F, Key.A]
+
+        for p in presses: p.press()
+        for r in releases: r.release()
+
+        print("\n\npresses:")
+        for p in presses: print(f" -- {p}")
+        print("\nreleases:")
+        for r in releases: print(f" -- {r}")
+
+        print("\nevents:")
+        records = get_record_history()
+        for r in records: print(f"{r}")
+
+        self.assertEqual(len(records), 2)
+        self.assertEmulatePress(records[0], Key.A, layer_state=1, mods=4)
+        self.assertEmulateRelease(records[1], Key.A, layer_state=1, mods=4)
+        print("\n\n----------------------------------------------------\n\n")
+
+        self.assertEqual(get_mods(), 0)  # fixme every test should test it
+        self.assertEqual(get_layer_state(), 0)
+
+    def test_MT_TAP_MT_KEY(self):
+        Key.D.press()
+        Key.D.release()
+        Key.D.press()
+        Key.A.press()
+        Key.D.release()
+        Key.A.release()
+
+        print('\n\n')
+        records = get_record_history()
+        for r in records: print(f"{r}")
+        self.assertEqual(len(records), 4)
+        self.assertRegister(records[0], Keycode.MACRO2)
+        self.assertUnregister(records[1], Keycode.MACRO2)
+        self.assertEmulatePress(records[2], Key.A, mods=8)
+        self.assertEmulateRelease(records[3], Key.A, mods=8)
 
 
 

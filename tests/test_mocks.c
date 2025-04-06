@@ -247,7 +247,7 @@ void TEST_snprintf(char* buffer, size_t bsize, const char* format, ...) {
 
 smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
     switch (keycode) {
-        SMTD_MT_ON_MKEY(L0_KC2, MACRO2, KC_LEFT_GUI)
+        SMTD_MT_ON_MKEY(L0_KC2, MACRO2, KC_LEFT_GUI, 2)
 
         SMTD_MT(L0_KC3, KC_LEFT_ALT)
         SMTD_MT(L1_KC3, KC_LEFT_ALT)
