@@ -3,6 +3,8 @@ import os
 import sys
 import itertools
 from dataclasses import dataclass
+import random
+from time import sleep
 
 from tests.sm_td_bindings import *
 
@@ -409,6 +411,58 @@ class TestSmTd(unittest.TestCase):
         # fixme вот тут можно было бы и отпускать процесс, а не стопорить и эмулировать нажатие
         # то есть не включать байпас, а сделать так, чтобы process_smtd просто отпускал нажатие клавиши
         Key.K1.release()
+
+    def test_MT_LT_key_MT_key_ordered(self):
+        Key.LT1.press()
+        Key.MT1.press()
+        Key.K1.press()
+        Key.K1.release()
+        Key.MT1.release()
+        Key.MTE.press()
+        Key.K2.press()
+        Key.K2.release()
+        Key.MTE.release()
+        Key.LT1.release()
+
+        print("\n\n\n------------------------------------------")
+        print("\n\nevents:")
+        for r in get_record_history(): print(f"{r}")
+        print("\n\n------------------------------------------\n\n\n")
+
+        self.assertHistory(
+            EmulatePress(Key.K1, layer=1, mods=4),
+            EmulateRelease(Key.K1, layer=1, mods=4),
+            EmulatePress(Key.K2, layer=1, mods=2),
+            EmulateRelease(Key.K2, layer=1, mods=2),
+        )
+
+
+    def test_MT_LT_key_MT_key_shuffled(self):
+        Key.MT1.press()
+        Key.LT1.press()
+        Key.K1.press()
+        Key.MTE.press()
+        Key.MT1.release()
+        print("\n\n\n------------------------------------------")
+        print("\n\nevents:")
+        for r in get_record_history(): print(f"{r}")
+        print("\n\n------------------------------------------\n\n\n")
+        Key.K2.press()
+        print("\n\n\n------------------------------------------")
+        print("\n\nevents:")
+        for r in get_record_history(): print(f"{r}")
+        print("\n\n------------------------------------------\n\n\n")
+        Key.K1.release()
+        Key.K2.release()
+        Key.LT1.release()
+        Key.MTE.release()
+
+        self.assertHistory(
+            EmulatePress(Key.K1, layer=1, mods=4),
+            EmulateRelease(Key.K1, layer=1, mods=4),
+            EmulatePress(Key.K2, layer=1, mods=2),
+            EmulateRelease(Key.K2, layer=1, mods=2),
+        )
 
 
     def test_faceroll_must_return_to_default_state(self):

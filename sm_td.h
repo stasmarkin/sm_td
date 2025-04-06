@@ -739,16 +739,13 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
 
                 // Same key has just pressed again. We consider that we are in a sequence of taps
                 // So current state is interpreted as tap action. And next tap should be handled in another state.
-                uint8_t idx = state->idx;
+                // fixme test this case
                 SMTD_DEBUG_OFFSET_INC;
                 smtd_handle_action(state, SMTD_ACTION_TAP, true);
                 smtd_apply_stage(state, SMTD_STAGE_NONE);
                 SMTD_SIMULTANEOUS_PRESSES_DELAY
-
-                // let that new press event be processed by the next state
-                smtd_apply_to_stack(idx, pressed_keycode, record, desired_keycode);
                 SMTD_DEBUG_OFFSET_DEC;
-                return false;
+                break;
             }
 
             // is_state_key == false  here
@@ -761,15 +758,12 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 SMTD_DEBUG("%s timeout_touch_release has not been executed yet",
                            smtd_state_to_str(state));
 
-                uint8_t idx = state->idx;
                 SMTD_DEBUG_OFFSET_INC;
                 smtd_handle_action(state, SMTD_ACTION_TAP, true);
-                SMTD_SIMULTANEOUS_PRESSES_DELAY
                 smtd_apply_stage(state, SMTD_STAGE_NONE);
-
-                smtd_apply_to_stack(idx, pressed_keycode, record, desired_keycode);
+                SMTD_SIMULTANEOUS_PRESSES_DELAY
                 SMTD_DEBUG_OFFSET_DEC;
-                return false;
+                break;
             }
 
             smtd_state *following_key_state = find_following_key(state, pressed_keycode, record);
@@ -801,11 +795,10 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
 
             // A key was pressed. Can't hold current state anymore
             SMTD_DEBUG_OFFSET_INC;
-            smtd_apply_to_stack(state->idx + 1, pressed_keycode, record, desired_keycode);
             smtd_handle_action(state, SMTD_ACTION_RELEASE, false);
             smtd_apply_stage(state, SMTD_STAGE_NONE);
             SMTD_DEBUG_OFFSET_DEC;
-            return false;
+            break;
         } // case SMTD_STAGE_HOLD_RELEASE
     }
 
