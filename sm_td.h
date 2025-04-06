@@ -712,17 +712,8 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
         case SMTD_STAGE_TOUCH_RELEASE: {
             // At this stage we have just released the macro key and still holding the following key
 
-            if (is_state_key) {
-                if (!record->event.pressed) {
-                    // Macro key is released again. We should not be here, since we have already release state
-                    SMTD_DEBUG("%s how could that happen? %s, is_state_key=%d",
-                               smtd_state_to_str(state),
-                               smtd_record_to_str(record),
-                               is_state_key);
-                    break;
-                }
-
-                // Same key has just pressed again. We consider that we are in a sequence of taps
+            if (record->event.pressed) {
+                // Another or Same key has just pressed again. We consider that we are in a sequence of taps
                 // So current state is interpreted as tap action. And next tap should be handled in another state.
                 // fixme test this case
                 SMTD_DEBUG_OFFSET_INC;
@@ -730,11 +721,6 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 smtd_apply_stage(state, SMTD_STAGE_NONE);
                 SMTD_SIMULTANEOUS_PRESSES_DELAY
                 SMTD_DEBUG_OFFSET_DEC;
-                break;
-            }
-
-            // is_state_key == false  here
-            if (record->event.pressed) {
                 break;
             }
 

@@ -443,23 +443,11 @@ class TestSmTd(unittest.TestCase):
         Key.K1.press()
         Key.MTE.press()
         Key.MT1.release()
-        Key.K2.press()
         Key.K1.release()
-
-        print("\n\n\n------------------------------------------")
-        print("\n\nevents:")
-        for r in get_record_history(): print(f"{r}")
-        print("\n\n------------------------------------------\n\n\n")
+        Key.K2.press()
         Key.K2.release()
-
-        print("\n\n\n------------------------------------------")
-        print("\n\nevents:")
-        for r in get_record_history(): print(f"{r}")
-        print("\n\n------------------------------------------\n\n\n")
-
         Key.LT1.release()
         Key.MTE.release()
-
 
         print("\n\n\n------------------------------------------")
         print("\n\nevents:")
@@ -468,7 +456,7 @@ class TestSmTd(unittest.TestCase):
 
         self.assertHistory(
             EmulatePress(Key.K1, layer=1, mods=4),
-            EmulateRelease(Key.K1, layer=1, mods=4),
+            EmulateRelease(Key.K1, layer=1, mods=2),
             EmulatePress(Key.K2, layer=1, mods=2),
             EmulateRelease(Key.K2, layer=1, mods=2),
         )
