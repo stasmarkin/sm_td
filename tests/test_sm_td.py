@@ -70,6 +70,20 @@ class TestSmTd(unittest.TestCase):
         reset()
         Key.reset()
 
+    def tearDown(self):
+        """Method to run after each test"""
+        assert get_mods() == 0
+        assert get_layer_state() == 0
+
+        for d in get_deferred_execs():
+            if d["active"]: execute_deferred(d["idx"])
+        for d in get_deferred_execs():
+            assert not d["active"]
+
+        assert get_mods() == 0
+        assert get_layer_state() == 0
+
+
     def assertEvent(self, event, rowcol=(255, 255), keycodeValue=65535, pressed=True, mods=0, layer_state=0,
                     smtd_bypass=False):
         self.assertEqual(event["row"], rowcol[0])
@@ -94,6 +108,7 @@ class TestSmTd(unittest.TestCase):
     def assertEmulateRelease(self, event, key, mods=0, layer_state=0):
         self.assertEvent(event, key.rowcol(), pressed=False, mods=mods, layer_state=layer_state, smtd_bypass=True)
 
+
     def test_process_smtd(self):
         """Test that process_smtd function from the actual library works"""
         self.assertFalse(Key.A.press(), "process_smtd should block future key events")
@@ -106,8 +121,8 @@ class TestSmTd(unittest.TestCase):
         """Test the actual bypass mode in the library"""
         set_bypass(True)
         self.assertTrue(Key.A.press(), "sm_td should return true in bypass mode")
-
         self.assertEqual(len(get_record_history()), 0)
+
 
     def test_reset(self):
         """Test the reset function"""
@@ -119,6 +134,7 @@ class TestSmTd(unittest.TestCase):
 
         self.assertGreater(len(records_before), 0, "No records were created")
         self.assertEqual(len(records_after), 0, "Records were not cleared after reset")
+
 
     def test_generic_tap(self):
         """Test the generic tap function"""
@@ -132,6 +148,7 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(len(records), 2)
         self.assertEmulateRelease(records[1], Key.S)
 
+
     def test_basic_MT_ON_MKEY_tap(self):
         """Test the basic MT function"""
         self.assertFalse(Key.D.press(), "press should block future key events")
@@ -143,6 +160,7 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(len(records), 2, "tap should happer after release")
         self.assertRegister(records[0], Keycode.MACRO2)
         self.assertUnregister(records[1], Keycode.MACRO2)
+
 
     def test_basic_MT_ON_MKEY_hold(self):
         """Test the basic MT function"""
@@ -157,6 +175,7 @@ class TestSmTd(unittest.TestCase):
         self.assertFalse(Key.D.release(), "release should return true")
         self.assertEqual(len(get_record_history()), 0)
         self.assertEqual(get_mods(), 0)
+
 
     def test_basic_MT_taphold(self):
         self.assertFalse(Key.D.press(), "press should block future key events")
@@ -181,7 +200,6 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(len(records), 2)
         self.assertRegister(records[0], Keycode.MACRO2)
         self.assertUnregister(records[1], Keycode.MACRO2)
-
 
 
     def test_basic_MT_taptaptap(self):
@@ -213,6 +231,7 @@ class TestSmTd(unittest.TestCase):
         self.assertUnregister(records[3], Keycode.MACRO2)
         self.assertRegister(records[4], Keycode.MACRO2)
         self.assertUnregister(records[5], Keycode.MACRO2)
+
 
     def test_LT_MT_KEY_DOWN__MT_LT_KEY_UP(self):
         presses = [Key.K, Key.F, Key.A]
@@ -259,8 +278,6 @@ class TestSmTd(unittest.TestCase):
         self.assertEmulateRelease(records[1], Key.A, layer_state=1, mods=4)
         print("\n\n----------------------------------------------------\n\n")
 
-        self.assertEqual(get_mods(), 0)  # fixme every test should test it
-        self.assertEqual(get_layer_state(), 0)
 
     def test_MT_TAP_MT_KEY(self):
         Key.D.press()
@@ -278,7 +295,6 @@ class TestSmTd(unittest.TestCase):
         self.assertUnregister(records[1], Keycode.MACRO2)
         self.assertEmulatePress(records[2], Key.A, mods=8)
         self.assertEmulateRelease(records[3], Key.A, mods=8)
-
 
 
     def test_LT_MT_permutations(self):
@@ -311,9 +327,6 @@ class TestSmTd(unittest.TestCase):
             self.assertEmulatePress(records[0], Key.A, layer_state=1, mods=4)
             self.assertEmulateRelease(records[1], Key.A, layer_state=1, mods=4)
             print("\n\n----------------------------------------------------\n\n")
-
-            self.assertEqual(get_mods(), 0)  # fixme every test should test it
-            self.assertEqual(get_layer_state(), 0)
 
 
     def test_LT_layer_switch(self):
