@@ -443,19 +443,28 @@ class TestSmTd(unittest.TestCase):
         Key.K1.press()
         Key.MTE.press()
         Key.MT1.release()
-        print("\n\n\n------------------------------------------")
-        print("\n\nevents:")
-        for r in get_record_history(): print(f"{r}")
-        print("\n\n------------------------------------------\n\n\n")
         Key.K2.press()
+        Key.K1.release()
+
         print("\n\n\n------------------------------------------")
         print("\n\nevents:")
         for r in get_record_history(): print(f"{r}")
         print("\n\n------------------------------------------\n\n\n")
-        Key.K1.release()
         Key.K2.release()
+
+        print("\n\n\n------------------------------------------")
+        print("\n\nevents:")
+        for r in get_record_history(): print(f"{r}")
+        print("\n\n------------------------------------------\n\n\n")
+
         Key.LT1.release()
         Key.MTE.release()
+
+
+        print("\n\n\n------------------------------------------")
+        print("\n\nevents:")
+        for r in get_record_history(): print(f"{r}")
+        print("\n\n------------------------------------------\n\n\n")
 
         self.assertHistory(
             EmulatePress(Key.K1, layer=1, mods=4),
