@@ -316,23 +316,23 @@ class TestSmTd(unittest.TestCase):
             self.assertEqual(get_layer_state(), 0)
 
 
-def test_LT_layer_switch(self):
-    Key.K.press()
-    Key.A.press()
-    Key.A.release()
-    Key.K.release()
+    def test_LT_layer_switch(self):
+        Key.K.press()
+        Key.A.press()
+        Key.A.release()
+        Key.K.release()
 
-    records = get_record_history()
-    self.assertEqual(len(records), 2)
-    self.assertEmulatePress(records[0], Key.A, layer_state=1)
-    self.assertEmulateRelease(records[1], Key.A, layer_state=1)
+        records = get_record_history()
+        self.assertEqual(len(records), 2)
+        self.assertEmulatePress(records[0], Key.A, layer_state=1)
+        self.assertEmulateRelease(records[1], Key.A, layer_state=1)
 
 
-def test_instant_bypass(self):
-    Key.A.press()
-    # fixme вот тут можно было бы и отпускать процесс, а не стопорить и эмулировать нажатие
-    # то есть не включать байпас, а сделать так, чтобы process_smtd просто отпускал нажатие клавиши
-    Key.A.release()
+    def test_instant_bypass(self):
+        Key.A.press()
+        # fixme вот тут можно было бы и отпускать процесс, а не стопорить и эмулировать нажатие
+        # то есть не включать байпас, а сделать так, чтобы process_smtd просто отпускал нажатие клавиши
+        Key.A.release()
 
 
 if __name__ == "__main__":
