@@ -21,7 +21,7 @@ class Key(Enum):
     MT2 = (0, 4, "SMTD_MT(L*_KC4, KC_LEFT_CTRL)")
     LT1 = (0, 5, "SMTD_LT(L0_KC5, L1), SMTD_LT(L2_KC5, L3)")
     LT2 = (0, 6, "SMTD_LT(L0_KC5, L2), SMTD_LT(L1_KC5, L3)")
-    MTE = (0, 7, "SMTD_MTE(L*_KC3, KC_LEFT_SHIFT)") # Ñ in Spanish layout,
+    MTE = (0, 7, "SMTD_MTE(L*_KC3, KC_LEFT_SHIFT)")  # Ñ in Spanish layout,
 
     def __init__(self, row, col, comment):
         self._rowcol = (row, col)
@@ -55,6 +55,11 @@ class Key(Enum):
         if self._released: return self._released.prolong()
         raise "both _pressed and _released are None"
 
+    def try_prolong(self):
+        if self._pressed: return self._pressed.try_prolong()
+        if self._released: return self._released.try_prolong()
+        raise "both _pressed and _released are None"
+
     def rowcol(self):
         return self._rowcol
 
@@ -64,12 +69,14 @@ class Key(Enum):
     def __str__(self):
         return f"Key.{self.name} # {self._comment}"
 
+
 @dataclass
 class Register:
     keycode: Keycode
     bypass: bool = False
     mods: int = 0
     layer: int = 0
+
 
 @dataclass
 class Unregister:
@@ -78,11 +85,13 @@ class Unregister:
     mods: int = 0
     layer: int = 0
 
+
 @dataclass
 class EmulatePress:
     key: Key
     mods: int = 0
     layer: int = 0
+
 
 @dataclass
 class EmulateRelease:
@@ -126,8 +135,6 @@ class TestSmTd(unittest.TestCase):
             else:
                 raise ValueError(f"Unknown type in assertHistory {a}")
 
-
-
     def assertEvent(self, event, rowcol=(255, 255), keycodeValue=65535, pressed=True, mods=0, layer_state=0,
                     smtd_bypass=False):
         self.assertEqual(event["row"], rowcol[0], f"{event} doesn't match rowcol={rowcol}")
@@ -152,7 +159,6 @@ class TestSmTd(unittest.TestCase):
     def assertEmulateRelease(self, event, key, mods=0, layer_state=0):
         self.assertEvent(event, key.rowcol(), pressed=False, mods=mods, layer_state=layer_state, smtd_bypass=True)
 
-
     def test_process_smtd(self):
         """Test that process_smtd function from the actual library works"""
         self.assertFalse(Key.K1.press(), "process_smtd should block future key events")
@@ -167,7 +173,6 @@ class TestSmTd(unittest.TestCase):
         self.assertTrue(Key.K1.press(), "sm_td should return true in bypass mode")
         self.assertEqual(len(get_record_history()), 0)
 
-
     def test_reset(self):
         """Test the reset function"""
         Key.K1.press()
@@ -178,7 +183,6 @@ class TestSmTd(unittest.TestCase):
 
         self.assertGreater(len(records_before), 0, "No records were created")
         self.assertEqual(len(records_after), 0, "Records were not cleared after reset")
-
 
     def test_generic_tap(self):
         """Test the generic tap function"""
@@ -192,7 +196,6 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(len(records), 2)
         self.assertEmulateRelease(records[1], Key.K2)
 
-
     def test_basic_MT_ON_MKEY_tap(self):
         """Test the basic MT function"""
         self.assertFalse(Key.MMT.press(), "press should block future key events")
@@ -204,7 +207,6 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(len(records), 2, "tap should happer after release")
         self.assertRegister(records[0], Keycode.MACRO2)
         self.assertUnregister(records[1], Keycode.MACRO2)
-
 
     def test_basic_MT_ON_MKEY_hold(self):
         """Test the basic MT function"""
@@ -219,7 +221,6 @@ class TestSmTd(unittest.TestCase):
         self.assertFalse(Key.MMT.release(), "release should return true")
         self.assertEqual(len(get_record_history()), 0)
         self.assertEqual(get_mods(), 0)
-
 
     def test_basic_MT_taphold(self):
         self.assertFalse(Key.MMT.press(), "press should block future key events")
@@ -244,7 +245,6 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(len(records), 2)
         self.assertRegister(records[0], Keycode.MACRO2)
         self.assertUnregister(records[1], Keycode.MACRO2)
-
 
     def test_basic_MT_taptaptap(self):
         self.assertFalse(Key.MMT.press(), "press should block future key events")
@@ -276,7 +276,6 @@ class TestSmTd(unittest.TestCase):
         self.assertRegister(records[4], Keycode.MACRO2)
         self.assertUnregister(records[5], Keycode.MACRO2)
 
-
     def test_MTE_hold(self):
         self.assertFalse(Key.MTE.press())
         self.assertHistory()
@@ -290,7 +289,6 @@ class TestSmTd(unittest.TestCase):
         self.assertHistory()
         self.assertEqual(get_mods(), 0)
 
-
     def test_MTE_tap(self):
         self.assertFalse(Key.MTE.press())
         self.assertHistory()
@@ -302,7 +300,6 @@ class TestSmTd(unittest.TestCase):
             Register(Keycode.L0_KC7),
             Unregister(Keycode.L0_KC7),
         )
-
 
     def test_LT_MT_KEY_DOWN__MT_LT_KEY_UP(self):
         presses = [Key.LT1, Key.MT1, Key.K1]
@@ -327,7 +324,6 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(get_mods(), 0)  # fixme every test should test it
         self.assertEqual(get_layer_state(), 0)
 
-
     def test_LT_MT_KEY_DOWN__LT_MT_KEY_UP(self):
         presses = [Key.LT1, Key.MT1, Key.K1]
         releases = [Key.LT1, Key.MT1, Key.K1]
@@ -349,7 +345,6 @@ class TestSmTd(unittest.TestCase):
         self.assertEmulateRelease(records[1], Key.K1, layer_state=1, mods=4)
         print("\n\n----------------------------------------------------\n\n")
 
-
     def test_MT_TAP_MT_KEY(self):
         Key.MMT.press()
         Key.MMT.release()
@@ -366,7 +361,6 @@ class TestSmTd(unittest.TestCase):
         self.assertUnregister(records[1], Keycode.MACRO2)
         self.assertEmulatePress(records[2], Key.K1, mods=8)
         self.assertEmulateRelease(records[3], Key.K1, mods=8)
-
 
     def test_LT_MT_permutations(self):
         presses = [Key.MT1, Key.LT1]
@@ -399,7 +393,6 @@ class TestSmTd(unittest.TestCase):
             self.assertEmulateRelease(records[1], Key.K1, layer_state=1, mods=4)
             print("\n\n----------------------------------------------------\n\n")
 
-
     def test_LT_layer_switch(self):
         Key.LT1.press()
         Key.K1.press()
@@ -411,7 +404,6 @@ class TestSmTd(unittest.TestCase):
         self.assertEmulatePress(records[0], Key.K1, layer_state=1)
         self.assertEmulateRelease(records[1], Key.K1, layer_state=1)
 
-
     def test_instant_bypass(self):
         Key.K1.press()
         # fixme вот тут можно было бы и отпускать процесс, а не стопорить и эмулировать нажатие
@@ -420,9 +412,59 @@ class TestSmTd(unittest.TestCase):
 
 
     def test_faceroll_must_return_to_default_state(self):
-        """Any random key presses will restore sm_td state after releasing all keys"""
-        pass #fixme
+        def fn_prolong(key, *args):
+            return (
+                lambda: key.try_prolong(),
+                lambda: [_a(key) for _a in args],
+                f"prolong {key.name}",
+            )
 
+        def fn_release(key):
+            return (
+                lambda: key.release(),
+                lambda: [fn_prolong(key)],
+                f"release {key.name}",
+            )
+
+        def fn_press(key):
+            return (
+                lambda: key.press(),
+                lambda: [fn_release(key), fn_prolong(key, fn_release)],
+                f"press {key.name}",
+            )
+
+        def generate_permutations():
+            stack = [("", [], [fn_press(k) for k in Key])]  # [ (result, possible actions) ]
+            while stack:
+                desc, result, actions = stack.pop()
+                if not actions:
+                    yield (desc, result)
+                    continue
+
+                for i, action in enumerate(actions):
+                    actions_left = actions[:i] + actions[i + 1:]
+                    new_result = result + [action[0]]
+                    new_actions = action[1]()
+                    if not new_actions:
+                        stack.append((f"{desc} -> {action[2]}", new_result, actions_left))
+                        continue
+                    for a in new_actions:
+                        new_actions_left = list(actions_left)
+                        new_actions_left.append(a)
+                        stack.append((f"{desc} -> {action[2]}", new_result, new_actions_left))
+
+        permutations = generate_permutations()
+        for desc, actions in permutations:
+            reset()
+            print(f"\n\n{desc}")
+            for action in actions: action()
+            records = get_record_history()
+            print("\nevents:")
+            for r in records: print(f"{r}")
+
+            # Check that the state is reset
+            assert get_mods() == 0, f"Mods should be 0 after {desc}"
+            assert get_layer_state() == 0, f"Layer state should be 0 after {desc}"
 
 
 if __name__ == "__main__":

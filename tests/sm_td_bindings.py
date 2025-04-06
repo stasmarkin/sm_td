@@ -162,6 +162,11 @@ class Keycode(Enum):
         execute_deferred(self._defer_idx)
         self._defer_idx = None
 
+    def try_prolong(self):
+        if self._defer_idx is None: return
+        execute_deferred(self._defer_idx, False)
+        self._defer_idx = None
+
     def layer(self):
         """Get the layer of the keycode"""
         if self.value < 500:
@@ -321,9 +326,10 @@ def get_deferred_execs():
     return result
 
 
-def execute_deferred(idx):
+def execute_deferred(idx, make_asserts = True):
     """Execute a specific deferred execution by its id"""
-    assert get_deferred_execs()[idx - 1]["active"] == True
+    if make_asserts: assert get_deferred_execs()[idx - 1]["active"] == True
+    if not get_deferred_execs()[idx - 1]["active"]: return
     lib.TEST_execute_deferred(ctypes.c_uint8(idx))
     assert get_deferred_execs()[idx - 1]["active"] == False
 

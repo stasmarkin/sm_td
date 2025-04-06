@@ -397,76 +397,59 @@ char* smtd_record_to_str(keyrecord_t *record) {
 uint32_t timeout_reset_seq(uint32_t trigger_time, void *cb_arg) {
     smtd_state *state = (smtd_state *) cb_arg;
     SMTD_DEBUG("");
-    SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG("%s timeout_reset_seq", smtd_state_to_str(state));
+    SMTD_DEBUG(">> %s timeout_reset_seq", smtd_state_to_str(state));
     state->sequence_len = 0;
-    SMTD_DEBUG_OFFSET_DEC;
-    SMTD_DEBUG_OFFSET_DEC;
-    SMTD_DEBUG_OFFSET_DEC;
+    SMTD_DEBUG("<< %s timeout_reset_seq", smtd_state_to_str(state));
     return 0;
 }
 
 uint32_t timeout_touch(uint32_t trigger_time, void *cb_arg) {
     smtd_state *state = (smtd_state *) cb_arg;
     SMTD_DEBUG("");
+    SMTD_DEBUG(">> %s timeout_touch", smtd_state_to_str(state));
     SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG("%s timeout_touch", smtd_state_to_str(state));
     smtd_apply_stage(state, SMTD_STAGE_HOLD);
     smtd_handle_action(state, SMTD_ACTION_HOLD, true);
     SMTD_DEBUG_OFFSET_DEC;
-    SMTD_DEBUG_OFFSET_DEC;
-    SMTD_DEBUG_OFFSET_DEC;
+    SMTD_DEBUG("<< %s timeout_touch", smtd_state_to_str(state));
     return 0;
 }
 
 uint32_t timeout_sequence(uint32_t trigger_time, void *cb_arg) {
     smtd_state *state = (smtd_state *) cb_arg;
     SMTD_DEBUG("");
+    SMTD_DEBUG(">> %s timeout_sequence", smtd_state_to_str(state));
     SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG("%s timeout_sequence", smtd_state_to_str(state));
     if (smtd_feature_enabled_or_default(state, SMTD_FEATURE_AGGREGATE_TAPS)) {
         smtd_handle_action(state, SMTD_ACTION_TAP, true);
     }
     smtd_apply_stage(state, SMTD_STAGE_NONE);
     SMTD_DEBUG_OFFSET_DEC;
-    SMTD_DEBUG_OFFSET_DEC;
-    SMTD_DEBUG_OFFSET_DEC;
+    SMTD_DEBUG("<< %s timeout_sequence", smtd_state_to_str(state));
     return 0;
 }
 
 uint32_t timeout_touch_release(uint32_t trigger_time, void *cb_arg) {
     smtd_state *state = (smtd_state *) cb_arg;
     SMTD_DEBUG("");
+    SMTD_DEBUG(">> %s timeout_touch_release", smtd_state_to_str(state));
     SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG("%s timeout_touch_release", smtd_state_to_str(state));
     smtd_handle_action(state, SMTD_ACTION_TAP, true);
     smtd_apply_stage(state, SMTD_STAGE_NONE);
     SMTD_DEBUG_OFFSET_DEC;
-    SMTD_DEBUG_OFFSET_DEC;
-    SMTD_DEBUG_OFFSET_DEC;
+    SMTD_DEBUG("<< %s timeout_touch_release", smtd_state_to_str(state));
     return 0;
 }
 
 uint32_t timeout_hold_release(uint32_t trigger_time, void *cb_arg) {
     smtd_state *state = (smtd_state *) cb_arg;
     SMTD_DEBUG("");
+    SMTD_DEBUG(">> %s timeout_touch_release", smtd_state_to_str(state));
     SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG_OFFSET_INC;
-    SMTD_DEBUG("%s timeout_touch_release", smtd_state_to_str(state));
     smtd_handle_action(state, SMTD_ACTION_RELEASE, true);
     smtd_apply_stage(state, SMTD_STAGE_NONE);
     SMTD_DEBUG_OFFSET_DEC;
-    SMTD_DEBUG_OFFSET_DEC;
-    SMTD_DEBUG_OFFSET_DEC;
+    SMTD_DEBUG("<< %s timeout_touch_release", smtd_state_to_str(state));
     return 0;
 }
 
@@ -801,6 +784,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
             SMTD_DEBUG_OFFSET_INC;
             smtd_apply_stage(state, SMTD_STAGE_HOLD_RELEASE);
             smtd_handle_action(state, SMTD_ACTION_HOLD, true);
+            SMTD_DEBUG_OFFSET_DEC;
             SMTD_SIMULTANEOUS_PRESSES_DELAY
 
             break;
