@@ -118,9 +118,6 @@ typedef struct {
     /** The keycode that should be actually pressed (asked outside or determined by the tap action) */
     uint16_t desired_keycode;
 
-    /** The mods that were active on last key action */
-    uint8_t saved_mods;  //fixme can delete this after hold_release stage
-
     /** The length of the sequence of same key taps */
     uint8_t sequence_len;
 
@@ -156,7 +153,6 @@ typedef struct {
         .pressed_keyposition = MAKE_KEYPOS(0, 0),   \
         .pressed_keycode = 0,                       \
         .desired_keycode = 0,                       \
-        .saved_mods = 0,                            \
         .sequence_len = 0,                          \
         .pressed_time = 0,                          \
         .released_time = 0,                         \
@@ -208,13 +204,11 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
 
 void smtd_apply_stage(smtd_state *state, smtd_stage next_stage);
 
-void smtd_handle_action(smtd_state *state, smtd_action action, bool propagate_mods);
+void smtd_handle_action(smtd_state *state, smtd_action action);
 
-void smtd_execute_action(smtd_state *state, smtd_action action, bool propagate_mods);
+void smtd_execute_action(smtd_state *state, smtd_action action);
 
 void smtd_emulate_press(keypos_t *keypos, bool press);
-
-void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t mods_after_action);
 
 smtd_resolution smtd_worst_resolution_before(smtd_state *state);
 
@@ -344,15 +338,14 @@ char* smtd_keycode_to_str(uint16_t keycode) {
 char* smtd_state_to_str(smtd_state *state) {
     static char buffer_state[64];
 
-    SMTD_SNDEBUG(buffer_state, sizeof(buffer_state), "S[%d](@%d.%d#%s->%s){%s/%s,m=%x}",
+    SMTD_SNDEBUG(buffer_state, sizeof(buffer_state), "S[%d](@%d.%d#%s->%s){%s/%s}",
              state->idx,
              state->pressed_keyposition.row,
              state->pressed_keyposition.col,
              smtd_keycode_to_str(state->pressed_keycode),
              smtd_keycode_to_str(state->desired_keycode),
              smtd_stage_to_str(state->stage),
-             smtd_resolution_to_str(state->resolution),
-             state->saved_mods);
+             smtd_resolution_to_str(state->resolution));
 
     return buffer_state;
 }
@@ -360,15 +353,14 @@ char* smtd_state_to_str(smtd_state *state) {
 char* smtd_state_to_str2(smtd_state *state) {
     static char buffer_state2[64];
 
-    SMTD_SNDEBUG(buffer_state2, sizeof(buffer_state2), "S[%d](@%d.%d#%s->%s){%s/%s,m=%x}",
+    SMTD_SNDEBUG(buffer_state2, sizeof(buffer_state2), "S[%d](@%d.%d#%s->%s){%s/%s}",
              state->idx,
              state->pressed_keyposition.row,
              state->pressed_keyposition.col,
              smtd_keycode_to_str(state->pressed_keycode),
              smtd_keycode_to_str(state->desired_keycode),
              smtd_stage_to_str(state->stage),
-             smtd_resolution_to_str(state->resolution),
-             state->saved_mods);
+             smtd_resolution_to_str(state->resolution));
 
     return buffer_state2;
 }
@@ -409,7 +401,7 @@ uint32_t timeout_touch(uint32_t trigger_time, void *cb_arg) {
     SMTD_DEBUG(">> %s timeout_touch", smtd_state_to_str(state));
     SMTD_DEBUG_OFFSET_INC;
     smtd_apply_stage(state, SMTD_STAGE_HOLD);
-    smtd_handle_action(state, SMTD_ACTION_HOLD, true);
+    smtd_handle_action(state, SMTD_ACTION_HOLD);
     SMTD_DEBUG_OFFSET_DEC;
     SMTD_DEBUG("<< %s timeout_touch", smtd_state_to_str(state));
     return 0;
@@ -421,7 +413,7 @@ uint32_t timeout_sequence(uint32_t trigger_time, void *cb_arg) {
     SMTD_DEBUG(">> %s timeout_sequence", smtd_state_to_str(state));
     SMTD_DEBUG_OFFSET_INC;
     if (smtd_feature_enabled_or_default(state, SMTD_FEATURE_AGGREGATE_TAPS)) {
-        smtd_handle_action(state, SMTD_ACTION_TAP, true);
+        smtd_handle_action(state, SMTD_ACTION_TAP);
     }
     smtd_apply_stage(state, SMTD_STAGE_NONE);
     SMTD_DEBUG_OFFSET_DEC;
@@ -434,7 +426,7 @@ uint32_t timeout_touch_release(uint32_t trigger_time, void *cb_arg) {
     SMTD_DEBUG("");
     SMTD_DEBUG(">> %s timeout_touch_release", smtd_state_to_str(state));
     SMTD_DEBUG_OFFSET_INC;
-    smtd_handle_action(state, SMTD_ACTION_TAP, true);
+    smtd_handle_action(state, SMTD_ACTION_TAP);
     smtd_apply_stage(state, SMTD_STAGE_NONE);
     SMTD_DEBUG_OFFSET_DEC;
     SMTD_DEBUG("<< %s timeout_touch_release", smtd_state_to_str(state));
@@ -446,7 +438,7 @@ uint32_t timeout_hold_release(uint32_t trigger_time, void *cb_arg) {
     SMTD_DEBUG("");
     SMTD_DEBUG(">> %s timeout_touch_release", smtd_state_to_str(state));
     SMTD_DEBUG_OFFSET_INC;
-    smtd_handle_action(state, SMTD_ACTION_RELEASE, true);
+    smtd_handle_action(state, SMTD_ACTION_RELEASE);
     smtd_apply_stage(state, SMTD_STAGE_NONE);
     SMTD_DEBUG_OFFSET_DEC;
     SMTD_DEBUG("<< %s timeout_touch_release", smtd_state_to_str(state));
@@ -519,7 +511,7 @@ smtd_apply_to_stack(uint8_t starting_idx, uint16_t pressed_keycode, keyrecord_t 
         smtd_state* state = smtd_active_states[idx-1];
         if (state->stage == SMTD_STAGE_TOUCH_RELEASE) {
             SMTD_DEBUG("%s clean up", smtd_state_to_str(state));
-            smtd_handle_action(state, SMTD_ACTION_TAP, false);
+            smtd_handle_action(state, SMTD_ACTION_TAP);
             smtd_apply_stage(state, SMTD_STAGE_NONE);
             idx = smtd_active_states_size;
             continue;
@@ -527,7 +519,7 @@ smtd_apply_to_stack(uint8_t starting_idx, uint16_t pressed_keycode, keyrecord_t 
 
         if (state->stage == SMTD_STAGE_HOLD_RELEASE) {
             SMTD_DEBUG("%s clean up", smtd_state_to_str(state));
-            smtd_handle_action(state, SMTD_ACTION_RELEASE, false);
+            smtd_handle_action(state, SMTD_ACTION_RELEASE);
             smtd_apply_stage(state, SMTD_STAGE_NONE);
             idx = smtd_active_states_size;
             continue;
@@ -623,10 +615,9 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
         // -----------------------------------------------------------------------------------------
         case SMTD_STAGE_NONE: {
             if (is_state_key && record->event.pressed) {
-                state->saved_mods = get_mods();
                 SMTD_DEBUG_OFFSET_INC;
                 smtd_apply_stage(state, SMTD_STAGE_TOUCH);
-                smtd_handle_action(state, SMTD_ACTION_TOUCH, true);
+                smtd_handle_action(state, SMTD_ACTION_TOUCH);
                 SMTD_DEBUG_OFFSET_DEC;
                 break;
             }
@@ -640,7 +631,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 if (is_state_key && !record->event.pressed) {
                     SMTD_DEBUG_OFFSET_INC;
                     if (!smtd_feature_enabled_or_default(state, SMTD_FEATURE_AGGREGATE_TAPS)) {
-                        smtd_handle_action(state, SMTD_ACTION_TAP, true);
+                        smtd_handle_action(state, SMTD_ACTION_TAP);
                     }
 
                     smtd_apply_stage(state, SMTD_STAGE_SEQUENCE);
@@ -671,7 +662,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 // we need to execute hold the macro key and let following state handle the key release
                 SMTD_DEBUG_OFFSET_INC;
                 smtd_apply_stage(state, SMTD_STAGE_HOLD);
-                smtd_handle_action(state, SMTD_ACTION_HOLD, true);
+                smtd_handle_action(state, SMTD_ACTION_HOLD);
                 SMTD_DEBUG_OFFSET_DEC;
                 SMTD_SIMULTANEOUS_PRESSES_DELAY
                 break;
@@ -686,7 +677,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 //fixme move to the end of states? or drop if not the last?
                 state->sequence_len++;
                 SMTD_DEBUG_OFFSET_INC;
-                smtd_handle_action(state, SMTD_ACTION_TOUCH, true);
+                smtd_handle_action(state, SMTD_ACTION_TOUCH);
                 smtd_apply_stage(state, SMTD_STAGE_TOUCH);
                 SMTD_DEBUG_OFFSET_DEC;
                 break;
@@ -696,7 +687,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 state->resolution = SMTD_RESOLUTION_DETERMINED;
                 SMTD_DEBUG_OFFSET_INC;
                 if (smtd_feature_enabled_or_default(state, SMTD_FEATURE_AGGREGATE_TAPS)) {
-                    smtd_handle_action(state, SMTD_ACTION_TAP, true);
+                    smtd_handle_action(state, SMTD_ACTION_TAP);
                 }
                 smtd_apply_stage(state, SMTD_STAGE_NONE);
                 SMTD_DEBUG_OFFSET_DEC;
@@ -710,7 +701,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
             if (is_state_key && !record->event.pressed) {
                 if (state->idx == smtd_active_states_size - 1) {
                     SMTD_DEBUG_OFFSET_INC;
-                    smtd_handle_action(state, SMTD_ACTION_RELEASE, false);
+                    smtd_handle_action(state, SMTD_ACTION_RELEASE);
                     smtd_apply_stage(state, SMTD_STAGE_NONE);
                     SMTD_DEBUG_OFFSET_DEC;
                     break;
@@ -741,7 +732,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 // So current state is interpreted as tap action. And next tap should be handled in another state.
                 // fixme test this case
                 SMTD_DEBUG_OFFSET_INC;
-                smtd_handle_action(state, SMTD_ACTION_TAP, true);
+                smtd_handle_action(state, SMTD_ACTION_TAP);
                 smtd_apply_stage(state, SMTD_STAGE_NONE);
                 SMTD_SIMULTANEOUS_PRESSES_DELAY
                 SMTD_DEBUG_OFFSET_DEC;
@@ -759,7 +750,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                            smtd_state_to_str(state));
 
                 SMTD_DEBUG_OFFSET_INC;
-                smtd_handle_action(state, SMTD_ACTION_TAP, true);
+                smtd_handle_action(state, SMTD_ACTION_TAP);
                 smtd_apply_stage(state, SMTD_STAGE_NONE);
                 SMTD_SIMULTANEOUS_PRESSES_DELAY
                 SMTD_DEBUG_OFFSET_DEC;
@@ -777,7 +768,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
             // we need to execute hold the macro key
             SMTD_DEBUG_OFFSET_INC;
             smtd_apply_stage(state, SMTD_STAGE_HOLD_RELEASE);
-            smtd_handle_action(state, SMTD_ACTION_HOLD, true);
+            smtd_handle_action(state, SMTD_ACTION_HOLD);
             SMTD_DEBUG_OFFSET_DEC;
             SMTD_SIMULTANEOUS_PRESSES_DELAY
 
@@ -795,7 +786,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
 
             // A key was pressed. Can't hold current state anymore
             SMTD_DEBUG_OFFSET_INC;
-            smtd_handle_action(state, SMTD_ACTION_RELEASE, false);
+            smtd_handle_action(state, SMTD_ACTION_RELEASE);
             smtd_apply_stage(state, SMTD_STAGE_NONE);
             SMTD_DEBUG_OFFSET_DEC;
             break;
@@ -810,7 +801,6 @@ void reset_state(smtd_state *state) {
     state->pressed_keyposition = MAKE_KEYPOS(0, 0);
     state->pressed_keycode = 0;
     state->desired_keycode = 0;
-    state->saved_mods = 0;
     state->sequence_len = 0;
     state->pressed_time = 0;
     state->released_time = 0;
@@ -854,7 +844,6 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
         case SMTD_STAGE_SEQUENCE:
             state->released_time = timer_read32();
             state->resolution = SMTD_RESOLUTION_UNCERTAIN;
-            state->saved_mods = get_mods();
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_SEQUENCE),
                                         timeout_sequence, state);
             SMTD_DEBUG("%s timeout_sequence in %lums", smtd_state_to_str(state),
@@ -885,7 +874,7 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
     cancel_deferred_exec(prev_token);
 }
 
-void smtd_handle_action(smtd_state *state, smtd_action action, bool propagate_mods) {
+void smtd_handle_action(smtd_state *state, smtd_action action) {
     if (smtd_worst_resolution_before(state) < SMTD_RESOLUTION_DETERMINED) {
         state->need_next_action = true;
         state->next_action = action;
@@ -901,7 +890,7 @@ void smtd_handle_action(smtd_state *state, smtd_action action, bool propagate_mo
 
     smtd_resolution resolution_before_action = state->resolution;
     SMTD_DEBUG_OFFSET_INC;
-    smtd_execute_action(state, action, propagate_mods);
+    smtd_execute_action(state, action);
     SMTD_DEBUG_OFFSET_DEC;
     smtd_resolution resolution_after_action = state->resolution;
 
@@ -936,20 +925,20 @@ void smtd_handle_action(smtd_state *state, smtd_action action, bool propagate_mo
         SMTD_DEBUG_OFFSET_INC;
         switch (next_state->next_action) {
             case SMTD_ACTION_TOUCH:
-                smtd_handle_action(next_state, SMTD_ACTION_TOUCH, propagate_mods);
+                smtd_handle_action(next_state, SMTD_ACTION_TOUCH);
                 break;
             case SMTD_ACTION_TAP:
-                smtd_handle_action(next_state, SMTD_ACTION_TOUCH, propagate_mods);
-                smtd_handle_action(next_state, SMTD_ACTION_TAP, propagate_mods);
+                smtd_handle_action(next_state, SMTD_ACTION_TOUCH);
+                smtd_handle_action(next_state, SMTD_ACTION_TAP);
                 break;
             case SMTD_ACTION_HOLD:
-                smtd_handle_action(next_state, SMTD_ACTION_TOUCH, propagate_mods);
-                smtd_handle_action(next_state, SMTD_ACTION_HOLD, propagate_mods);
+                smtd_handle_action(next_state, SMTD_ACTION_TOUCH);
+                smtd_handle_action(next_state, SMTD_ACTION_HOLD);
                 break;
             case SMTD_ACTION_RELEASE:
-                smtd_handle_action(next_state, SMTD_ACTION_TOUCH, propagate_mods);
-                smtd_handle_action(next_state, SMTD_ACTION_HOLD, propagate_mods);
-                smtd_handle_action(next_state, SMTD_ACTION_RELEASE, propagate_mods);
+                smtd_handle_action(next_state, SMTD_ACTION_TOUCH);
+                smtd_handle_action(next_state, SMTD_ACTION_HOLD);
+                smtd_handle_action(next_state, SMTD_ACTION_RELEASE);
                 break;
         }
         SMTD_DEBUG_OFFSET_DEC;
@@ -960,7 +949,7 @@ void smtd_handle_action(smtd_state *state, smtd_action action, bool propagate_mo
     }
 }
 
-void smtd_execute_action(smtd_state *state, smtd_action action, bool propagate_mods) {
+void smtd_execute_action(smtd_state *state, smtd_action action) {
     if (state->desired_keycode == 0) {
         state->desired_keycode = smtd_current_keycode(&state->pressed_keyposition);
     }
@@ -968,16 +957,6 @@ void smtd_execute_action(smtd_state *state, smtd_action action, bool propagate_m
     SMTD_DEBUG("%s exec in progress with %s",
                smtd_state_to_str(state),
                smtd_action_to_str(action));
-
-    uint8_t mods_on_start = get_mods();
-
-    if (state->saved_mods != mods_on_start) {
-        set_mods(state->saved_mods);
-        send_keyboard_report();
-        SMTD_SIMULTANEOUS_PRESSES_DELAY
-    }
-
-    uint8_t mods_on_restore = state->saved_mods;
 
     smtd_resolution new_resolution = on_smtd_action(state->desired_keycode, action, state->sequence_len);
     if (new_resolution > state->resolution) {
@@ -1003,59 +982,9 @@ void smtd_execute_action(smtd_state *state, smtd_action action, bool propagate_m
         SMTD_DEBUG_OFFSET_DEC;
     }
 
-
-    uint8_t mods_after_action = get_mods();
-
-    if (propagate_mods && mods_on_restore != mods_after_action) {
-        state->saved_mods = mods_after_action;
-        SMTD_DEBUG_OFFSET_INC;
-        smtd_propagate_mods(state, mods_on_restore, mods_after_action);
-        SMTD_DEBUG_OFFSET_DEC;
-    }
-
-    if (mods_on_start != mods_on_restore) {
-        uint8_t changed_mods = mods_on_start ^ mods_on_restore;
-        uint8_t enabled_mods = mods_on_start & changed_mods;
-        uint8_t disabled_mods = mods_on_restore & changed_mods;
-
-        uint8_t current_mods = get_mods();
-        current_mods |= enabled_mods;
-        current_mods &= ~disabled_mods;
-
-        set_mods(current_mods);
-        send_keyboard_report();
-        SMTD_SIMULTANEOUS_PRESSES_DELAY
-    }
-
     SMTD_DEBUG("%s exec done with %s",
                smtd_state_to_str(state),
                smtd_action_to_str(action));
-}
-
-
-void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t mods_after_action) {
-    uint8_t changed_mods = mods_after_action ^ mods_before_action;
-    uint8_t enabled_mods = mods_after_action & changed_mods;
-    uint8_t disabled_mods = mods_before_action & changed_mods;
-
-    SMTD_DEBUG("%s mods: before:%x  after:%x  ^^:%x  ++:%x  --:%x",
-               smtd_state_to_str(state), mods_before_action, mods_after_action,
-               changed_mods, enabled_mods, disabled_mods);
-
-    for (uint8_t i = state->idx + 1; i < smtd_active_states_size; i++) {
-        SMTD_DEBUG("%s mods upd %s by +%x -%x",
-                   smtd_state_to_str(state),
-                   smtd_state_to_str2(smtd_active_states[i]),
-                   enabled_mods,
-                   disabled_mods);
-
-        smtd_active_states[i]->saved_mods |= enabled_mods;
-        smtd_active_states[i]->saved_mods &= ~disabled_mods;
-
-        SMTD_DEBUG("%s changed mods %s",
-                   smtd_state_to_str(state),
-                   smtd_state_to_str2(smtd_active_states[i]));
-    }
 }
 
 
