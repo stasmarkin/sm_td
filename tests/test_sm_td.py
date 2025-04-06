@@ -13,14 +13,14 @@ from tests import sm_td_bindings as smtd
 
 
 class Key(Enum):
-    A = (0, 0, "no special behaviour")
-    S = (0, 1, "no special behaviour")
-    D = (0, 2, "SMTD_MT_ON_MKEY(L0_KC2, MACRO2, KC_LEFT_GUI, 2)")
-    F = (0, 3, "SMTD_MT(L*_KC3, KC_LEFT_ALT)")
-    J = (0, 4, "SMTD_MT(L*_KC4, KC_LEFT_CTRL)")
-    K = (0, 5, "SMTD_LT(L0_KC5, L1), SMTD_LT(L2_KC5, L3)")
-    L = (0, 6, "SMTD_LT(L0_KC5, L2), SMTD_LT(L1_KC5, L3)")
-    N = (0, 7, "no special behaviour") # Ñ in Spanish layout,
+    K1 = (0, 0, "no special behaviour")
+    K2 = (0, 1, "no special behaviour")
+    MMT = (0, 2, "SMTD_MT_ON_MKEY(L0_KC2, MACRO2, KC_LEFT_GUI, 2)")
+    MT1 = (0, 3, "SMTD_MT(L*_KC3, KC_LEFT_ALT)")
+    MT2 = (0, 4, "SMTD_MT(L*_KC4, KC_LEFT_CTRL)")
+    LT1 = (0, 5, "SMTD_LT(L0_KC5, L1), SMTD_LT(L2_KC5, L3)")
+    LT2 = (0, 6, "SMTD_LT(L0_KC5, L2), SMTD_LT(L1_KC5, L3)")
+    MTE = (0, 7, "SMTD_MTE(L*_KC3, KC_LEFT_SHIFT)") # Ñ in Spanish layout,
 
     def __init__(self, row, col, comment):
         self._rowcol = (row, col)
@@ -111,22 +111,22 @@ class TestSmTd(unittest.TestCase):
 
     def test_process_smtd(self):
         """Test that process_smtd function from the actual library works"""
-        self.assertFalse(Key.A.press(), "process_smtd should block future key events")
+        self.assertFalse(Key.K1.press(), "process_smtd should block future key events")
 
         records = get_record_history()
         self.assertEqual(len(records), 1)
-        self.assertEmulatePress(records[0], Key.A)
+        self.assertEmulatePress(records[0], Key.K1)
 
     def test_bypass_mode(self):
         """Test the actual bypass mode in the library"""
         set_bypass(True)
-        self.assertTrue(Key.A.press(), "sm_td should return true in bypass mode")
+        self.assertTrue(Key.K1.press(), "sm_td should return true in bypass mode")
         self.assertEqual(len(get_record_history()), 0)
 
 
     def test_reset(self):
         """Test the reset function"""
-        Key.A.press()
+        Key.K1.press()
         records_before = get_record_history()
 
         reset()
@@ -138,24 +138,24 @@ class TestSmTd(unittest.TestCase):
 
     def test_generic_tap(self):
         """Test the generic tap function"""
-        self.assertFalse(Key.S.press(), "press should block future key events")
+        self.assertFalse(Key.K2.press(), "press should block future key events")
         records = get_record_history()
         self.assertEqual(len(records), 1)
-        self.assertEmulatePress(records[0], Key.S)
+        self.assertEmulatePress(records[0], Key.K2)
 
-        self.assertFalse(Key.S.release(), "release should block future key events")
+        self.assertFalse(Key.K2.release(), "release should block future key events")
         records = get_record_history()
         self.assertEqual(len(records), 2)
-        self.assertEmulateRelease(records[1], Key.S)
+        self.assertEmulateRelease(records[1], Key.K2)
 
 
     def test_basic_MT_ON_MKEY_tap(self):
         """Test the basic MT function"""
-        self.assertFalse(Key.D.press(), "press should block future key events")
+        self.assertFalse(Key.MMT.press(), "press should block future key events")
         records = get_record_history()
         self.assertEqual(len(records), 0)
 
-        self.assertFalse(Key.D.release(), "release should return true")
+        self.assertFalse(Key.MMT.release(), "release should return true")
         records = get_record_history()
         self.assertEqual(len(records), 2, "tap should happer after release")
         self.assertRegister(records[0], Keycode.MACRO2)
@@ -164,33 +164,33 @@ class TestSmTd(unittest.TestCase):
 
     def test_basic_MT_ON_MKEY_hold(self):
         """Test the basic MT function"""
-        self.assertFalse(Key.D.press(), "press should block future key events")
+        self.assertFalse(Key.MMT.press(), "press should block future key events")
         self.assertEqual(len(get_record_history()), 0)
         self.assertEqual(get_mods(), 0)
 
-        Key.D.prolong()
+        Key.MMT.prolong()
         self.assertEqual(len(get_record_history()), 0)
         self.assertEqual(get_mods(), 8)
 
-        self.assertFalse(Key.D.release(), "release should return true")
+        self.assertFalse(Key.MMT.release(), "release should return true")
         self.assertEqual(len(get_record_history()), 0)
         self.assertEqual(get_mods(), 0)
 
 
     def test_basic_MT_taphold(self):
-        self.assertFalse(Key.D.press(), "press should block future key events")
+        self.assertFalse(Key.MMT.press(), "press should block future key events")
         self.assertEqual(len(get_record_history()), 0)
 
-        self.assertFalse(Key.D.release(), "release should return true")
+        self.assertFalse(Key.MMT.release(), "release should return true")
         self.assertEqual(len(get_record_history()), 2)
 
-        self.assertFalse(Key.D.press(), "press should block future key events")
+        self.assertFalse(Key.MMT.press(), "press should block future key events")
         self.assertEqual(len(get_record_history()), 2)
 
         self.assertEqual(get_mods(), 0)
-        Key.D.prolong()
+        Key.MMT.prolong()
         self.assertEqual(get_mods(), 8)
-        self.assertFalse(Key.D.release(), "release should return true")
+        self.assertFalse(Key.MMT.release(), "release should return true")
         self.assertEqual(get_mods(), 0)
 
         print("\nevents:")
@@ -203,25 +203,25 @@ class TestSmTd(unittest.TestCase):
 
 
     def test_basic_MT_taptaptap(self):
-        self.assertFalse(Key.D.press(), "press should block future key events")
+        self.assertFalse(Key.MMT.press(), "press should block future key events")
         self.assertEqual(len(get_record_history()), 0)
 
-        self.assertFalse(Key.D.release(), "release should return true")
+        self.assertFalse(Key.MMT.release(), "release should return true")
         self.assertEqual(len(get_record_history()), 2)
 
-        self.assertFalse(Key.D.press(), "press should block future key events")
+        self.assertFalse(Key.MMT.press(), "press should block future key events")
         self.assertEqual(len(get_record_history()), 2)
 
-        self.assertFalse(Key.D.release(), "release should return true")
+        self.assertFalse(Key.MMT.release(), "release should return true")
         self.assertEqual(len(get_record_history()), 4)
 
-        self.assertFalse(Key.D.press(), "press should block future key events")
+        self.assertFalse(Key.MMT.press(), "press should block future key events")
         self.assertEqual(len(get_record_history()), 4)
 
-        Key.D.prolong()
+        Key.MMT.prolong()
         self.assertEqual(len(get_record_history()), 5)
 
-        self.assertFalse(Key.D.release(), "release should return true")
+        self.assertFalse(Key.MMT.release(), "release should return true")
         self.assertEqual(len(get_record_history()), 6)
 
         records = get_record_history()
@@ -234,8 +234,8 @@ class TestSmTd(unittest.TestCase):
 
 
     def test_LT_MT_KEY_DOWN__MT_LT_KEY_UP(self):
-        presses = [Key.K, Key.F, Key.A]
-        releases = [Key.F, Key.K, Key.A]
+        presses = [Key.LT1, Key.MT1, Key.K1]
+        releases = [Key.MT1, Key.LT1, Key.K1]
 
         for p in presses: p.press()
         for r in releases: r.release()
@@ -249,8 +249,8 @@ class TestSmTd(unittest.TestCase):
         records = get_record_history()
         for r in records: print(f"{r}")
 
-        self.assertEmulatePress(records[0], Key.A, layer_state=1, mods=4)
-        self.assertEmulateRelease(records[1], Key.A, layer_state=1, mods=4)
+        self.assertEmulatePress(records[0], Key.K1, layer_state=1, mods=4)
+        self.assertEmulateRelease(records[1], Key.K1, layer_state=1, mods=4)
         print("\n\n----------------------------------------------------\n\n")
 
         self.assertEqual(get_mods(), 0)  # fixme every test should test it
@@ -258,8 +258,8 @@ class TestSmTd(unittest.TestCase):
 
 
     def test_LT_MT_KEY_DOWN__LT_MT_KEY_UP(self):
-        presses = [Key.K, Key.F, Key.A]
-        releases = [Key.K, Key.F, Key.A]
+        presses = [Key.LT1, Key.MT1, Key.K1]
+        releases = [Key.LT1, Key.MT1, Key.K1]
 
         for p in presses: p.press()
         for r in releases: r.release()
@@ -274,18 +274,18 @@ class TestSmTd(unittest.TestCase):
         for r in records: print(f"{r}")
 
         self.assertEqual(len(records), 2)
-        self.assertEmulatePress(records[0], Key.A, layer_state=1, mods=4)
-        self.assertEmulateRelease(records[1], Key.A, layer_state=1, mods=4)
+        self.assertEmulatePress(records[0], Key.K1, layer_state=1, mods=4)
+        self.assertEmulateRelease(records[1], Key.K1, layer_state=1, mods=4)
         print("\n\n----------------------------------------------------\n\n")
 
 
     def test_MT_TAP_MT_KEY(self):
-        Key.D.press()
-        Key.D.release()
-        Key.D.press()
-        Key.A.press()
-        Key.D.release()
-        Key.A.release()
+        Key.MMT.press()
+        Key.MMT.release()
+        Key.MMT.press()
+        Key.K1.press()
+        Key.MMT.release()
+        Key.K1.release()
 
         print('\n\n')
         records = get_record_history()
@@ -293,18 +293,18 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(len(records), 4)
         self.assertRegister(records[0], Keycode.MACRO2)
         self.assertUnregister(records[1], Keycode.MACRO2)
-        self.assertEmulatePress(records[2], Key.A, mods=8)
-        self.assertEmulateRelease(records[3], Key.A, mods=8)
+        self.assertEmulatePress(records[2], Key.K1, mods=8)
+        self.assertEmulateRelease(records[3], Key.K1, mods=8)
 
 
     def test_LT_MT_permutations(self):
-        presses = [Key.F, Key.K]
-        releases = [Key.F, Key.K, Key.A]
+        presses = [Key.MT1, Key.LT1]
+        releases = [Key.MT1, Key.LT1, Key.K1]
 
         # sex, hehe
         seqs = []
         for press_seq in itertools.permutations(presses):
-            press_seq = press_seq + (Key.A,)  # Key.A must be the last key pressed
+            press_seq = press_seq + (Key.K1,)  # Key.A must be the last key pressed
             for release_seq in itertools.permutations(releases):
                 seqs += [(press_seq, release_seq,)]
 
@@ -324,28 +324,34 @@ class TestSmTd(unittest.TestCase):
             records = get_record_history()
             for r in records: print(f"{r}")
 
-            self.assertEmulatePress(records[0], Key.A, layer_state=1, mods=4)
-            self.assertEmulateRelease(records[1], Key.A, layer_state=1, mods=4)
+            self.assertEmulatePress(records[0], Key.K1, layer_state=1, mods=4)
+            self.assertEmulateRelease(records[1], Key.K1, layer_state=1, mods=4)
             print("\n\n----------------------------------------------------\n\n")
 
 
     def test_LT_layer_switch(self):
-        Key.K.press()
-        Key.A.press()
-        Key.A.release()
-        Key.K.release()
+        Key.LT1.press()
+        Key.K1.press()
+        Key.K1.release()
+        Key.LT1.release()
 
         records = get_record_history()
         self.assertEqual(len(records), 2)
-        self.assertEmulatePress(records[0], Key.A, layer_state=1)
-        self.assertEmulateRelease(records[1], Key.A, layer_state=1)
+        self.assertEmulatePress(records[0], Key.K1, layer_state=1)
+        self.assertEmulateRelease(records[1], Key.K1, layer_state=1)
 
 
     def test_instant_bypass(self):
-        Key.A.press()
+        Key.K1.press()
         # fixme вот тут можно было бы и отпускать процесс, а не стопорить и эмулировать нажатие
         # то есть не включать байпас, а сделать так, чтобы process_smtd просто отпускал нажатие клавиши
-        Key.A.release()
+        Key.K1.release()
+
+
+    def test_faceroll_must_return_to_default_state(self):
+        """Any random key presses will restore sm_td state after releasing all keys"""
+        pass #fixme
+
 
 
 if __name__ == "__main__":

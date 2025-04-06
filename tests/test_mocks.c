@@ -66,7 +66,7 @@ typedef struct {
     bool active;
 } deferred_exec_info_t;
 
-enum LAYERS { L0 = 0, L1 = 1, L2 = 2 };
+enum LAYERS { L0 = 0, L1 = 1, L2 = 2, L3 = 3 };
 
 enum KEYCODES {
     L0_KC0 = 100, L0_KC1, L0_KC2, L0_KC3, L0_KC4, L0_KC5, L0_KC6, L0_KC7, //
@@ -252,10 +252,24 @@ smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap
 
         SMTD_MT(L0_KC3, KC_LEFT_ALT)
         SMTD_MT(L1_KC3, KC_LEFT_ALT)
+        SMTD_MT(L2_KC3, KC_LEFT_ALT)
+        SMTD_MT(L3_KC3, KC_LEFT_ALT)
+
         SMTD_MT(L0_KC4, KC_LEFT_CTRL)
         SMTD_MT(L1_KC4, KC_LEFT_CTRL)
-        SMTD_LT(L0_KC5, L1)
+        SMTD_MT(L2_KC4, KC_LEFT_CTRL)
+        SMTD_MT(L3_KC4, KC_LEFT_CTRL)
 
+        SMTD_LT(L0_KC5, L1)
+        SMTD_LT(L2_KC5, L3)
+
+        SMTD_LT(L0_KC6, L2)
+        SMTD_LT(L1_KC6, L3)
+
+        SMTD_MTE(L0_KC7, KC_LEFT_SHIFT)
+        SMTD_MTE(L1_KC7, KC_LEFT_SHIFT)
+        SMTD_MTE(L2_KC7, KC_LEFT_SHIFT)
+        SMTD_MTE(L3_KC7, KC_LEFT_SHIFT)
     }
     return SMTD_RESOLUTION_UNHANDLED;
 }
