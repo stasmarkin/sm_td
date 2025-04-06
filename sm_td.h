@@ -797,19 +797,13 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
             }
 
             // Following key is released. Now we definitely know that macro key is held
-            // we need to execute hold the macro key and let following state handle the key release
+            // we need to execute hold the macro key
             SMTD_DEBUG_OFFSET_INC;
-            smtd_apply_stage(state, SMTD_STAGE_HOLD);
+            smtd_apply_stage(state, SMTD_STAGE_HOLD_RELEASE);
             smtd_handle_action(state, SMTD_ACTION_HOLD, true);
             SMTD_SIMULTANEOUS_PRESSES_DELAY
 
-            smtd_apply_to_stack(state->idx + 1, pressed_keycode, record, desired_keycode);
-            SMTD_SIMULTANEOUS_PRESSES_DELAY
-
-            smtd_handle_action(state, SMTD_ACTION_RELEASE, false);
-            smtd_apply_stage(state, SMTD_STAGE_NONE);
-            SMTD_DEBUG_OFFSET_DEC;
-            return false;
+            break;
         } // case SMTD_STAGE_TOUCH_RELEASE
 
         // -----------------------------------------------------------------------------------------
@@ -817,7 +811,6 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
             // At this stage we have just released the macro key (which was held)
             // and still holding the following key (or keys)
             // state is dead here
-
             if (!record->event.pressed && state->idx != smtd_active_states_size - 1) {
                 break;
             }
