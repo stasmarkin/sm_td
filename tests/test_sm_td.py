@@ -412,55 +412,62 @@ class TestSmTd(unittest.TestCase):
 
 
     def test_faceroll_must_return_to_default_state(self):
+        """
+        Test that the state of the SMTD is reset after a faceroll.
+
+        This test generates random combinations of key presses and releases
+        but in the end all pressed keys must be released and the state of the SMTD must be reset.
+        Since number of combinations is huge, we just sample a few of them.
+        """
+        sample_size = 1_000
+        faceroll_keys = [k for k in Key]
+
         def fn_prolong(key, *args):
             return (
                 lambda: key.try_prolong(),
-                lambda: [_a(key) for _a in args],
+                [_a(key) for _a in args],
                 f"prolong {key.name}",
             )
 
         def fn_release(key):
             return (
                 lambda: key.release(),
-                lambda: [fn_prolong(key)],
+                [fn_prolong(key)],
                 f"release {key.name}",
             )
 
         def fn_press(key):
             return (
                 lambda: key.press(),
-                lambda: [fn_release(key), fn_prolong(key, fn_release)],
+                [fn_release(key), fn_prolong(key)],
                 f"press {key.name}",
             )
 
-        def generate_permutations():
-            stack = [("", [], [fn_press(k) for k in Key])]  # [ (result, possible actions) ]
-            while stack:
-                desc, result, actions = stack.pop()
-                if not actions:
-                    yield (desc, result)
-                    continue
+        def permutations_generator():
+            while True:
+                subset = random.sample(faceroll_keys, random.randint(1, len(faceroll_keys)))
+                fn_left = [fn_press(k) for k in subset]
 
-                for i, action in enumerate(actions):
-                    actions_left = actions[:i] + actions[i + 1:]
-                    new_result = result + [action[0]]
-                    new_actions = action[1]()
-                    if not new_actions:
-                        stack.append((f"{desc} -> {action[2]}", new_result, actions_left))
-                        continue
-                    for a in new_actions:
-                        new_actions_left = list(actions_left)
-                        new_actions_left.append(a)
-                        stack.append((f"{desc} -> {action[2]}", new_result, new_actions_left))
+                result_desc = "/reset/"
+                result_actions = []
 
-        permutations = generate_permutations()
-        for desc, actions in permutations:
+                while fn_left:
+                    fn = random.choice(fn_left)
+                    fn_left.remove(fn)
+                    action, next_fns, desc = fn
+                    result_actions.append(action)
+                    for next_fn in next_fns:
+                        fn_left.append(next_fn)
+                    result_desc += f" -> {desc}"
+
+                yield (result_desc, result_actions)
+
+        generator = permutations_generator()
+
+        for _ in range(sample_size):
             reset()
-            print(f"\n\n{desc}")
+            desc, actions = next(generator)
             for action in actions: action()
-            records = get_record_history()
-            print("\nevents:")
-            for r in records: print(f"{r}")
 
             # Check that the state is reset
             assert get_mods() == 0, f"Mods should be 0 after {desc}"
