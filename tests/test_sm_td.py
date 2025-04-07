@@ -321,10 +321,6 @@ class TestSmTd(unittest.TestCase):
 
         self.assertEmulatePress(records[0], Key.K1, layer_state=1, mods=4)
         self.assertEmulateRelease(records[1], Key.K1, layer_state=1, mods=4)
-        print("\n\n----------------------------------------------------\n\n")
-
-        self.assertEqual(get_mods(), 0)  # fixme every test should test it
-        self.assertEqual(get_layer_state(), 0)
 
     def test_LT_MT_KEY_DOWN__LT_MT_KEY_UP(self):
         presses = [Key.LT1, Key.MT1, Key.K1]

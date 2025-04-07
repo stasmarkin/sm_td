@@ -182,7 +182,7 @@ __attribute__((weak)) uint32_t get_smtd_timeout(uint16_t keycode, smtd_timeout t
 
 __attribute__((weak)) bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature);
 
-extern uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS];
+extern const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS];
 
 
 /* ************************************* *
@@ -195,8 +195,7 @@ void smtd_apply_to_stack(uint8_t starting_idx, uint16_t pressed_keycode, keyreco
 
 void smtd_create_state(uint16_t pressed_keycode, keyrecord_t *record, uint16_t desired_keycode);
 
-bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_keycode, keyrecord_t *record,
-                      uint16_t desired_keycode);
+void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_keycode, keyrecord_t *record);
 
 void smtd_apply_stage(smtd_state *state, smtd_stage next_stage);
 
@@ -489,21 +488,14 @@ smtd_apply_to_stack(uint8_t starting_idx, uint16_t pressed_keycode, keyrecord_t 
         processed_state = processed_state | is_state_key;
 
         SMTD_DEBUG_OFFSET_INC;
-        bool can_process_next = smtd_apply_event(is_state_key, state, pressed_keycode, record, desired_keycode);
+        smtd_apply_event(is_state_key, state, pressed_keycode, record);
         SMTD_DEBUG_OFFSET_DEC;
-
-        if (!can_process_next) {
-            SMTD_DEBUG("%s term state with %s",
-                       smtd_record_to_str(record),
-                       smtd_state_to_str(state));
-            break;
-        }
     }
 
     SMTD_DEBUG_OFFSET_INC;
     uint8_t idx = smtd_active_states_size;
     while (idx > 0) {
-        smtd_state* state = smtd_active_states[idx-1];
+        smtd_state *state = smtd_active_states[idx - 1];
         if (state->stage == SMTD_STAGE_TOUCH_RELEASE) {
             SMTD_DEBUG("%s clean up", smtd_state_to_str(state));
             smtd_handle_action(state, SMTD_ACTION_TAP);
@@ -573,7 +565,7 @@ void smtd_create_state(uint16_t pressed_keycode, keyrecord_t *record, uint16_t d
     smtd_active_states_size++;
 
     SMTD_DEBUG_OFFSET_INC;
-    smtd_apply_event(true, state, pressed_keycode, record, desired_keycode);
+    smtd_apply_event(true, state, pressed_keycode, record);
     SMTD_DEBUG_OFFSET_DEC;
 
     SMTD_DEBUG("<< %s CREATE STATE %s",
@@ -582,8 +574,7 @@ void smtd_create_state(uint16_t pressed_keycode, keyrecord_t *record, uint16_t d
     SMTD_DEBUG_FULL();
 }
 
-//fixme find a better place for this
-smtd_state *find_following_key(smtd_state *state, uint16_t pressed_keycode, keyrecord_t *record) {
+bool is_following_key(smtd_state *state, uint16_t pressed_keycode, keyrecord_t *record) {
     for (uint8_t i = state->idx + 1; i < smtd_active_states_size; i++) {
         bool is_following_state_key =
                 (record->event.key.row == smtd_active_states[i]->pressed_keyposition.row &&
@@ -591,15 +582,15 @@ smtd_state *find_following_key(smtd_state *state, uint16_t pressed_keycode, keyr
                 (pressed_keycode == smtd_active_states[i]->pressed_keycode ||
                  pressed_keycode == smtd_active_states[i]->desired_keycode);
         if (is_following_state_key) {
-            return smtd_active_states[i];
+            return true;
         }
     }
 
-    return NULL;
+    return false;
 }
 
-bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_keycode,
-                      keyrecord_t *record, uint16_t desired_keycode) {
+void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_keycode,
+                      keyrecord_t *record) {
     SMTD_DEBUG("--%s apply_event with %s, is_state_key=%d",
                smtd_state_to_str(state),
                smtd_record_to_str(record),
@@ -644,8 +635,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 break;
             }
 
-            smtd_state *following_key_state3 = find_following_key(state, pressed_keycode, record);
-            if (following_key_state3 == NULL) {
+            if (!is_following_key(state, pressed_keycode, record)) {
                 // Some previously pressed key has been released
                 // We don't need to do anything here
                 break;
@@ -737,8 +727,7 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 break;
             }
 
-            smtd_state *following_key_state = find_following_key(state, pressed_keycode, record);
-            if (following_key_state == NULL) {
+            if (!is_following_key(state, pressed_keycode, record)) {
                 // Some previously pressed key has been released
                 // We don't need to do anything here
                 break;
@@ -771,8 +760,6 @@ bool smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
             break;
         } // case SMTD_STAGE_HOLD_RELEASE
     }
-
-    return true;
 }
 
 void reset_state(smtd_state *state) {
