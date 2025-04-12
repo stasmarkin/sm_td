@@ -100,8 +100,7 @@ typedef enum {
 typedef enum {
     SMTD_TIMEOUT_TAP,
     SMTD_TIMEOUT_SEQUENCE,
-    SMTD_TIMEOUT_TOUCH_RELEASE,
-    SMTD_TIMEOUT_HOLD_RELEASE,
+    SMTD_TIMEOUT_RELEASE,
 } smtd_timeout;
 
 typedef enum {
@@ -712,7 +711,7 @@ void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 break;
             }
 
-            if (timer_elapsed32(state->released_time) >= get_smtd_timeout_or_default(state, SMTD_TIMEOUT_TOUCH_RELEASE) * 2) {
+            if (timer_elapsed32(state->released_time) >= get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE)) {
                 // Timeout has been reached, but timeout_touch_release has not been executed yet
                 SMTD_DEBUG("%s timeout_touch_release has not been executed yet",
                            smtd_state_to_str(state));
@@ -812,18 +811,18 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
 
         case SMTD_STAGE_TOUCH_RELEASE:
             state->released_time = timer_read32();
-            state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_TOUCH_RELEASE),
+            state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE),
                                         timeout_touch_release, state);
             SMTD_DEBUG("%s timeout_touch_release in %lums", smtd_state_to_str(state),
-                       get_smtd_timeout_or_default(state, SMTD_TIMEOUT_TOUCH_RELEASE));
+                       get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE));
             break;
 
         case SMTD_STAGE_HOLD_RELEASE:
             state->released_time = timer_read32();
-            state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_HOLD_RELEASE),
+            state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE),
                                         timeout_hold_release, state);
             SMTD_DEBUG("%s timeout_hold_release in %lums", smtd_state_to_str(state),
-                       get_smtd_timeout_or_default(state, SMTD_TIMEOUT_HOLD_RELEASE));
+                       get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE));
             break;
     }
 
@@ -997,9 +996,7 @@ uint32_t get_smtd_timeout_default(smtd_timeout timeout) {
             return SMTD_GLOBAL_TAP_TERM;
         case SMTD_TIMEOUT_SEQUENCE:
             return SMTD_GLOBAL_SEQUENCE_TERM;
-        case SMTD_TIMEOUT_TOUCH_RELEASE:
-            return SMTD_GLOBAL_RELEASE_TERM;
-        case SMTD_TIMEOUT_HOLD_RELEASE:
+        case SMTD_TIMEOUT_RELEASE:
             return SMTD_GLOBAL_RELEASE_TERM;
     }
     return 0;
