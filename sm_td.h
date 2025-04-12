@@ -730,7 +730,6 @@ void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
             // we need to execute hold the macro key
             smtd_apply_stage(state, SMTD_STAGE_HOLD_RELEASE);
             smtd_handle_action(state, SMTD_ACTION_HOLD);
-            //fixme-sm после модифаеров в русской раскладке остаются зажатыми моды. кмд+A например
 
             break;
         } // case SMTD_STAGE_TOUCH_RELEASE
