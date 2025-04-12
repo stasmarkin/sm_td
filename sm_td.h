@@ -656,7 +656,6 @@ void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 // we need to execute hold the macro key and let following state handle the key release
                 smtd_apply_stage(state, SMTD_STAGE_HOLD);
                 smtd_handle_action(state, SMTD_ACTION_HOLD);
-                SMTD_SIMULTANEOUS_PRESSES_DELAY
                 break;
             }
 
@@ -710,7 +709,6 @@ void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 // fixme test this case
                 smtd_handle_action(state, SMTD_ACTION_TAP);
                 smtd_apply_stage(state, SMTD_STAGE_NONE);
-                SMTD_SIMULTANEOUS_PRESSES_DELAY
                 break;
             }
 
@@ -720,7 +718,6 @@ void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                            smtd_state_to_str(state));
                 smtd_handle_action(state, SMTD_ACTION_TAP);
                 smtd_apply_stage(state, SMTD_STAGE_NONE);
-                SMTD_SIMULTANEOUS_PRESSES_DELAY
                 break;
             }
 
@@ -734,7 +731,7 @@ void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
             // we need to execute hold the macro key
             smtd_apply_stage(state, SMTD_STAGE_HOLD_RELEASE);
             smtd_handle_action(state, SMTD_ACTION_HOLD);
-            SMTD_SIMULTANEOUS_PRESSES_DELAY
+            //fixme-sm после модифаеров в русской раскладке остаются зажатыми моды. кмд+A например
 
             break;
         } // case SMTD_STAGE_TOUCH_RELEASE
@@ -919,6 +916,7 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
                smtd_action_to_str(action));
 
     smtd_resolution new_resolution = on_smtd_action(state->desired_keycode, action, state->sequence_len);
+    SMTD_SIMULTANEOUS_PRESSES_DELAY
     if (new_resolution > state->resolution) {
         state->resolution = new_resolution;
     }
@@ -963,6 +961,7 @@ void smtd_emulate_press(keypos_t *keypos, bool press) {
     process_record(&record_press);
     SMTD_DEBUG_OFFSET_DEC;
     smtd_bypass = false;
+    SMTD_SIMULTANEOUS_PRESSES_DELAY
 }
 
 smtd_resolution smtd_worst_resolution_before(smtd_state *state) {
