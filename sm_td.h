@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Version: 0.5.0-RC5
- * Date: 2025-04-12
+ * Version: 0.5.0-RC6
+ * Date: 2025-04-13
  */
 #pragma once
 
@@ -490,8 +490,12 @@ smtd_apply_to_stack(uint8_t starting_idx, uint16_t pressed_keycode, keyrecord_t 
 
         bool is_state_key = (record->event.key.row == state->pressed_keyposition.row &&
                              record->event.key.col == state->pressed_keyposition.col) &&
-                            (pressed_keycode == state->pressed_keycode ||
-                             pressed_keycode == state->desired_keycode);
+                            (
+                                (record->event.key.row != 0 || record->event.key.col != 0)
+                                 || pressed_keycode == state->pressed_keycode
+                                 || pressed_keycode == state->desired_keycode
+                            );
+
         processed_state = processed_state | is_state_key;
 
         SMTD_DEBUG_OFFSET_INC;
@@ -541,18 +545,16 @@ smtd_apply_to_stack(uint8_t starting_idx, uint16_t pressed_keycode, keyrecord_t 
         return;
     }
 
-    smtd_create_state(pressed_keycode, record, desired_keycode);
-}
-
-void smtd_create_state(uint16_t pressed_keycode, keyrecord_t *record, uint16_t desired_keycode) {
-    // may be start a new state? A key must be just pressed
     if (!record->event.pressed) {
-        SMTD_DEBUG("<< %s BYPASS KEY RELEASE", smtd_record_to_str(record));
+        SMTD_DEBUG("<< %s BYPASS KEY RELEASE (should never happen)", smtd_record_to_str(record));
         SMTD_DEBUG_FULL();
         return;
     }
 
-    // create a new state and process the event
+    smtd_create_state(pressed_keycode, record, desired_keycode);
+}
+
+void smtd_create_state(uint16_t pressed_keycode, keyrecord_t *record, uint16_t desired_keycode) {
     smtd_state *state = NULL;
     for (uint8_t i = 0; i < SMTD_POOL_SIZE; i++) {
         if (smtd_states_pool[i].stage == SMTD_STAGE_NONE) {
