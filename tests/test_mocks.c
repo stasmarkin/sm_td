@@ -124,7 +124,7 @@ uint8_t get_highest_layer(uint32_t state) {
 }
 
 void layer_move(uint8_t layer) {
-    TEST_print(" --> Layer moved to %d", layer);
+    TEST_print("             --> Layer moved to %d\n", layer);
     layer_state = layer;
 }
 
@@ -133,7 +133,7 @@ bool is_caps_word_on(void) {
 }
 
 void set_mods(uint8_t mods) {
-  TEST_print(" --> Set mods: %d", mods);
+  TEST_print("             --> Set mods: %d\n", mods);
     current_mods = mods;
 }
 
@@ -142,22 +142,22 @@ uint8_t get_mods(void) {
 }
 
 void register_mods(uint8_t mods) {
-    TEST_print(" --> Register mods: %d", mods);
+    TEST_print("             --> Register mods: %d\n", mods);
     current_mods |= mods;
 }
 
 void add_mods(uint8_t mods) {
-    TEST_print(" --> Add mods: %d", mods);
+    TEST_print("             --> Add mods: %d\n", mods);
     current_mods |= mods;
 }
 
 void unregister_mods(uint8_t mods) {
-    TEST_print(" --> Unregister mods: %d", mods);
+    TEST_print("             --> Unregister mods: %d\n", mods);
     current_mods &= ~mods;
 }
 
 void del_mods(uint8_t mods) {
-    TEST_print(" --> Delete mods: %d", mods);
+    TEST_print("             --> Delete mods: %d\n", mods);
     current_mods &= ~mods;
 }
 
@@ -168,7 +168,7 @@ void send_keyboard_report(void) {
 bool get_smtd_bypass();
 
 void unregister_code16(uint16_t keycode) {
-    TEST_print(" --> Unregister code: %d", keycode);
+    TEST_print("             --> Unregister code: %d\n", keycode);
     record_history[record_count] = (history_t) {
         .row = 255,
         .col = 255,
@@ -186,7 +186,7 @@ void unregister_code16(uint16_t keycode) {
 }
 
 void register_code16(uint16_t keycode) {
-    TEST_print(" --> Register code: %d", keycode);
+    TEST_print("             --> Register code: %d\n", keycode);
     record_history[record_count] = (history_t) {
         .row = 255,
         .col = 255,

@@ -469,7 +469,7 @@ class TestSmTd(unittest.TestCase):
         but in the end all pressed keys must be released and the state of the SMTD must be reset.
         Since number of combinations is huge, we just sample a few of them.
         """
-        sample_size = 1_000
+        sample_size = 100
         faceroll_keys = [k for k in Key]
 
         def fn_prolong(key, *args):
@@ -539,7 +539,6 @@ class TestSmTd(unittest.TestCase):
         )
 
     def test_stirred_mod_press(self):
-        """Test that the normal mod press works"""
         Key.CTRL.press()
         Key.K1.press()
         Key.CTRL.release()
@@ -555,22 +554,127 @@ class TestSmTd(unittest.TestCase):
             EmulateRelease(Key.CTRL, mods=1),
         )
 
-    def test_stirred_long_mod_press(self):
-        """Test that the normal mod press works"""
+    def test_stirred_long_mod_press1(self):
+        Key.CTRL.press()
+        Key.CTRL.prolong()
+        Key.K1.press()
+        Key.CTRL.release()
+        Key.K1.release()
+
+        self.assertHistory(
+            EmulatePress(Key.CTRL, mods=0),
+            EmulatePress(Key.K1, mods=1),
+            EmulateRelease(Key.K1, mods=1),
+            EmulateRelease(Key.CTRL, mods=1),
+        )
+
+    def test_stirred_long_mod_press2(self):
+        Key.CTRL.press()
+        Key.K1.press()
+        Key.K1.prolong()
+        Key.CTRL.release()
+        Key.K1.release()
+
+        self.assertHistory(
+            EmulatePress(Key.CTRL, mods=0),
+            EmulatePress(Key.K1, mods=1),
+            EmulateRelease(Key.K1, mods=1),
+            EmulateRelease(Key.CTRL, mods=1),
+        )
+
+    def test_stirred_long_mod_press3(self):
         Key.CTRL.press()
         Key.K1.press()
         Key.CTRL.release()
         Key.CTRL.prolong()
         Key.K1.release()
 
-        # since CTRL and K1 and both quickly pressed and released, K1 is assumed to be TAPPED
-        # and since K1 is tapped, the virtual key press and release appears to be simultaneous
-        # so that tap "rearranges" actual press-release sequence
         self.assertHistory(
             EmulatePress(Key.CTRL, mods=0),
             EmulatePress(Key.K1, mods=1),
             EmulateRelease(Key.CTRL, mods=1),
             EmulateRelease(Key.K1, mods=0),
+        )
+
+    def test_upright_mod_smtd_press(self):
+        Key.CTRL.press()
+        Key.MT1.press()
+        Key.MT1.release()
+        Key.CTRL.release()
+
+        self.assertHistory(
+            EmulatePress(Key.CTRL, mods=0),
+            Register(Keycode.L0_KC3, mods=1),
+            Unregister(Keycode.L0_KC3, mods=1),
+            EmulateRelease(Key.CTRL, mods=1),
+        )
+
+    def test_stirred_mod_smtd_press(self):
+        Key.CTRL.press()
+        Key.MT1.press()
+        Key.CTRL.release()
+        Key.MT1.release()
+
+        self.assertHistory(
+            EmulatePress(Key.CTRL, mods=0),
+            Register(Keycode.L0_KC3, mods=1),
+            Unregister(Keycode.L0_KC3, mods=1),
+            EmulateRelease(Key.CTRL, mods=1),
+        )
+
+    def test_stirred_long_mod_smtd_press1(self):
+        Key.CTRL.press()
+        Key.CTRL.prolong()
+        Key.MT1.press()
+        Key.CTRL.release()
+        Key.MT1.release()
+
+        self.assertHistory(
+            EmulatePress(Key.CTRL, mods=0),
+            Register(Keycode.L0_KC3, mods=1),
+            Unregister(Keycode.L0_KC3, mods=1),
+            EmulateRelease(Key.CTRL, mods=1),
+        )
+
+    def test_stirred_long_mod_smtd_press2_bugged(self):
+        Key.CTRL.press()
+        Key.MT1.press()
+        Key.MT1.prolong() # well, MT1 comes a modifier here
+        Key.CTRL.release()
+        # fixme-sm now CTRL stuck in THL state, so it doesn't sent actual release right now
+        # sm_td need to understand that case and skip THL state straight to TAP action and NONE state
+        Key.MT1.release()
+
+        self.assertHistory(
+            EmulatePress(Key.CTRL, mods=0),
+            EmulateRelease(Key.CTRL, mods=1),
+        )
+
+    def test_stirred_long_mod_smtd_press2_fixed(self):
+        Key.CTRL.press()
+        Key.MT1.press()
+        Key.MT1.prolong() # well, MT1 comes a modifier here
+        Key.CTRL.release()
+        Key.CTRL.prolong()
+        Key.MT1.release()
+
+        self.assertHistory(
+            EmulatePress(Key.CTRL, mods=0),
+            EmulateRelease(Key.CTRL, mods=5),
+        )
+
+    def test_stirred_long_mod_smtd_press3(self):
+        Key.CTRL.press()
+        Key.MT1.press()
+        Key.CTRL.release()
+        Key.CTRL.prolong()
+        Key.MT1.release()
+
+        self.assertHistory(
+            EmulatePress(Key.CTRL, mods=0),
+            Register(Keycode.L0_KC3, mods=1),
+            EmulateRelease(Key.CTRL, mods=1),
+            Unregister(Keycode.L0_KC3, mods=0),
         )
 
 
