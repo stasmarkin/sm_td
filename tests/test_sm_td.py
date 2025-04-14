@@ -75,7 +75,6 @@ class Key(Enum):
 @dataclass
 class Register:
     keycode: Keycode
-    bypass: bool = False
     mods: int = 0
     layer: int = 0
 
@@ -83,7 +82,6 @@ class Register:
 @dataclass
 class Unregister:
     keycode: Keycode
-    bypass: bool = False
     mods: int = 0
     layer: int = 0
 
@@ -131,14 +129,14 @@ class TestSmTd(unittest.TestCase):
             elif isinstance(a, EmulateRelease):
                 self.assertEmulateRelease(history[i], a.key, a.mods, a.layer)
             elif isinstance(a, Register):
-                self.assertRegister(history[i], a.keycode, a.mods, a.layer, a.bypass)
+                self.assertRegister(history[i], a.keycode, a.mods, a.layer)
             elif isinstance(a, Unregister):
-                self.assertUnregister(history[i], a.keycode, a.mods, a.layer, a.bypass)
+                self.assertUnregister(history[i], a.keycode, a.mods, a.layer)
             else:
                 raise ValueError(f"Unknown type in assertHistory {a}")
 
     def assertEvent(self, event, rowcol=(255, 255), keycodeValue=65535, pressed=True, mods=0, layer_state=0,
-                    smtd_bypass=False):
+                    smtd_bypass=True):
         self.assertEqual(event["row"], rowcol[0], f"{event} doesn't match rowcol={rowcol}")
         self.assertEqual(event["col"], rowcol[1], f"{event} doesn't match rowcol={rowcol}")
         self.assertEqual(event["keycode"], keycodeValue, f"{event} doesn't match keycodeValue={keycodeValue}")
@@ -147,11 +145,11 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(event["layer_state"], layer_state, f"{event} doesn't match layer_state={layer_state}")
         self.assertEqual(event["smtd_bypass"], smtd_bypass, f"{event} doesn't match smtd_bypass={smtd_bypass}")
 
-    def assertRegister(self, event, keycode, mods=0, layer_state=0, smtd_bypass=False):
+    def assertRegister(self, event, keycode, mods=0, layer_state=0, smtd_bypass=True):
         self.assertEvent(event, keycodeValue=keycode.value, pressed=True, mods=mods,
                          layer_state=layer_state, smtd_bypass=smtd_bypass)
 
-    def assertUnregister(self, event, keycode, mods=0, layer_state=0, smtd_bypass=False):
+    def assertUnregister(self, event, keycode, mods=0, layer_state=0, smtd_bypass=True):
         self.assertEvent(event, keycodeValue=keycode.value, pressed=False, mods=mods,
                          layer_state=layer_state, smtd_bypass=smtd_bypass)
 
