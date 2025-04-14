@@ -20,7 +20,7 @@
 #define PROGMEM
 
 #define MATRIX_ROWS 1
-#define MATRIX_COLS 8
+#define MATRIX_COLS 9
 
 #define TAPPING_TERM 200
 
@@ -69,11 +69,11 @@ typedef struct {
 enum LAYERS { L0 = 0, L1 = 1, L2 = 2, L3 = 3 };
 
 enum KEYCODES {
-    L0_KC0 = 100, L0_KC1, L0_KC2, L0_KC3, L0_KC4, L0_KC5, L0_KC6, L0_KC7, //
-    L1_KC0 = 200, L1_KC1, L1_KC2, L1_KC3, L1_KC4, L1_KC5, L1_KC6, L1_KC7, //
-    L2_KC0 = 300, L2_KC1, L2_KC2, L2_KC3, L2_KC4, L2_KC5, L2_KC6, L2_KC7, //
-    L3_KC0 = 400, L3_KC1, L3_KC2, L3_KC3, L3_KC4, L3_KC5, L3_KC6, L3_KC7, //
-    MACRO0 = 500, MACRO1, MACRO2, MACRO3, MACRO4, MACRO5, MACRO6, MACRO7, //
+    L0_KC0 = 100, L0_KC1, L0_KC2, L0_KC3, L0_KC4, L0_KC5, L0_KC6, L0_KC7, L0_KC8,//
+    L1_KC0 = 200, L1_KC1, L1_KC2, L1_KC3, L1_KC4, L1_KC5, L1_KC6, L1_KC7, L1_KC8,//
+    L2_KC0 = 300, L2_KC1, L2_KC2, L2_KC3, L2_KC4, L2_KC5, L2_KC6, L2_KC7, L2_KC8,//
+    L3_KC0 = 400, L3_KC1, L3_KC2, L3_KC3, L3_KC4, L3_KC5, L3_KC6, L3_KC7, L3_KC8,//
+    MACRO0 = 500, MACRO1, MACRO2, MACRO3, MACRO4, MACRO5, MACRO6, MACRO7, MACRO8,//
 };
 
 enum MODIFIERS {
@@ -94,9 +94,9 @@ static uint8_t record_count = 0;
 static deferred_exec_info_t deferred_execs[MAX_DEFERRED_EXECS] = {0};
 static uint8_t deferred_exec_count = 0;
 uint16_t const keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
-    [L0] = { L0_KC0, L0_KC1, L0_KC2, L0_KC3, L0_KC4, L0_KC5, L0_KC6, L0_KC7, },
-    [L1] = { L1_KC0, L1_KC1, L1_KC2, L1_KC3, L1_KC4, L1_KC5, L1_KC6, L1_KC7, },
-    [L2] = { L2_KC0, L2_KC1, L2_KC2, L2_KC3, L2_KC4, L2_KC5, L2_KC6, L2_KC7, },
+    [L0] = { L0_KC0, L0_KC1, L0_KC2, L0_KC3, L0_KC4, L0_KC5, L0_KC6, L0_KC7, L0_KC8, },
+    [L1] = { L1_KC0, L1_KC1, L1_KC2, L1_KC3, L1_KC4, L1_KC5, L1_KC6, L1_KC7, L1_KC8, },
+    [L2] = { L2_KC0, L2_KC1, L2_KC2, L2_KC3, L2_KC4, L2_KC5, L2_KC6, L2_KC7, L2_KC8, },
 };
 
 void TEST_print(const char* format, ...);
@@ -179,6 +179,10 @@ void unregister_code16(uint16_t keycode) {
         .smtd_bypass = get_smtd_bypass(),
     };
     record_count++;
+
+    if (keycode == L0_KC8) unregister_mods(MOD_BIT(KC_LEFT_CTRL));
+    if (keycode == L1_KC8) unregister_mods(MOD_BIT(KC_LEFT_CTRL));
+    if (keycode == L2_KC8) unregister_mods(MOD_BIT(KC_LEFT_CTRL));
 }
 
 void register_code16(uint16_t keycode) {
@@ -193,6 +197,10 @@ void register_code16(uint16_t keycode) {
         .smtd_bypass = get_smtd_bypass(),
     };
     record_count++;
+
+    if (keycode == L0_KC8) register_mods(MOD_BIT(KC_LEFT_CTRL));
+    if (keycode == L1_KC8) register_mods(MOD_BIT(KC_LEFT_CTRL));
+    if (keycode == L2_KC8) register_mods(MOD_BIT(KC_LEFT_CTRL));
 }
 
 void tap_code16(uint16_t keycode) {
@@ -211,6 +219,10 @@ bool process_record(keyrecord_t *record) {
         .smtd_bypass = get_smtd_bypass(),
     };
     record_count++;
+
+    if (record->event.key.col == 8 && record->event.pressed) register_mods(MOD_BIT(KC_LEFT_CTRL));
+    if (record->event.key.col == 8 && !record->event.pressed) unregister_mods(MOD_BIT(KC_LEFT_CTRL));
+
     return true;
 }
 
@@ -292,6 +304,7 @@ char* smtd_keycode_to_str_user(uint16_t keycode) {
         case L0_KC5: return "L0_KC5";
         case L0_KC6: return "L0_KC6";
         case L0_KC7: return "L0_KC7";
+        case L0_KC8: return "L0_KC8";
         case L1_KC0: return "L1_KC0";
         case L1_KC1: return "L1_KC1";
         case L1_KC2: return "L1_KC2";
@@ -300,6 +313,7 @@ char* smtd_keycode_to_str_user(uint16_t keycode) {
         case L1_KC5: return "L1_KC5";
         case L1_KC6: return "L1_KC6";
         case L1_KC7: return "L1_KC7";
+        case L1_KC8: return "L1_KC8";
         case L2_KC0: return "L2_KC0";
         case L2_KC1: return "L2_KC1";
         case L2_KC2: return "L2_KC2";
@@ -308,6 +322,7 @@ char* smtd_keycode_to_str_user(uint16_t keycode) {
         case L2_KC5: return "L2_KC5";
         case L2_KC6: return "L2_KC6";
         case L2_KC7: return "L2_KC7";
+        case L2_KC8: return "L2_KC8";
         case MACRO0: return "MACRO0";
         case MACRO1: return "MACRO1";
         case MACRO2: return "MACRO2";
@@ -316,6 +331,7 @@ char* smtd_keycode_to_str_user(uint16_t keycode) {
         case MACRO5: return "MACRO5";
         case MACRO6: return "MACRO6";
         case MACRO7: return "MACRO7";
+        case MACRO8: return "MACRO8";
         default:     return "UNKNWN";
     }
 }

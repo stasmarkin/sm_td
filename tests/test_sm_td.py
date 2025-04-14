@@ -24,6 +24,7 @@ class Key(Enum):
     LT1 = (0, 5, "SMTD_LT(L0_KC5, L1), SMTD_LT(L2_KC5, L3)")
     LT2 = (0, 6, "SMTD_LT(L0_KC5, L2), SMTD_LT(L1_KC5, L3)")
     MTE = (0, 7, "SMTD_MTE(L*_KC3, KC_LEFT_SHIFT)")  # Ñ in Spanish layout,
+    CTRL = (0, 8, "KC_LEFT_CTRL")
 
     def __init__(self, row, col, comment):
         self._rowcol = (row, col)
@@ -121,6 +122,10 @@ class TestSmTd(unittest.TestCase):
 
     def assertHistory(self, *args):
         history = get_record_history()
+        print("\n\nHistory:")
+        for h in history: print(f" -- {h}")
+        print("\n")
+
         assert len(history) == len(args)
 
         for i, a in enumerate(args):
@@ -517,6 +522,57 @@ class TestSmTd(unittest.TestCase):
             # Check that the state is reset
             assert get_mods() == 0, f"Mods should be 0 after {desc}"
             assert get_layer_state() == 0, f"Layer state should be 0 after {desc}"
+
+
+    def test_upright_mod_press(self):
+        """Test that the normal mod press works"""
+        Key.CTRL.press()
+        Key.K1.press()
+        Key.K1.release()
+        Key.CTRL.release()
+
+        self.assertHistory(
+            EmulatePress(Key.CTRL, mods=0),
+            EmulatePress(Key.K1, mods=1),
+            EmulateRelease(Key.K1, mods=1),
+            EmulateRelease(Key.CTRL, mods=1),
+        )
+
+    def test_stirred_mod_press(self):
+        """Test that the normal mod press works"""
+        Key.CTRL.press()
+        Key.K1.press()
+        Key.CTRL.release()
+        Key.K1.release()
+
+        # since CTRL and K1 and both quickly pressed and released, K1 is assumed to be TAPPED
+        # and since K1 is tapped, the virtual key press and release appears to be simultaneous
+        # so that tap "rearranges" actual press-release sequence
+        self.assertHistory(
+            EmulatePress(Key.CTRL, mods=0),
+            EmulatePress(Key.K1, mods=1),
+            EmulateRelease(Key.K1, mods=1),
+            EmulateRelease(Key.CTRL, mods=1),
+        )
+
+    def test_stirred_long_mod_press(self):
+        """Test that the normal mod press works"""
+        Key.CTRL.press()
+        Key.K1.press()
+        Key.CTRL.release()
+        Key.CTRL.prolong()
+        Key.K1.release()
+
+        # since CTRL and K1 and both quickly pressed and released, K1 is assumed to be TAPPED
+        # and since K1 is tapped, the virtual key press and release appears to be simultaneous
+        # so that tap "rearranges" actual press-release sequence
+        self.assertHistory(
+            EmulatePress(Key.CTRL, mods=0),
+            EmulatePress(Key.K1, mods=1),
+            EmulateRelease(Key.CTRL, mods=1),
+            EmulateRelease(Key.K1, mods=0),
+        )
+
 
 
 if __name__ == "__main__":

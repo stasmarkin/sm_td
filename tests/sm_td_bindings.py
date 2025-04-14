@@ -79,6 +79,7 @@ class Keycode(Enum):
     L0_KC5 = 105
     L0_KC6 = 106
     L0_KC7 = 107
+    L0_KC8 = 108
 
     L1_KC0 = 200
     L1_KC1 = 201
@@ -88,6 +89,7 @@ class Keycode(Enum):
     L1_KC5 = 205
     L1_KC6 = 206
     L1_KC7 = 207
+    L1_KC8 = 208
 
     L2_KC0 = 300
     L2_KC1 = 301
@@ -97,6 +99,7 @@ class Keycode(Enum):
     L2_KC5 = 305
     L2_KC6 = 306
     L2_KC7 = 307
+    L2_KC8 = 308
 
     L3_KC0 = 400
     L3_KC1 = 401
@@ -106,6 +109,7 @@ class Keycode(Enum):
     L3_KC5 = 405
     L3_KC6 = 406
     L3_KC7 = 407
+    L3_KC8 = 408
 
     MACRO0 = 500
     MACRO1 = 501
@@ -115,6 +119,7 @@ class Keycode(Enum):
     MACRO5 = 505
     MACRO6 = 506
     MACRO7 = 507
+    MACRO8 = 508
 
     @classmethod
     def from_rowcol(cls, rowcol):
