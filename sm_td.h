@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Version: 0.5.0-RC7
- * Date: 2025-04-14
+ * Version: 0.5.0-RC8
+ * Date: 2025-04-27
  */
 #pragma once
 
