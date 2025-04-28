@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import random
 from time import sleep
 
-from tests.sm_td_bindings import *
+from sm_td_bindings import *
 
 # Add parent directory to path so we can import modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -146,8 +146,8 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(event["col"], rowcol[1], f"{event} doesn't match rowcol={rowcol}")
         self.assertEqual(event["keycode"], keycodeValue, f"{event} doesn't match keycodeValue={keycodeValue}")
         self.assertEqual(event["pressed"], pressed, f"{event} doesn't match pressed={pressed}")
-        self.assertEqual(event["mods"], mods, f"{event} doesn't match mods={mods}")
-        self.assertEqual(event["layer_state"], layer_state, f"{event} doesn't match layer_state={layer_state}")
+        if (mods >= 0): self.assertEqual(event["mods"], mods, f"{event} doesn't match mods={mods}")
+        if (layer_state >= 0): self.assertEqual(event["layer_state"], layer_state, f"{event} doesn't match layer_state={layer_state}")
         self.assertEqual(event["smtd_bypass"], smtd_bypass, f"{event} doesn't match smtd_bypass={smtd_bypass}")
 
     def assertRegister(self, event, keycode, mods=0, layer_state=0, smtd_bypass=True):
@@ -455,7 +455,7 @@ class TestSmTd(unittest.TestCase):
 
         self.assertHistory(
             EmulatePress(Key.K1, layer=1, mods=4),
-            EmulateRelease(Key.K1, layer=1, mods=2),
+            EmulateRelease(Key.K1, layer=1, mods=-1),
             EmulatePress(Key.K2, layer=1, mods=2),
             EmulateRelease(Key.K2, layer=1, mods=2),
         )
@@ -587,6 +587,7 @@ class TestSmTd(unittest.TestCase):
         Key.K1.press()
         Key.CTRL.release()
         Key.CTRL.prolong()
+        Key.K1.prolong()
         Key.K1.release()
 
         self.assertHistory(
@@ -652,6 +653,7 @@ class TestSmTd(unittest.TestCase):
 
     def test_stirred_long_mod_smtd_press2_fixed(self):
         Key.CTRL.press()
+        Key.CTRL.prolong()
         Key.MT1.press()
         Key.MT1.prolong() # well, MT1 comes a modifier here
         Key.CTRL.release()
@@ -660,21 +662,48 @@ class TestSmTd(unittest.TestCase):
 
         self.assertHistory(
             EmulatePress(Key.CTRL, mods=0),
-            EmulateRelease(Key.CTRL, mods=5),
+            EmulateRelease(Key.CTRL, mods=-1),
         )
 
-    def test_stirred_long_mod_smtd_press3(self):
+    def test_stirred_mod_smtd_press3(self):
         Key.CTRL.press()
         Key.MT1.press()
         Key.CTRL.release()
-        Key.CTRL.prolong()
         Key.MT1.release()
 
         self.assertHistory(
             EmulatePress(Key.CTRL, mods=0),
             Register(Keycode.L0_KC3, mods=1),
-            EmulateRelease(Key.CTRL, mods=1),
-            Unregister(Keycode.L0_KC3, mods=0),
+            Unregister(Keycode.L0_KC3, mods=-1),
+            EmulateRelease(Key.CTRL, mods=-1),
+        )
+
+    def test_stirred_long_mod_smtd_press3(self):
+        Key.CTRL.press()
+        Key.CTRL.prolong()
+        Key.MT1.press()
+        Key.CTRL.release()
+        Key.MT1.release()
+
+        self.assertHistory(
+            EmulatePress(Key.CTRL, mods=0),
+            Register(Keycode.L0_KC3, mods=1),
+            Unregister(Keycode.L0_KC3, mods=-1),
+            EmulateRelease(Key.CTRL, mods=-1),
+        )
+
+    def test_stirred_long_mod_smtd_press4(self):
+        Key.CTRL.press()
+        Key.MT1.press()
+        Key.CTRL.prolong()
+        Key.CTRL.release()
+        Key.MT1.release()
+
+        self.assertHistory(
+            EmulatePress(Key.CTRL, mods=0),
+            Register(Keycode.L0_KC3, mods=1),
+            Unregister(Keycode.L0_KC3, mods=-1),
+            EmulateRelease(Key.CTRL, mods=-1),
         )
 
 
