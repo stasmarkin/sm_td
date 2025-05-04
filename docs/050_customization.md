@@ -1,7 +1,12 @@
 You need to put all the handlers of your sm_td keycodes into the `on_smtd_action()` function. It's called with the following arguments
 - `uint16_t keycode` - keycode of the macro key you pressed
-- smtd_action action` - result interpreted action (SMTD_ACTION_TOUCH, SMTD_ACTION_TAP, SMTD_ACTION_HOLD, SMTD_ACTION_RELEASE). tap, hold and release are self-explanatory. The touch action is fired on every key press (without knowing if it is a tap or a hold).
-- uint8_t tap_count` - Number of consecutive taps before the current action. (will be reset after hold, pause or any other keypress)
+- `smtd_action action` - result interpreted action (SMTD_ACTION_TOUCH, SMTD_ACTION_TAP, SMTD_ACTION_HOLD, SMTD_ACTION_RELEASE). tap, hold and release are self-explanatory. The touch action is fired on every key press (without knowing if it is a tap or a hold).
+- `uint8_t tap_count` - Number of consecutive taps before the current action. (will be reset after hold, pause or any other keypress)
+
+The function should return a `smtd_resolution` value to indicate how the action was handled:
+- `SMTD_RESOLUTION_UNCERTAIN` - The action is not yet determined (for example, tapping MT key may result in mod or key, so on tap resolution is uncertain)
+- `SMTD_RESOLUTION_UNHANDLED` - The action was not handled by some custom code. `sm_td` will handle it as normal key action
+- `SMTD_RESOLUTION_DETERMINED` - The action was handled and determined
 
 There are only two execution flows for the `on_smtd_action` function:
 - `SMTD_ACTION_TOUCH` → `SMTD_ACTION_TAP`.
@@ -12,7 +17,7 @@ You will never get a tap between hold and release or miss a touch action. So you
 One possible structure to describe macro behavior is nested switch-cases. Top level for macro key selection, second for action, third (optional) for tap_count. For example
 
 ```c
-void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
+smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
     switch (keycode) {
         case CUSTOM_KEYCODE_1: {
             switch (action) {
@@ -52,12 +57,13 @@ void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
                     }
                     break;
             } // end of switch (action)
-            break;
+            return SMTD_RESOLUTION_DETERMINED;
         } // end of case CUSTOM_KEYCODE_1
             
         // put all your custom keycodes here
         
     } // end of switch (keycode)
+    return SMTD_RESOLUTION_UNHANDLED;
 } // end of on_smtd_action function
 ```
 
@@ -69,8 +75,8 @@ There are special macros to make your code more compact and easier:
 They handle custom keycodes in the same way as the standard QMK `MT()` or `LT()` functions.
 So instead of writing a multiline handler for each sm_td keycode, you can write something like this
 
-```
-void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) { }
+```c
+smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
     switch (keycode) {
         SMTD_MT(CKC_A, KC_A, KC_LEFT_GUI)
         SMTD_MT(CKC_S, KC_S, KC_LEFT_ALT)
@@ -80,6 +86,8 @@ void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) { }
         SMTD_LT(CKC_SPACE, KC_SPACE, LAYER_NUM)
         SMTD_LT(CKC_ENTER, KC_ENTER, LAYER_FN)
     } // End of switch (keycode)
+    
+    return SMTD_RESOLUTION_UNHANDLED;
 } // End of on_smtd_action function
 ```
 

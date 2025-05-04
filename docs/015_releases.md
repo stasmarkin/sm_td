@@ -1,3 +1,11 @@
+#### `v0.5.0`
+- 3+ finger roll interpretation
+- simplified configuration (no more custom keycodes are needed)
+- no more SMTD_KEYCODES_BEGIN and SMTD_KEYCODES_END are needed
+- simplified SMTD_MT, SMTD_LT and other macros
+- bunch of useful macros
+- some bug fixes
+
 #### `v0.4.0`
 - simplified installation process (no need to init each key with `SMTD()` macro)
 - added useful `SMTD_MT()`, `SMTD_MTE()`, `SMTD_LT()` macros for easier customization

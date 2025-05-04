@@ -1,7 +1,3 @@
-## Three fingers roll
-
-If you press 3 keys simultaneously smtd will interpret this as hold + hold + top (read 3.3: Deep Explanation: Three keys and states stack). That's what usually expected in 99% cases, but anyway that breaks fast 3+ fingers rolls while typing. It will be fixed in verison v.1.1.0
-
 
 ## Rattle modification key with Mods Recall feature
 

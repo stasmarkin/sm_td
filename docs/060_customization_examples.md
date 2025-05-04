@@ -15,19 +15,21 @@ Parameters are:
 
 With all that you can easily emulate `LT(LAYER, KEY)` like that:
 ```c
-void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
+smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
     switch (keycode) {
         SMTD_LT(CKC_SPACE, KC_SPACE, LAYER_NUM)
         SMTD_LT(CKC_ENTER, KC_ENTER, LAYER_SYMBOLS, 2)
         SMTD_LT(CKC_1, KC_1, LAYER_SYS, 2, false)
     } // end of switch (keycode)
+    
+    return SMTD_RESOLUTION_UNHANDLED;
 } // end of on_smtd_action function
 ```
 
 
 Or you can manually write it as a custom handler
 ```c
-void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
+smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
     switch (keycode) {
         case emulate_lt_macro_key: {
             switch (action) {
@@ -62,9 +64,11 @@ void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
                     }
                     break;
             } // end of switch (action)
-            break;
+            return SMTD_RESOLUTION_DETERMINED;
+        }
                     
     } // end of switch (keycode)
+    return SMTD_RESOLUTION_UNHANDLED;
 } // end of on_smtd_action function
 ```
 
@@ -94,20 +98,22 @@ So when you press a macro key, the modifier is immediately turned on. But if you
 
 With all that you can easily emulate `MT(MOD, KEY)` like that:
 ```c
-void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
+smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
     switch (keycode) {
         SMTD_MT(CKC_A, KC_A, KC_LEFT_GUI)
         SMTD_MT(CKC_S, KC_S, KC_LEFT_ALT, 3)
         SMTD_MTE(CKC_D, KC_D, KC_LEFT_CTRL, 3, false)
         SMTD_MTE(CKC_F, KC_F, KC_LEFT_SHIFT)
     } // end of switch (keycode)
+    
+    return SMTD_RESOLUTION_UNHANDLED;
 } // end of on_smtd_action function
 ```
 
 
 Or you can manually write it as a custom handler
 ```c
-void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
+smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
     switch (keycode) {
         case emulate_mt_macro_key: {                                           
             switch (action) {                                     
@@ -141,7 +147,11 @@ void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
                             break;
                     }             
                     break;                                        
-              } // end of switch (keycode)
+            } // end of switch (action)
+            return SMTD_RESOLUTION_DETERMINED;
+        } // end of case emulate_mt_macro_key
+    } // end of switch (keycode)
+    return SMTD_RESOLUTION_UNHANDLED;
 } // end of on_smtd_action function
 ```
 
@@ -152,7 +162,7 @@ void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
 Previous paragraph describes `SMTD_MTE` macro for that.
 But you can implement that manually:
 ```c
-void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
+smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
     switch (keycode) {
         case resposive_mt_macro_key: {                                           
             switch (action) {                                     
@@ -188,7 +198,11 @@ void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
                             break;
                     }             
                     break;                                        
-              } // end of switch (keycode)
+            } // end of switch (action)
+            return SMTD_RESOLUTION_DETERMINED;
+        } // end of case resposive_mt_macro_key
+    } // end of switch (keycode)
+    return SMTD_RESOLUTION_UNHANDLED;
 } // end of on_smtd_action function
 ```
 
@@ -201,7 +215,7 @@ So, on touch action sm_td will register MOD, and it should be unregistered on ta
 
 For example, you to alternate between `:`, `;` and `#` on each key press.
 ```c
-void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
+smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
     switch (keycode) {
         case resposive_seq_macro_key: {                                           
             switch (action) {                                     
@@ -217,7 +231,11 @@ void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
                         default: break;
                     }
                     break;    
-              } // end of switch (keycode)
+            } // end of switch (action)
+            return SMTD_RESOLUTION_DETERMINED;
+        } // end of case resposive_seq_macro_key
+    } // end of switch (keycode)
+    return SMTD_RESOLUTION_UNHANDLED;
 } // end of on_smtd_action function
 ```
 
@@ -227,7 +245,7 @@ So, the first press will send `:` and sequential presses will delete just entere
 ## Clumsy symbol pick after sequential tapping (same as QMK Tap Dance)
 
 ```c
-void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
+smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
     switch (keycode) {
         case clumsy_seq_macro_key: {                                           
             switch (action) {                                     
@@ -238,11 +256,15 @@ void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
                         case 2: register_code16(KC_HASH); break;
                         default: break;
                     }
-                    break
-              } // end of switch (keycode)
+                    break;
+            } // end of switch (action)
+            return SMTD_RESOLUTION_DETERMINED;
+        } // end of case clumsy_seq_macro_key
+    } // end of switch (keycode)
+    return SMTD_RESOLUTION_UNHANDLED;
 } // end of on_smtd_action function
 
-bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
+bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature) {
     if (keycode == clumsy_seq_macro_key && feature == SMTD_FEATURE_AGGREGATE_TAPS) return true;
     
     return smtd_feature_enabled_default(keycode, feature); 

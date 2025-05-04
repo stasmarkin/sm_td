@@ -52,10 +52,10 @@ Also, you may email me or tag/text me on Reddit (u/stasmarkin) or Discord (stasm
 
 ## Roadmap
 
-#### `v0.5.0` (in progress)
+#### `v0.5.0` (RC8)
 - 3 finger roll interpretation
 - bunch of useful macros
-- fix 'SMTD_KEYCODES_BEGIN' undeclared error on compilation
+- fix 'SMTD_KEYCODES_BEGIN' undeclared error on compilation (removed entirely)
 - some bug fixes
 
 #### `v0.5.1+` and further `v0.x`
@@ -73,7 +73,7 @@ Also, you may email me or tag/text me on Reddit (u/stasmarkin) or Discord (stasm
 1. Add `DEFERRED_EXEC_ENABLE = yes` to your `rules.mk` file.
 2. Add `#define MAX_DEFERRED_EXECUTORS 10` (or add 10 if you already use it) to your `config.h` file.
 3. Clone the `sm_td.h` repository into your `keymaps/your_keymap` folder (next to your `keymap.c`)
-4. Add `#include "sm_td.h"` to your `keymap.c` file. !!! WARNING !!! There is a bug in v0.4.0 and the library would compile with a "'SMTD_KEYCODES_BEGIN' undeclared" error. You need to put this `#include "sm_td.h"` right after you define your custom keycodes enum (described in step 6).
+4. Add `#include "sm_td.h"` to your `keymap.c` file.
 5. Check `!process_smtd` first in your `process_record_user` function like this
    ```c
    bool process_record_user(uint16_t keycode, keyrecord_t *record) {
@@ -86,36 +86,22 @@ Also, you may email me or tag/text me on Reddit (u/stasmarkin) or Discord (stasm
    }
    ```
 
-6. Add `SMTD_KEYCODES_BEGIN` and `SMTD_KEYCODES_END` to you custom keycodes, and put each new custom keycode you want to use with `sm_td` between them.
-   For example, if you want to use `A`, `S`, `D` and `F` for HRM, you need to create a custom keycode for them like this
-   ```c
-   enum custom_keycodes {
-       SMTD_KEYCODES_BEGIN = SAFE_RANGE,
-       CKC_A, // reads as C(ustom) + KC_A, but you may give any name here
-       CKC_S,
-       CKC_D,
-       CKC_F,
-       SMTD_KEYCODES_END,
-   };
-   ```
-   Please don't forget to put `;` at the end of the enum definition. Normally it's not necessary, but if you put `#include "sm_td.h"` it will break compilation.   Note that `SAFE_RANGE` is a predefined constant in QMK, and is used [to define custom keycodes](https://docs.qmk.fm/custom_quantum_functions).
-   You need to put it on the beginning of your custom keycodes enum.
-   Some keyboards may have their own `SAFE_RANGE` constant, so you need to check your firmware for this constant.
 
-7. Place all your custom keycodes on the desired key positions in your `keymaps`.
-8. Create a `void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count)` function that would handle all the actions of the custom keycodes you defined in the previous step.
-   For example, if you want to use `CKC_A`, `CKC_S`, `CKC_D` and `CKC_F` for HRM, your `on_smtd_action()` function will look like this
+8. Create a `smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count)` function that would handle all the actions of the custom keycodes you defined in the previous step.
+   For example, if you want to use `KC_A`, `KC_S`, `KC_D` and `KC_F` for Home Row Mods, your `on_smtd_action()` function will look like this
    ```c
-   void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
+   smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
        switch (keycode) {
-           SMTD_MT(CKC_A, KC_A, KC_LEFT_GUI)
-           SMTD_MT(CKC_S, KC_S, KC_LEFT_ALT)
-           SMTD_MT(CKC_D, KC_D, KC_LEFT_CTRL)
-           SMTD_MT(CKC_F, KC_F, KC_LSFT)
+           SMTD_MT(KC_A, KC_LEFT_GUI)
+           SMTD_MT(KC_S, KC_LEFT_ALT)
+           SMTD_MT(KC_D, KC_LEFT_CTRL)
+           SMTD_MT(KC_F, KC_LSFT)
        }
+   
+       return SMTD_RESOLUTION_UNHANDLED;
    }
    ```
-   See extensive documentation in the [Customization Guide](https://github.com/stasmarkin/sm_td/blob/main/docs/050_customization.md) with cool [Examples](https://github.com/stasmarkin/sm_td/blob/main/docs/060_customization_examples.md).
+   Please, see documentation for other behavior configuration in the [Customization Guide](https://github.com/stasmarkin/sm_td/blob/main/docs/050_customization.md) with cool [Examples](https://github.com/stasmarkin/sm_td/blob/main/docs/060_customization_examples.md).
 
 9. (optional) Add global configuration parameters to your `config.h` file (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
 10. (optional) Add per-key configuration (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
@@ -123,7 +109,7 @@ Also, you may email me or tag/text me on Reddit (u/stasmarkin) or Discord (stasm
 
 ## What is `on_smtd_action()` function?
 
-As soon as you press a key assigned between `SMTD_KEYCODES_BEGIN` and `SMTD_KEYCODES_END`, all state machines in the stack start working.
+As soon as you press a key, all state machines in the stack start working.
 Other keys you press after the sm_td state machine has run will also be processed by the sm_td state machine.
 This state machine might decide to postpone the processing of the key you pressed, so that it will be considered a tap or hold later.
 You don't have to worry about this, sm_td will process all keys you press in the correct order and in a very predictable way.
@@ -138,23 +124,23 @@ There are only two execution flows for the `on_smtd_action' function:
 - `SMTD_ACTION_TOUCH` → `SMTD_ACTION_HOLD` → `SMTD_ACTION_RELEASE`.
 
 For a better understanding of the execution flow, please check the following example.
-Let's say you want to tap, tap, hold and tap again a custom key `CKC`. Here are your finger movements:
+Let's say you want to tap, tap, hold and tap again a custom key `KC`. Here are your finger movements:
 
-- `↓CKC` 50ms `↑CKC` (first tap finished) 50ms
-- `↓CKC` 50ms `↑CKC` (second tap finished) 50ms
-- `↓CKC` 200ms (holding long enough for hold action) `↑CKC` 50ms
-- `↓CKC` 50ms `↑CKC` (third tap finished)
+- `↓KC` 50ms `↑KC` (first tap finished) 50ms
+- `↓KC` 50ms `↑KC` (second tap finished) 50ms
+- `↓KC` 200ms (holding long enough for hold action) `↑KC` 50ms
+- `↓KC` 50ms `↑KC` (third tap finished)
 
 For this example, you will get the following `on_smtd_action()` calls:
-- `on_smtd_action(CKC, SMTD_ACTION_TOUCH, 0)` right after pressing `↓CKC`
-- `on_smtd_action(CKC, SMTD_ACTION_TAP, 0)` right after releasing `↑CKC` (first tap finished)
-- `on_smtd_action(CKC, SMTD_ACTION_TOUCH, 1)` right after pressing `↓CKC` second time
-- `on_smtd_action(CKC, SMTD_ACTION_TAP, 1)` right after releasing `↑CKC` second time (second tap finished)
-- `on_smtd_action(CKC, SMTD_ACTION_TOUCH, 2)` right after pressing `↓CKC` third time
-- `on_smtd_action(CKC, SMTD_ACTION_HOLD, 2)` after holding `CKC` long enough
-- `on_smtd_action(CKC, SMTD_ACTION_RELEASE, 2)` right after releasing `↑CKC` (hold)
-- `on_smtd_action(CKC, SMTD_ACTION_TOUCH, 0)` right after pressing `↓CKC` fourth time
-- `on_smtd_action(CKC, SMTD_ACTION_TAP, 0)` right after releasing `↑CKC` (third tap finished)
+- `on_smtd_action(KC, SMTD_ACTION_TOUCH, 0)` right after pressing `↓KC`
+- `on_smtd_action(KC, SMTD_ACTION_TAP, 0)` right after releasing `↑KC` (first tap finished)
+- `on_smtd_action(KC, SMTD_ACTION_TOUCH, 1)` right after pressing `↓KC` second time
+- `on_smtd_action(KC, SMTD_ACTION_TAP, 1)` right after releasing `↑KC` second time (second tap finished)
+- `on_smtd_action(KC, SMTD_ACTION_TOUCH, 2)` right after pressing `↓KC` third time
+- `on_smtd_action(KC, SMTD_ACTION_HOLD, 2)` after holding `KC` long enough
+- `on_smtd_action(KC, SMTD_ACTION_RELEASE, 2)` right after releasing `↑KC` (hold)
+- `on_smtd_action(KC, SMTD_ACTION_TOUCH, 0)` right after pressing `↓KC` fourth time
+- `on_smtd_action(KC, SMTD_ACTION_TAP, 0)` right after releasing `↑KC` (third tap finished)
 
 If you need, there is a deeper documentation on execution flow, please see [state machine description](https://github.com/stasmarkin/sm_td/blob/main/docs/090_deep_explanation_stages.md) and further [one key explanation](https://github.com/stasmarkin/sm_td/blob/main/docs/100_deep_explanation_one_stage_example.md), [two key explanation](https://github.com/stasmarkin/sm_td/blob/main/docs/110_deep_explanation_two_stages_example.md) and [state machine stack](https://github.com/stasmarkin/sm_td/blob/main/docs/120_deep_explanation_stack.md).
 
