@@ -254,7 +254,15 @@ bool smtd_feature_enabled_or_default(smtd_state *state, smtd_feature feature);
  *           DEBUG CONFIGURATION         *
  * ************************************* */
 
-#ifdef SMTD_DEBUG_ENABLED
+#ifndef SMTD_DEBUG_ENABLED
+
+#define SMTD_DEBUG(...)
+#define SMTD_DEBUG_INPUT(...)
+#define SMTD_DEBUG_OFFSET_INC
+#define SMTD_DEBUG_OFFSET_DEC
+#define SMTD_DEBUG_FULL(...)
+
+#else
 
 uint32_t last_key_timer = 0;
 
@@ -434,14 +442,6 @@ char* smtd_record_to_str(keyrecord_t *record) {
 
     return buffer_record;
 }
-#else
-
-#define SMTD_DEBUG(...)
-#define SMTD_DEBUG_INPUT(...)
-#define SMTD_DEBUG_OFFSET_INC
-#define SMTD_DEBUG_OFFSET_DEC
-#define SMTD_DEBUG_FULL(...)
-
 #endif
 
 
