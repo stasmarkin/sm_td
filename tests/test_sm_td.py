@@ -76,29 +76,29 @@ class Key(Enum):
 @dataclass
 class Register:
     keycode: Keycode
-    mods: int = 0
-    layer: int = 0
+    mods: int = -1
+    layer: int = -1
 
 
 @dataclass
 class Unregister:
     keycode: Keycode
-    mods: int = 0
-    layer: int = 0
+    mods: int = -1
+    layer: int = -1
 
 
 @dataclass
 class EmulatePress:
     key: Key
-    mods: int = 0
-    layer: int = 0
+    mods: int = -1
+    layer: int = -1
 
 
 @dataclass
 class EmulateRelease:
     key: Key
-    mods: int = 0
-    layer: int = 0
+    mods: int = -1
+    layer: int = -1
 
 
 class TestSmTd(unittest.TestCase):

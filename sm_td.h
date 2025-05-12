@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
- * Version: 0.5.0-RC8
- * Date: 2025-04-27
+ * Version: 0.5.0-RC9
+ * Date: 2025-05-11
  */
 #pragma once
 
@@ -47,7 +47,7 @@
 #define SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS 0
 #endif
 
-#if SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS > 0
+#ifdef SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS > 0
 #define SMTD_SIMULTANEOUS_PRESSES_DELAY wait_ms(SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS);
 #else
 #define SMTD_SIMULTANEOUS_PRESSES_DELAY
@@ -68,6 +68,9 @@
 #ifndef SMTD_GLOBAL_AGGREGATE_TAPS
 #define SMTD_GLOBAL_AGGREGATE_TAPS false
 #endif
+
+// SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
+
 #include <stdint.h>
 
 
@@ -115,8 +118,10 @@ typedef struct {
     /** The keycode of a key that QMK thinks was pressed */
     uint16_t pressed_keycode;
 
+#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
     /** The mods on key tap */
-    uint8_t saved_mods; 
+    uint8_t saved_mods;
+#endif
 
     /** The keycode that should be actually pressed (asked outside or determined by the tap action) */
     uint16_t desired_keycode;
@@ -149,6 +154,8 @@ typedef struct {
     uint8_t idx;
 } smtd_state;
 
+
+#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
 #define EMPTY_STATE {                               \
         .pressed_keyposition = MAKE_KEYPOS(0, 0),   \
         .pressed_keycode = 0,                       \
@@ -164,6 +171,23 @@ typedef struct {
         .action_required = -1,                      \
         .idx = 0,                                   \
 }
+#else
+#define EMPTY_STATE {                               \
+        .pressed_keyposition = MAKE_KEYPOS(0, 0),   \
+        .pressed_keycode = 0,                       \
+        .desired_keycode = 0,                       \
+        .sequence_len = 0,                          \
+        .pressed_time = 0,                          \
+        .released_time = 0,                         \
+        .timeout = INVALID_DEFERRED_TOKEN,          \
+        .stage = SMTD_STAGE_NONE,                   \
+        .resolution = SMTD_RESOLUTION_UNCERTAIN,    \
+        .action_performed = -1,                     \
+        .action_required = -1,                      \
+        .idx = 0,                                   \
+}
+#endif
+
 
 #define SMTD_POOL_SIZE 10
 static smtd_state *smtd_active_states[SMTD_POOL_SIZE] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
@@ -209,7 +233,9 @@ void smtd_execute_action(smtd_state *state, smtd_action action);
 
 void smtd_emulate_key(keypos_t *keypos, bool press);
 
+#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
 void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t mods_after_action);
+#endif
 
 smtd_resolution smtd_worst_resolution_before(smtd_state *state);
 
@@ -350,6 +376,7 @@ char* smtd_keycode_to_str(uint16_t keycode) {
 char* smtd_state_to_str(smtd_state *state) {
     static char buffer_state[64];
 
+#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
     SMTD_SNDEBUG(buffer_state, sizeof(buffer_state), "S[%d](@%d.%d#%s->%s){%s/%s,m=%x}",
              state->idx,
              state->pressed_keyposition.row,
@@ -359,6 +386,16 @@ char* smtd_state_to_str(smtd_state *state) {
              smtd_stage_to_str(state->stage),
              smtd_resolution_to_str(state->resolution),
              state->saved_mods);
+#else
+    SMTD_SNDEBUG(buffer_state, sizeof(buffer_state), "S[%d](@%d.%d#%s->%s){%s/%s}",
+             state->idx,
+             state->pressed_keyposition.row,
+             state->pressed_keyposition.col,
+             smtd_keycode_to_str(state->pressed_keycode),
+             smtd_keycode_to_str(state->desired_keycode),
+             smtd_stage_to_str(state->stage),
+             smtd_resolution_to_str(state->resolution));
+#endif
 
     return buffer_state;
 }
@@ -366,6 +403,7 @@ char* smtd_state_to_str(smtd_state *state) {
 char* smtd_state_to_str2(smtd_state *state) {
     static char buffer_state2[64];
 
+#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
     SMTD_SNDEBUG(buffer_state2, sizeof(buffer_state2), "S[%d](@%d.%d#%s->%s){%s/%s,m=%x}",
              state->idx,
              state->pressed_keyposition.row,
@@ -375,6 +413,16 @@ char* smtd_state_to_str2(smtd_state *state) {
              smtd_stage_to_str(state->stage),
              smtd_resolution_to_str(state->resolution),
              state->saved_mods);
+#else
+    SMTD_SNDEBUG(buffer_state2, sizeof(buffer_state2), "S[%d](@%d.%d#%s->%s){%s/%s}",
+             state->idx,
+             state->pressed_keyposition.row,
+             state->pressed_keyposition.col,
+             smtd_keycode_to_str(state->pressed_keycode),
+             smtd_keycode_to_str(state->desired_keycode),
+             smtd_stage_to_str(state->stage),
+             smtd_resolution_to_str(state->resolution));
+#endif
 
     return buffer_state2;
 }
@@ -774,7 +822,9 @@ void reset_state(smtd_state *state) {
     state->pressed_keyposition = MAKE_KEYPOS(0, 0);
     state->pressed_keycode = 0;
     state->desired_keycode = 0;
+#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
     state->saved_mods = 0;
+#endif
     state->sequence_len = 0;
     state->pressed_time = 0;
     state->released_time = 0;
@@ -807,7 +857,9 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             break;
 
         case SMTD_STAGE_TOUCH:
+#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
             state->saved_mods = get_mods();
+#endif
             state->pressed_time = timer_read32();
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_TAP),
                                         timeout_touch, state);
@@ -816,7 +868,9 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             break;
 
         case SMTD_STAGE_SEQUENCE:
+#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
             state->saved_mods = get_mods();
+#endif
             state->released_time = timer_read32();
             state->resolution = SMTD_RESOLUTION_UNCERTAIN;
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_SEQUENCE),
@@ -954,6 +1008,7 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
                smtd_state_to_str(state),
                smtd_action_to_str(action));
 
+#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
     uint8_t mods_on_start = get_mods();
 
     if (state->saved_mods != mods_on_start) {
@@ -963,6 +1018,10 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
     }
 
     uint8_t mods_on_restore = state->saved_mods;
+#else
+    uint8_t mods_on_start = get_mods();
+    uint8_t mods_on_restore = mods_on_start;
+#endif
 
     smtd_bypass = true;
     smtd_resolution new_resolution = on_smtd_action(state->desired_keycode, action, state->sequence_len);
@@ -992,6 +1051,7 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
         SMTD_DEBUG_OFFSET_DEC;
     }
 
+#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
     uint8_t mods_after_action = get_mods();
 
     if (mods_on_restore != mods_after_action) {
@@ -1014,12 +1074,14 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
         send_keyboard_report();
         SMTD_SIMULTANEOUS_PRESSES_DELAY
     }
+#endif
 
     SMTD_DEBUG("%s exec done with %s",
                smtd_state_to_str(state),
                smtd_action_to_str(action));
 }
 
+#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
 void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t mods_after_action) {
     uint8_t changed_mods = mods_after_action ^ mods_before_action;
     uint8_t enabled_mods = mods_after_action & changed_mods;
@@ -1044,6 +1106,7 @@ void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t 
                    smtd_state_to_str2(smtd_active_states[i]));
     }
 }
+#endif
 
 /* ************************************* *
  *      UTILITY FUNCTIONS                *
