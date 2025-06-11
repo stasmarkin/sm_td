@@ -45,7 +45,7 @@ Also, you may check [my layout](https://github.com/stasmarkin/sm_voyager_keymap)
 
 First of all, there are issues and pull requests on this repository. You may ask any questions there.
 
-Then you may join the [SM_TD Discord Channel](https://discord.gg/x2MaXf5X7p) for any questions or suggestions.
+Then you may join the [SM_TD Discord Channel](https://discord.gg/GHuqxtGftX) for any questions or suggestions.
 
 Also, you may email me or tag/text me on Reddit (u/stasmarkin) or Discord (stasmarkin).
 
