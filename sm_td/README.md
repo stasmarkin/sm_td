@@ -51,4 +51,4 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 Build and flash your firmware. Your custom keys will now support advanced tap, hold, and multi-tap behaviors with human-friendly timing.
 
-For more details and customization,
+For more details and customization, see the [documentation](https://github.com/stasmarkin/sm_td/tree/main/docs).
