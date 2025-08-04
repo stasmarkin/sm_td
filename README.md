@@ -190,6 +190,7 @@ If you need, there is a deeper documentation on execution flow, please see [stat
 - [Josh Stobbs](https://github.com/joshstobbs)
 - [Yousef Hadder](https://github.com/YousefHadder)
 - [WhoAmiI](https://github.com/chuan2984)
+- [Slava](https://github.com/shofel)
 
 (please, let me know, if I have forgotten someone) 
 
