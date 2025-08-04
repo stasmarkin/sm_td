@@ -131,7 +131,7 @@ typedef struct {
     uint16_t desired_keycode;
 
     /** The length of the sequence of same key taps */
-    uint8_t sequence_len;
+    uint8_t tap_count;
 
     /** The time when the key was pressed */
     uint32_t pressed_time;
@@ -165,7 +165,7 @@ typedef struct {
         .pressed_keycode = 0,                       \
         .desired_keycode = 0,                       \
         .saved_mods = 0,                            \
-        .sequence_len = 0,                          \
+        .tap_count = 0,                             \
         .pressed_time = 0,                          \
         .released_time = 0,                         \
         .timeout = INVALID_DEFERRED_TOKEN,          \
@@ -180,7 +180,7 @@ typedef struct {
         .pressed_keyposition = MAKE_KEYPOS(0, 0),   \
         .pressed_keycode = 0,                       \
         .desired_keycode = 0,                       \
-        .sequence_len = 0,                          \
+        .tap_count = 0,                             \
         .pressed_time = 0,                          \
         .released_time = 0,                         \
         .timeout = INVALID_DEFERRED_TOKEN,          \
@@ -208,7 +208,7 @@ static bool smtd_bypass = false;
 
 bool process_smtd(uint16_t keycode, keyrecord_t *record);
 
-smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t sequence_len);
+smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count);
 
 __attribute__((weak)) uint32_t get_smtd_timeout(uint16_t keycode, smtd_timeout timeout);
 
@@ -456,7 +456,7 @@ char* smtd_record_to_str(keyrecord_t *record) {
 uint32_t timeout_reset_seq(uint32_t trigger_time, void *cb_arg) {
     smtd_state *state = (smtd_state *) cb_arg;
     SMTD_DEBUG_INPUT(">> %s timeout_reset_seq", smtd_state_to_str(state));
-    state->sequence_len = 0;
+    state->tap_count = 0;
     SMTD_DEBUG("<< %s timeout_reset_seq", smtd_state_to_str(state));
     SMTD_DEBUG_FULL();
     return 0;
@@ -731,7 +731,7 @@ void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
         case SMTD_STAGE_SEQUENCE: {
             if (is_state_key && record->event.pressed) {
                 //fixme move to the end of states? or drop if not the last?
-                state->sequence_len++;
+                state->tap_count++;
                 state->action_performed = -1;
                 state->action_required = -1;
 
@@ -829,7 +829,7 @@ void reset_state(smtd_state *state) {
 #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
     state->saved_mods = 0;
 #endif
-    state->sequence_len = 0;
+    state->tap_count = 0;
     state->pressed_time = 0;
     state->released_time = 0;
     state->timeout = INVALID_DEFERRED_TOKEN;
@@ -1028,7 +1028,7 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
 #endif
 
     smtd_bypass = true;
-    smtd_resolution new_resolution = on_smtd_action(state->desired_keycode, action, state->sequence_len);
+    smtd_resolution new_resolution = on_smtd_action(state->desired_keycode, action, state->tap_count);
     smtd_bypass = false;
 
     SMTD_SIMULTANEOUS_PRESSES_DELAY
