@@ -138,7 +138,7 @@ As soon as you press keys assigned to sm_td, it will call the `on_smtd_action()`
 - smtd_action action - result interpreted action (`SMTD_ACTION_TOUCH`, `SMTD_ACTION_TAP`, `SMTD_ACTION_HOLD`, `SMTD_ACTION_RELEASE`). tap, hold and release are self-explanatory. Touch action fired on key press (without knowing if it is a tap or hold).
 - uint8_t tap_count - number of consecutive taps before the current action. (will be reset after hold, pause or any other keypress)
 
-There are only two execution flows for the `on_smtd_action' function:
+There are only two execution flows for the `on_smtd_action` function:
 - `SMTD_ACTION_TOUCH` → `SMTD_ACTION_TAP`.
 - `SMTD_ACTION_TOUCH` → `SMTD_ACTION_HOLD` → `SMTD_ACTION_RELEASE`.
 
