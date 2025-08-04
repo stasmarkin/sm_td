@@ -1,3 +1,9 @@
+```
+This documentation is written for version 0.4.1.
+It is a bit outdated for later versions of SM_TD.
+```
+
+
 You need to put all the handlers of your sm_td keycodes into the `on_smtd_action()` function. It's called with the following arguments
 - `uint16_t keycode` - keycode of the macro key you pressed
 - `smtd_action action` - result interpreted action (SMTD_ACTION_TOUCH, SMTD_ACTION_TAP, SMTD_ACTION_HOLD, SMTD_ACTION_RELEASE). tap, hold and release are self-explanatory. The touch action is fired on every key press (without knowing if it is a tap or a hold).

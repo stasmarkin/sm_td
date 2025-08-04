@@ -1,3 +1,8 @@
+```
+This documentation is written for version 0.4.1.
+It is a bit outdated for later versions of SM_TD.
+```
+
 
 ## Rattle modification key with Mods Recall feature
 

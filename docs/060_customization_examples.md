@@ -1,3 +1,8 @@
+```
+This documentation is written for version 0.4.1.
+It is a bit outdated for later versions of SM_TD.
+```
+
 
 ## Emulate LT(LAYER, KEY)
 There is `SMTD_LT` macro for that. You can use it in 3 different forms:
