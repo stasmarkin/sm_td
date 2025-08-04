@@ -5,21 +5,21 @@
 ## Introduction
 
 This is the `SM Tap Dance` (`sm_td` or `smtd` for short) user library for QMK.
-The main goal of this library is to ultimately fix the Home Row Mods (HRM) and Tap Dance problems in QMK.
-The basic features of this library are:
+The main goal of this library is to improve the behavior of Home Row Mods (HRM) and Tap Dance problems in QMK.
+Key features include:
 - Human-friendly tap+tap vs. hold+tap interpretation. Especially useful for `LT()` and `MT()` macros.
 - Better multi-tap and hold (and then tap again) interpretation of the same key
 - Reactive response to multiple taps (and holds)
 
 This library uses the natural way of human typing when we have a small overlap between key taps.
-For example, when a person types `hi` quickly, he does not release `h` before pressing `i`, in other words, the finger movements are: `↓h` `↓i` `↑h` `↑i`.
+For example, when a person types `hi` quickly, he does not release `h` before pressing `i`, in other words, the finger movements are: `↓h`, `↓i`, `↑h`, `↑i`.
 The main problem with QMK tap dance is that it does not consider this natural way of typing and tries to interpret all keys pressed and released in the straight order.
-So in the example above, if you put a tap-hold action on the `h` key (e.g. `LT(1, KC_H)`), QMK will interpret it as `layer_move(1)` + `tap(KC_I)`.
+So in the example above, if you put a tap-hold action on the `h` key (e.g. `LT(1, KC_H)`), QMK interprets this as `layer_move(1)` followed by `tap(KC_I)`.
 
 There are many other ways to fix this problem with HRM, but all of them are not perfect and require some changes in your typing habits.
-The core principle of this library is respecting human typing habits and not try to change them.
+The core principle of this library is respecting human typing habits and not trying to change them.
 The main idea is to pay attention to the time between key releases (instead of key presses) and interpret them in a more human-friendly way.
-So, `↓h` `↓i` `↑h` (tiny pause) `↑i` will be interpreted as `layer_move(1)` + `tap(KC_I)` because as humans we release combo keys almost simultaneously.
+So, For instance, `↓h`, `↓i`, `↑h` (tiny pause), `↑i` will be interpreted as `layer_move(1)` + `tap(KC_I)` because as humans we release combo keys almost simultaneously.
 On the other hand, `↓h` `↓i` `↑h` (long pause) `↑i` will be interpreted as `tap(KC_H)` + `tap(KC_I)` because as humans we release sequential keys with a long pause in between.
 
 
@@ -54,7 +54,7 @@ On the other hand, `↓h` `↓i` `↑h` (long pause) `↑i` will be interpreted 
    ```
 
 
-8. Create a `smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count)` function that would handle all the actions of the custom keycodes you defined in the previous step.
+8. Create an `on_smtd_action()` function that handles actions for custom keycodes. 
    For example, if you want to use `KC_A`, `KC_S`, `KC_D` and `KC_F` for Home Row Mods, your `on_smtd_action()` function will look like this
    ```c
    smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
@@ -68,7 +68,7 @@ On the other hand, `↓h` `↓i` `↑h` (long pause) `↑i` will be interpreted 
        return SMTD_RESOLUTION_UNHANDLED;
    }
    ```
-   Please, see documentation for other behavior configuration in the [Customization Guide](https://github.com/stasmarkin/sm_td/blob/main/docs/050_customization.md) with cool [Examples](https://github.com/stasmarkin/sm_td/blob/main/docs/060_customization_examples.md).
+   See the documentation for more behavior configurations in the [Customization Guide](https://github.com/stasmarkin/sm_td/blob/main/docs/050_customization.md) with cool [Examples](https://github.com/stasmarkin/sm_td/blob/main/docs/060_customization_examples.md).
 
 9. (optional) Add global configuration parameters to your `config.h` file (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
 10. (optional) Add per-key configuration (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
@@ -77,14 +77,14 @@ On the other hand, `↓h` `↓i` `↑h` (long pause) `↑i` will be interpreted 
 ## Macros for `on_smtd_action()`
 
 - `SMTD_MT(KC_A, KC_LEFT_GUI)` -- the most simple macro. Tapping `KC_A` will result into single tap and holding will result into `KC_LEFT_GUI` hold.
-- `SMTD_MT(KC_A, KC_LEFT_GUI, 2)` -- almost the same, as previous, but holding `KC_A` after 2 (you may use any number) sequential taps will result into `KC_A` hold.
+- `SMTD_MT(KC_A, KC_LEFT_GUI, 2)` -- almost the same as the previous, but holding `KC_A` after 2 (you may use any number) sequential taps will result into `KC_A` hold.
    E.g. `↓KC_A , ↑KC_A , ↓KC_A ...` will result into `KC_A` tap and then `KC_LEFT_GUI` hold
    but `↓KC_A , ↑KC_A , ↓KC_A , ↑KC_A, ↓KC_A ...` will result into double `KC_A` tap and then `KC_A` hold
 - `SMTD_MT(KC_A, KC_LEFT_GUI, 1, false)` -- disables QMK's caps lock feature for `KC_A`
 - `SMTD_MTE(KC_A, KC_LEFT_GUI)` -- is an eager version of `SMTD_MT`. It will hold `KC_LEFT_GUI` as soon as `KC_A` key is pressed. 
    If you immediately release `KC_A`, then `KC_LEFT_GUI` will be released and `KC_A` will be tapped
    If you continue pressing `KC_A`, then `KC_LEFT_GUI` will be held until you release the key. No `KC_A` will be tapped after.
-   This is useful macro for mouse clicks, so you will be able to do mod+mouse click much faster
+   This is useful macro for mouse clicks, allowing for faster mod+mouse clicks
 - `SMTD_MTE(KC_A, KC_LEFT_GUI, 2)` and `SMTD_MTE(KC_A, KC_LEFT_GUI, 1, false)` are the versions of `SMTD_MT(KC_A, KC_LEFT_GUI, 2)` and `SMTD_MT(KC_A, KC_LEFT_GUI, 1, false)` with eager mode.
 - `SMTD_LT(KC_A, 2)` -- the macro for momentary switching layers. Works the same way as `SMTD_MT`, but instead for holding modifier it switches a layer.
 - `SMTD_LT(KC_A, KC_LEFT_GUI, 2)` -- the same, as `SMTD_MT(KC_A, KC_LEFT_GUI, 2)`, allows you to hold `KC_A` after 2 sequential taps.
@@ -102,13 +102,13 @@ Also, you may check [my layout](https://github.com/stasmarkin/sm_voyager_keymap)
 
 #### `v0.5.0` (RC8)
 - 3 finger roll interpretation
-- bunch of useful macros
+- a collection of useful macros
 - fix 'SMTD_KEYCODES_BEGIN' undeclared error on compilation (removed entirely)
 - some bug fixes
 
 #### `v0.5.1+` and further `v0.x`
 - dynamic timeouts
-- feature requests (there are a lot of them in the [issues](https://github.com/stasmarkin/sm_td/issues))
+- feature requests (see [issues](https://github.com/stasmarkin/sm_td/issues))
 
 #### `v1.0.0`
 - stable API
@@ -128,11 +128,11 @@ Also, you may email me or tag/text me on Reddit (u/stasmarkin) or Discord (stasm
 
 ## What is `on_smtd_action()` function?
 
-As soon as you press a key, all state machines in the stack start working.
+When you press a key, all state machines in the stack start working.
 Other keys you press after the sm_td state machine has run will also be processed by the sm_td state machine.
 This state machine might decide to postpone the processing of the key you pressed, so that it will be considered a tap or hold later.
 You don't have to worry about this, sm_td will process all keys you press in the correct order and in a very predictable way.
-You also don't need to worry about the implementation of the state machine stack, but you do need to know what output you will get from sm_td's state machine.
+You don't need to understand the internal implementation of the state machine stack, but you do need to know what output you will get from sm_td's state machine.
 As soon as you press keys assigned to sm_td, it will call the `on_smtd_action()` function with the following arguments
 - uint16_t keycode - keycode of the key you pressed
 - smtd_action action - result interpreted action (`SMTD_ACTION_TOUCH`, `SMTD_ACTION_TAP`, `SMTD_ACTION_HOLD`, `SMTD_ACTION_RELEASE`). tap, hold and release are self-explanatory. Touch action fired on key press (without knowing if it is a tap or hold).
@@ -142,7 +142,7 @@ There are only two execution flows for the `on_smtd_action` function:
 - `SMTD_ACTION_TOUCH` → `SMTD_ACTION_TAP`.
 - `SMTD_ACTION_TOUCH` → `SMTD_ACTION_HOLD` → `SMTD_ACTION_RELEASE`.
 
-For a better understanding of the execution flow, please check the following example.
+Consider the following example to understand the execution flow.
 Let's say you want to tap, tap, hold and tap again a custom key `KC`. Here are your finger movements:
 
 - `↓KC` 50ms `↑KC` (first tap finished) 50ms
