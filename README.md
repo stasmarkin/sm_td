@@ -2,14 +2,28 @@
 
 ![SM Tap Dance Logo](SM_TD_logo_bg.png)
 
-## Introduction
+## What is SM_TD?
 
-This is the `SM Tap Dance` (`sm_td` or `smtd` for short) user library for QMK.
-The main goal of this library is to improve the behavior of Home Row Mods (HRM) and Tap Dance problems in QMK.
-Key features include:
-- Human-friendly tap+tap vs. hold+tap interpretation. Especially useful for `LT()` and `MT()` macros.
-- Better multi-tap and hold (and then tap again) interpretation of the same key
-- Reactive response to multiple taps (and holds)
+**SM_TD** is a QMK user library that fixes unreliable behavior in **Home Row Modifiers (HRMs)** and **Tap Dance** keys. It improves how QMK interprets taps vs. holds — especially during fast typing — by analyzing key **releases** rather than **presses**.
+
+## Why SM_TD?
+
+Typing often involves overlapping keypresses. For example:
+
+```
+↓h ↓i ↑h ↑i
+```
+
+This happens when you type "hi" quickly. But QMK's default behavior may misinterpret `↓h` as a **hold**, not a **tap**, just because `↓i` occurred before `↑h`.
+
+This leads to bugs when using keys like `LT(1, KC_H)` for home row mods — triggering `layer_move(1)` instead of typing `h`.
+
+**SM_TD solves this by:**
+- Interpreting key actions based on release timing
+- Respecting natural typing habits
+- Avoiding false holds in fast sequences
+
+### Background
 
 This library uses the natural way of human typing when we have a small overlap between key taps.
 For example, when a person types `hi` quickly, he does not release `h` before pressing `i`, in other words, the finger movements are: `↓h`, `↓i`, `↑h`, `↑i`.
@@ -163,6 +177,21 @@ For this example, you will get the following `on_smtd_action()` calls:
 
 If you need, there is a deeper documentation on execution flow, please see [state machine description](https://github.com/stasmarkin/sm_td/blob/main/docs/090_deep_explanation_stages.md) and further [one key explanation](https://github.com/stasmarkin/sm_td/blob/main/docs/100_deep_explanation_one_stage_example.md), [two key explanation](https://github.com/stasmarkin/sm_td/blob/main/docs/110_deep_explanation_two_stages_example.md) and [state machine stack](https://github.com/stasmarkin/sm_td/blob/main/docs/120_deep_explanation_stack.md).
 
+
+## Special thanks to beta-testers
+
+- [Azzam S.A](https://github.com/azzamsa)
+- [Thiago Alves](https://github.com/Townk)
+- [Julian Hirn](https://github.com/nineluj)
+- [Beau Haan](https://github.com/beauhaan/)
+- [Str8Razor](https://github.com/Str8Razor)
+- PineappleOfD!scord
+- [Alexander Spitaler](https://github.com/Speed1)
+- [Josh Stobbs](https://github.com/joshstobbs)
+- [Yousef Hadder](https://github.com/YousefHadder)
+- [WhoAmiI](https://github.com/chuan2984)
+
+(please, let me know, if I have forgotten someone) 
 
 ## Star History
 
