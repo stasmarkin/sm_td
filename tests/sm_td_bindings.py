@@ -241,7 +241,8 @@ def load_smtd_lib(path: str) -> SmtdBindings:
     compile_cmd = (f"clang -shared "
                    f"-o {lib_path} "
                    f"-fPIC {os.path.join(project_root, path)} "
-                   f"-I{project_root} ")
+                   f"-I{project_root} "
+                   f"-Wunused-variable -Werror=unused-variable ")
 
     print(f"Compiling sm_td library: {compile_cmd}")
     result = subprocess.run(compile_cmd, shell=True, stderr=subprocess.PIPE)

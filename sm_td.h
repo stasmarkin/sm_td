@@ -1012,20 +1012,16 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
                smtd_state_to_str(state),
                smtd_action_to_str(action));
 
-#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
+    #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
     uint8_t mods_on_start = get_mods();
+    uint8_t mods_on_restore = state->saved_mods;
 
     if (state->saved_mods != mods_on_start) {
         set_mods(state->saved_mods);
         send_keyboard_report();
         SMTD_SIMULTANEOUS_PRESSES_DELAY
     }
-
-    uint8_t mods_on_restore = state->saved_mods;
-#else
-    uint8_t mods_on_start = get_mods();
-    uint8_t mods_on_restore = mods_on_start;
-#endif
+    #endif
 
     smtd_bypass = true;
     smtd_resolution new_resolution = on_smtd_action(state->desired_keycode, action, state->tap_count);
@@ -1055,7 +1051,7 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
         SMTD_DEBUG_OFFSET_DEC;
     }
 
-#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
+    #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
     uint8_t mods_after_action = get_mods();
 
     if (mods_on_restore != mods_after_action) {
@@ -1078,7 +1074,7 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
         send_keyboard_report();
         SMTD_SIMULTANEOUS_PRESSES_DELAY
     }
-#endif
+    #endif
 
     SMTD_DEBUG("%s exec done with %s",
                smtd_state_to_str(state),
