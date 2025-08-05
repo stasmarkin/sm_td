@@ -1,7 +1,10 @@
 import itertools
 import random
 
-from tests.sm_td_assertions import *
+try:
+    from tests.sm_td_assertions import *
+except ImportError:
+    from sm_td_assertions import *
 
 smtd = load_smtd_lib('tests/caps_word_enable/layout.c')
 

@@ -1,0 +1,1 @@
+# Caps word enable tests
