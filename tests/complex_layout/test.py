@@ -3,7 +3,7 @@ import random
 
 from tests.sm_td_assertions import *
 
-smtd = load_smtd_lib('tests/complex_layout/test_complex_layout.c')
+smtd = load_smtd_lib('tests/complex_layout/layout.c')
 
 class TestSmTd(SmTdAssertions):
     def __init__(self, *args, **kwargs):
