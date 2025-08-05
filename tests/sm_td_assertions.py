@@ -34,6 +34,24 @@ class EmulateRelease:
     layer: int = -1
 
 
+# Convenience functions for cleaner test syntax
+def pressed(key, mods=0, layer=0):
+    """Create an EmulatePress event"""
+    return EmulatePress(key, mods, layer)
+
+def released(key, mods=0, layer=0):
+    """Create an EmulateRelease event"""
+    return EmulateRelease(key, mods, layer)
+
+def registered(keycode, mods=0, layer=0):
+    """Create a Register event"""
+    return Register(keycode, mods, layer)
+
+def unregistered(keycode, mods=0, layer=0):
+    """Create an Unregister event"""
+    return Unregister(keycode, mods, layer)
+
+
 class SmTdAssertions(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

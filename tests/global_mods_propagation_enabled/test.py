@@ -143,6 +143,19 @@ class TestSmTdWithGlobalModsPropagationEnabled(SmTdAssertions):
         self.assertEmulateRelease(records[3], SHIFT, mods = 2)
 
     def test_SCKKCS(self):
+        self.assertFalse(SHIFT.press())
+        self.assertFalse(MT_CTRL.press())
+        self.assertFalse(K2.press())
+        self.assertFalse(K2.release())
+        self.assertFalse(MT_CTRL.release())
+        self.assertFalse(SHIFT.release())
+
+        self.assertHistory(
+            pressed(SHIFT, mods=0),
+            pressed(K2, mods=3),
+            released(K2, mods=3),
+            released(SHIFT, mods=2)
+        )
 
 
 
