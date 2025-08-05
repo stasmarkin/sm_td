@@ -68,12 +68,15 @@ class Keycode:
     def __init__(self, smtd, value, row, col, layer):
         self.smtd = smtd
         self.value = value
-        self.pressed = False
-        self.defer_idx = None
         self.row = row
         self.col = col
         self.layer = layer
+        self.pressed = False
+        self.defer_idx = None
 
+    def reset(self):
+        self.pressed = False
+        self.defer_idx = None
 
     def press(self):
         assert self.pressed == False
@@ -108,19 +111,35 @@ class Keycode:
 
 
 class Key:
-    def __init__(self, smtd, name, row, col, comment):
+    def __init__(self, smtd, name, row, col, comment, all_keycodes):
         self.smtd = smtd
         self.name = name
-        self.rowcol = (row, col)
+        self.row = row
+        self.col = col
+        self.rowcol = (row, col) #fixme-sm remove rowcol
         self.comment = comment
+        self.all_keycodes = all_keycodes
+        self.pressed = None
+        self.released = None
+
+    def reset(self):
+        if self.pressed: self.pressed.reset()
+        if self.released: self.released.reset()
         self.pressed = None
         self.released = None
 
     def press(self):
         assert self.pressed is None
         self.released = None
-        self.pressed = Keycode.from_rowcol(self.rowcol())
+        self.pressed = self.current_keycode()
         return self.pressed.press()
+
+    def current_keycode(self):
+        layer = self.smtd.get_layer_state()
+        for keycode in self.all_keycodes:
+            if keycode.row == self.row and keycode.col == self.col and keycode.layer == layer:
+                return keycode
+        raise ValueError(f"No keycode for {self} on layer {layer}")
 
     def release(self):
         assert self.pressed is not None
@@ -182,7 +201,6 @@ class SmtdBindings:
     def reset(self) -> None:
         """Reset the test state"""
         self.lib.TEST_reset()
-        # fixme-sm Keycode.reset()
 
     def get_record_history(self) -> List[Dict[str, Any]]:
         """Get the history of key records processed"""
