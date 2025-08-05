@@ -1,4 +1,5 @@
 /* Layout configuration for sm_td tests */
+#define SMTD_UNIT_TEST
 
 #include "sm_td_bindings.c"
 
