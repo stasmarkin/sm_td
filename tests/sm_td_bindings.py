@@ -225,42 +225,40 @@ def _load_smtd_lib():
 
     atexit.register(cleanup)
 
+    lib.process_smtd.argtypes = [ctypes.c_uint, ctypes.POINTER(KeyRecord)]
+    lib.process_smtd.restype = ctypes.c_bool
+
+    lib.TEST_set_smtd_bypass.argtypes = [ctypes.c_bool]
+    lib.TEST_set_smtd_bypass.restype = None
+
+    lib.TEST_reset.argtypes = []
+    lib.TEST_reset.restype = None
+
+    lib.TEST_get_record_history.argtypes = [
+        ctypes.POINTER(History),  # out_records
+        ctypes.POINTER(ctypes.c_uint8)  # out_count
+    ]
+    lib.TEST_get_record_history.restype = None
+
+    lib.TEST_get_deferred_execs.argtypes = [
+        ctypes.POINTER(DeferredExecInfo),  # out_execs
+        ctypes.POINTER(ctypes.c_uint8)  # out_count
+    ]
+    lib.TEST_get_deferred_execs.restype = None
+
+    lib.TEST_execute_deferred.argtypes = [ctypes.c_uint8]  # deferred_token
+    lib.TEST_execute_deferred.restype = None
+
+    lib.get_mods.argtypes = []  # No arguments
+    lib.get_mods.restype = ctypes.c_uint8  # Returns uint8_t
+
+    lib.TEST_get_layer_state.argtypes = []
+    lib.TEST_get_layer_state.restype = ctypes.c_uint8
+
     return lib
 
 # Load the library and set up function definitions
 lib = _load_smtd_lib()
-
-# Define function prototypes
-lib.process_smtd.argtypes = [ctypes.c_uint, ctypes.POINTER(KeyRecord)]
-lib.process_smtd.restype = ctypes.c_bool
-
-lib.TEST_set_smtd_bypass.argtypes = [ctypes.c_bool]
-lib.TEST_set_smtd_bypass.restype = None
-
-lib.TEST_reset.argtypes = []
-lib.TEST_reset.restype = None
-
-lib.TEST_get_record_history.argtypes = [
-    ctypes.POINTER(History),  # out_records
-    ctypes.POINTER(ctypes.c_uint8)  # out_count
-]
-lib.TEST_get_record_history.restype = None
-
-lib.TEST_get_deferred_execs.argtypes = [
-    ctypes.POINTER(DeferredExecInfo),  # out_execs
-    ctypes.POINTER(ctypes.c_uint8)  # out_count
-]
-lib.TEST_get_deferred_execs.restype = None
-
-lib.TEST_execute_deferred.argtypes = [ctypes.c_uint8]  # deferred_token
-lib.TEST_execute_deferred.restype = None
-
-lib.get_mods.argtypes = []  # No arguments
-lib.get_mods.restype = ctypes.c_uint8  # Returns uint8_t
-
-lib.TEST_get_layer_state.argtypes = []
-lib.TEST_get_layer_state.restype = ctypes.c_uint8
-
 
 # Helper functions
 def create_keyrecord(row, col, pressed):
@@ -331,7 +329,7 @@ def get_deferred_execs():
     return result
 
 
-def execute_deferred(idx, make_asserts = True):
+def execute_deferred(idx, make_asserts=True):
     """Execute a specific deferred execution by its id"""
     if make_asserts: assert get_deferred_execs()[idx - 1]["active"] == True
     if not get_deferred_execs()[idx - 1]["active"]: return
@@ -342,6 +340,7 @@ def execute_deferred(idx, make_asserts = True):
 def get_mods():
     """Get the current modifier state"""
     return lib.get_mods()
+
 
 def get_layer_state():
     """Get the current layer state"""
