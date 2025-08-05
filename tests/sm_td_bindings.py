@@ -6,27 +6,35 @@ from typing import Dict, List, Optional, Tuple, Any
 
 
 # Structure definitions
-class KeyPosition(ctypes.Structure):
+class CKeyPosition(ctypes.Structure):
     _fields_ = [
         ("row", ctypes.c_uint8),
         ("col", ctypes.c_uint8)
     ]
 
 
-class KeyEvent(ctypes.Structure):
+class CKeyEvent(ctypes.Structure):
     _fields_ = [
-        ("key", KeyPosition),
+        ("key", CKeyPosition),
         ("pressed", ctypes.c_bool)
     ]
 
 
-class KeyRecord(ctypes.Structure):
+class CKeyRecord(ctypes.Structure):
     _fields_ = [
-        ("event", KeyEvent)
+        ("event", CKeyEvent)
     ]
 
+def create_ckeyrecord(row: int, col: int, pressed: bool) -> CKeyRecord:
+    """Helper to create a keyrecord structure"""
+    record = CKeyRecord()
+    record.event.key.row = row
+    record.event.key.col = col
+    record.event.keycode = 0
+    record.event.pressed = pressed
+    return record
 
-class DeferredExecInfo(ctypes.Structure):
+class CDeferredExecInfo(ctypes.Structure):
     _fields_ = [
         ("delay_ms", ctypes.c_uint32),
         ("callback", ctypes.c_void_p),  # Using void pointer for function pointer
@@ -35,7 +43,7 @@ class DeferredExecInfo(ctypes.Structure):
     ]
 
 
-class History(ctypes.Structure):
+class CHistory(ctypes.Structure):
     _fields_ = [
         ("row", ctypes.c_uint8),
         ("col", ctypes.c_uint8),
@@ -46,22 +54,6 @@ class History(ctypes.Structure):
         ("smtd_bypass", ctypes.c_bool),
     ]
 
-
-# Enum Values
-SMTD_ACTION_TOUCH = 0
-SMTD_ACTION_TAP = 1
-SMTD_ACTION_HOLD = 2
-SMTD_ACTION_RELEASE = 3
-
-SMTD_RESOLUTION_UNCERTAIN = 0
-SMTD_RESOLUTION_UNHANDLED = 1
-SMTD_RESOLUTION_DETERMINED = 2
-
-SMTD_TIMEOUT_TAP = 0
-SMTD_TIMEOUT_SEQUENCE = 1
-SMTD_TIMEOUT_RELEASE = 2
-
-SMTD_FEATURE_AGGREGATE_TAPS = 0
 
 
 class Keycode:
@@ -164,15 +156,6 @@ class Key:
     def __str__(self):
         return f"Key.{self.name} # {self.comment}"
 
-def create_keyrecord(row: int, col: int, pressed: bool) -> KeyRecord:
-    """Helper to create a keyrecord structure"""
-    record = KeyRecord()
-    record.event.key.row = row
-    record.event.key.col = col
-    record.event.keycode = 0
-    record.event.pressed = pressed
-    return record
-
 class SmtdBindings:
     """Encapsulates all SMTD library bindings and functions"""
 
@@ -181,7 +164,7 @@ class SmtdBindings:
 
     def process_key_and_timeout(self, keycode: Keycode, pressed: bool) -> Tuple[bool, Optional[int]]:
         execs_before = self.get_deferred_execs()
-        record_ptr = ctypes.pointer(create_keyrecord(keycode.row, keycode.col, pressed))
+        record_ptr = ctypes.pointer(create_ckeyrecord(keycode.row, keycode.col, pressed))
         result = self.lib.process_smtd(ctypes.c_uint(keycode.value), record_ptr)
         execs_after = self.get_deferred_execs()
         execs_diff = execs_after[len(execs_before):]
@@ -199,7 +182,7 @@ class SmtdBindings:
 
     def get_record_history(self) -> List[Dict[str, Any]]:
         """Get the history of key records processed"""
-        records = (History * 100)()  # MAX_RECORD_HISTORY is 100
+        records = (CHistory * 100)()  # MAX_RECORD_HISTORY is 100
         count = ctypes.c_uint8(0)
         self.lib.TEST_get_record_history(records, ctypes.byref(count))
 
@@ -218,7 +201,7 @@ class SmtdBindings:
 
     def get_deferred_execs(self) -> List[Dict[str, Any]]:
         """Get the list of deferred executions scheduled in the test environment"""
-        execs_array = (DeferredExecInfo * 100)()  # MAX_DEFERRED_EXECS is 100
+        execs_array = (CDeferredExecInfo * 100)()  # MAX_DEFERRED_EXECS is 100
         count = ctypes.c_uint8(0)
         self.lib.TEST_get_deferred_execs(execs_array, ctypes.byref(count))
 
@@ -282,7 +265,7 @@ def load_smtd_lib() -> SmtdBindings:
 
     atexit.register(cleanup)
 
-    lib.process_smtd.argtypes = [ctypes.c_uint, ctypes.POINTER(KeyRecord)]
+    lib.process_smtd.argtypes = [ctypes.c_uint, ctypes.POINTER(CKeyRecord)]
     lib.process_smtd.restype = ctypes.c_bool
 
     lib.TEST_set_smtd_bypass.argtypes = [ctypes.c_bool]
@@ -292,13 +275,13 @@ def load_smtd_lib() -> SmtdBindings:
     lib.TEST_reset.restype = None
 
     lib.TEST_get_record_history.argtypes = [
-        ctypes.POINTER(History),  # out_records
+        ctypes.POINTER(CHistory),  # out_records
         ctypes.POINTER(ctypes.c_uint8)  # out_count
     ]
     lib.TEST_get_record_history.restype = None
 
     lib.TEST_get_deferred_execs.argtypes = [
-        ctypes.POINTER(DeferredExecInfo),  # out_execs
+        ctypes.POINTER(CDeferredExecInfo),  # out_execs
         ctypes.POINTER(ctypes.c_uint8)  # out_count
     ]
     lib.TEST_get_deferred_execs.restype = None

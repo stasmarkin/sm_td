@@ -1,84 +1,8 @@
 import unittest
-import sys
 import itertools
-from dataclasses import dataclass
 import random
-
 from sm_td_bindings import *
-
-# Add parent directory to path so we can import modules
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-smtd = load_smtd_lib()
-
-# Layers
-
-L0 = 0
-L1 = 1
-L2 = 2
-
-# Keycodes
-
-L0_KC0 = Keycode(smtd, 100, 0, 0, L0)
-L0_KC1 = Keycode(smtd, 101, 0, 1, L0)
-L0_KC2 = Keycode(smtd, 102, 0, 2, L0)
-L0_KC3 = Keycode(smtd, 103, 0, 3, L0)
-L0_KC4 = Keycode(smtd, 104, 0, 4, L0)
-L0_KC5 = Keycode(smtd, 105, 0, 5, L0)
-L0_KC6 = Keycode(smtd, 106, 0, 6, L0)
-L0_KC7 = Keycode(smtd, 107, 0, 7, L0)
-L0_KC8 = Keycode(smtd, 108, 0, 8, L0)
-
-L1_KC0 = Keycode(smtd, 200, 0, 0, L1)
-L1_KC1 = Keycode(smtd, 201, 0, 1, L1)
-L1_KC2 = Keycode(smtd, 202, 0, 2, L1)
-L1_KC3 = Keycode(smtd, 203, 0, 3, L1)
-L1_KC4 = Keycode(smtd, 204, 0, 4, L1)
-L1_KC5 = Keycode(smtd, 205, 0, 5, L1)
-L1_KC6 = Keycode(smtd, 206, 0, 6, L1)
-L1_KC7 = Keycode(smtd, 207, 0, 7, L1)
-L1_KC8 = Keycode(smtd, 208, 0, 8, L1)
-
-L2_KC0 = Keycode(smtd, 300, 0, 0, L2)
-L2_KC1 = Keycode(smtd, 301, 0, 1, L2)
-L2_KC2 = Keycode(smtd, 302, 0, 2, L2)
-L2_KC3 = Keycode(smtd, 303, 0, 3, L2)
-L2_KC4 = Keycode(smtd, 304, 0, 4, L2)
-L2_KC5 = Keycode(smtd, 305, 0, 5, L2)
-L2_KC6 = Keycode(smtd, 306, 0, 6, L2)
-L2_KC7 = Keycode(smtd, 307, 0, 7, L2)
-L2_KC8 = Keycode(smtd, 308, 0, 8, L2)
-
-MACRO0 = Keycode(smtd, 500, 0, 0, -100)
-MACRO1 = Keycode(smtd, 501, 0, 1, -100)
-MACRO2 = Keycode(smtd, 502, 0, 2, -100)
-MACRO3 = Keycode(smtd, 503, 0, 3, -100)
-MACRO4 = Keycode(smtd, 504, 0, 4, -100)
-MACRO5 = Keycode(smtd, 505, 0, 5, -100)
-MACRO6 = Keycode(smtd, 506, 0, 6, -100)
-MACRO7 = Keycode(smtd, 507, 0, 7, -100)
-MACRO8 = Keycode(smtd, 508, 0, 8, -100)
-
-all_keycodes = [
-    L0_KC0, L0_KC1, L0_KC2, L0_KC3, L0_KC4, L0_KC5, L0_KC6, L0_KC7, L0_KC8,
-    L1_KC0, L1_KC1, L1_KC2, L1_KC3, L1_KC4, L1_KC5, L1_KC6, L1_KC7, L1_KC8,
-    L2_KC0, L2_KC1, L2_KC2, L2_KC3, L2_KC4, L2_KC5, L2_KC6, L2_KC7, L2_KC8,
-    MACRO0, MACRO1, MACRO2, MACRO3, MACRO4, MACRO5, MACRO6, MACRO7, MACRO8,
-]
-
-# Keys
-
-K1 = Key(smtd, 'K1', 0, 0, "no special behaviour", all_keycodes)
-K2 = Key(smtd, 'K2', 0, 1, "no special behaviour", all_keycodes)
-MMT = Key(smtd, 'MMT', 0, 2, "SMTD_MT_ON_MKEY(L0_KC2, MACRO2, KC_LEFT_GUI, 2)", all_keycodes)
-MT1 = Key(smtd, 'MT1', 0, 3, "SMTD_MT(L*_KC3, KC_LEFT_ALT)", all_keycodes)
-MT2 = Key(smtd, 'MT2', 0, 4, "SMTD_MT(L*_KC4, KC_LEFT_CTRL)", all_keycodes)
-LT1 = Key(smtd, 'LT1', 0, 5, "SMTD_LT(L0_KC5, L1), SMTD_LT(L2_KC5, L3)", all_keycodes)
-LT2 = Key(smtd, 'LT2', 0, 6, "SMTD_LT(L0_KC5, L2), SMTD_LT(L1_KC5, L3)", all_keycodes)
-MTE = Key(smtd, 'MTE', 0, 7, "SMTD_MTE(L*_KC3, KC_LEFT_SHIFT)", all_keycodes)  # Ñ in Spanish layout,
-CTRL = Key(smtd, 'CTRL', 0, 8, "KC_LEFT_CTRL", all_keycodes)
-
-all_keys = [K1, K2, MMT, MT1, MT2, LT1, LT2, MTE, CTRL]
+from dataclasses import dataclass
 
 
 # Tests
@@ -141,10 +65,12 @@ class TestSmTd(unittest.TestCase):
                          layer_state=layer_state, smtd_bypass=smtd_bypass)
 
     def assertEmulatePress(self, event, key, mods=0, layer_state=0):
-        self.assertEvent(event, row=key.row, col=key.col, pressed=True, mods=mods, layer_state=layer_state, smtd_bypass=True)
+        self.assertEvent(event, row=key.row, col=key.col, pressed=True, mods=mods, layer_state=layer_state,
+                         smtd_bypass=True)
 
     def assertEmulateRelease(self, event, key, mods=0, layer_state=0):
-        self.assertEvent(event, row=key.row, col=key.col, pressed=False, mods=mods, layer_state=layer_state, smtd_bypass=True)
+        self.assertEvent(event, row=key.row, col=key.col, pressed=False, mods=mods, layer_state=layer_state,
+                         smtd_bypass=True)
 
     def test_process_smtd(self):
         """Test that process_smtd function from the actual library works"""
@@ -684,6 +610,78 @@ class TestSmTd(unittest.TestCase):
             Unregister(L0_KC3, mods=-1),
             EmulateRelease(CTRL, mods=-1),
         )
+
+
+smtd = load_smtd_lib()
+
+# Layers
+
+L0 = 0
+L1 = 1
+L2 = 2
+
+# Keycodes
+
+L0_KC0 = Keycode(smtd, 100, 0, 0, L0)
+L0_KC1 = Keycode(smtd, 101, 0, 1, L0)
+L0_KC2 = Keycode(smtd, 102, 0, 2, L0)
+L0_KC3 = Keycode(smtd, 103, 0, 3, L0)
+L0_KC4 = Keycode(smtd, 104, 0, 4, L0)
+L0_KC5 = Keycode(smtd, 105, 0, 5, L0)
+L0_KC6 = Keycode(smtd, 106, 0, 6, L0)
+L0_KC7 = Keycode(smtd, 107, 0, 7, L0)
+L0_KC8 = Keycode(smtd, 108, 0, 8, L0)
+
+L1_KC0 = Keycode(smtd, 200, 0, 0, L1)
+L1_KC1 = Keycode(smtd, 201, 0, 1, L1)
+L1_KC2 = Keycode(smtd, 202, 0, 2, L1)
+L1_KC3 = Keycode(smtd, 203, 0, 3, L1)
+L1_KC4 = Keycode(smtd, 204, 0, 4, L1)
+L1_KC5 = Keycode(smtd, 205, 0, 5, L1)
+L1_KC6 = Keycode(smtd, 206, 0, 6, L1)
+L1_KC7 = Keycode(smtd, 207, 0, 7, L1)
+L1_KC8 = Keycode(smtd, 208, 0, 8, L1)
+
+L2_KC0 = Keycode(smtd, 300, 0, 0, L2)
+L2_KC1 = Keycode(smtd, 301, 0, 1, L2)
+L2_KC2 = Keycode(smtd, 302, 0, 2, L2)
+L2_KC3 = Keycode(smtd, 303, 0, 3, L2)
+L2_KC4 = Keycode(smtd, 304, 0, 4, L2)
+L2_KC5 = Keycode(smtd, 305, 0, 5, L2)
+L2_KC6 = Keycode(smtd, 306, 0, 6, L2)
+L2_KC7 = Keycode(smtd, 307, 0, 7, L2)
+L2_KC8 = Keycode(smtd, 308, 0, 8, L2)
+
+MACRO0 = Keycode(smtd, 500, 0, 0, -100)
+MACRO1 = Keycode(smtd, 501, 0, 1, -100)
+MACRO2 = Keycode(smtd, 502, 0, 2, -100)
+MACRO3 = Keycode(smtd, 503, 0, 3, -100)
+MACRO4 = Keycode(smtd, 504, 0, 4, -100)
+MACRO5 = Keycode(smtd, 505, 0, 5, -100)
+MACRO6 = Keycode(smtd, 506, 0, 6, -100)
+MACRO7 = Keycode(smtd, 507, 0, 7, -100)
+MACRO8 = Keycode(smtd, 508, 0, 8, -100)
+
+all_keycodes = [
+    L0_KC0, L0_KC1, L0_KC2, L0_KC3, L0_KC4, L0_KC5, L0_KC6, L0_KC7, L0_KC8,
+    L1_KC0, L1_KC1, L1_KC2, L1_KC3, L1_KC4, L1_KC5, L1_KC6, L1_KC7, L1_KC8,
+    L2_KC0, L2_KC1, L2_KC2, L2_KC3, L2_KC4, L2_KC5, L2_KC6, L2_KC7, L2_KC8,
+    MACRO0, MACRO1, MACRO2, MACRO3, MACRO4, MACRO5, MACRO6, MACRO7, MACRO8,
+]
+
+# Keys
+
+K1 = Key(smtd, 'K1', 0, 0, "no special behaviour", all_keycodes)
+K2 = Key(smtd, 'K2', 0, 1, "no special behaviour", all_keycodes)
+MMT = Key(smtd, 'MMT', 0, 2, "SMTD_MT_ON_MKEY(L0_KC2, MACRO2, KC_LEFT_GUI, 2)", all_keycodes)
+MT1 = Key(smtd, 'MT1', 0, 3, "SMTD_MT(L*_KC3, KC_LEFT_ALT)", all_keycodes)
+MT2 = Key(smtd, 'MT2', 0, 4, "SMTD_MT(L*_KC4, KC_LEFT_CTRL)", all_keycodes)
+LT1 = Key(smtd, 'LT1', 0, 5, "SMTD_LT(L0_KC5, L1), SMTD_LT(L2_KC5, L3)", all_keycodes)
+LT2 = Key(smtd, 'LT2', 0, 6, "SMTD_LT(L0_KC5, L2), SMTD_LT(L1_KC5, L3)", all_keycodes)
+MTE = Key(smtd, 'MTE', 0, 7, "SMTD_MTE(L*_KC3, KC_LEFT_SHIFT)", all_keycodes)  # Ñ in Spanish layout,
+CTRL = Key(smtd, 'CTRL', 0, 8, "KC_LEFT_CTRL", all_keycodes)
+
+all_keys = [K1, K2, MMT, MT1, MT2, LT1, LT2, MTE, CTRL]
 
 
 @dataclass
