@@ -1,76 +1,17 @@
-import unittest
 import itertools
 import random
-from sm_td_bindings import *
-from dataclasses import dataclass
+from test_assertions import *
 
 
-# Tests
+class TestSmTd(SmTdAssertions):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.smtd = smtd
 
-class TestSmTd(unittest.TestCase):
     def setUp(self):
         """Method to run before each test"""
+        super().setUp()
         reset()
-
-    def tearDown(self):
-        """Method to run after each test"""
-        assert smtd.get_mods() == 0
-        assert smtd.get_layer_state() == 0
-
-        for d in smtd.get_deferred_execs():
-            if d["active"]: smtd.execute_deferred(d["idx"])
-        for d in smtd.get_deferred_execs():
-            assert not d["active"]
-
-        assert smtd.get_mods() == 0
-        assert smtd.get_layer_state() == 0
-
-    def assertHistory(self, *args):
-        history = smtd.get_record_history()
-        print("\n\nHistory:")
-        for h in history: print(f" -- {h}")
-        print("\n")
-
-        assert len(history) == len(args)
-
-        for i, a in enumerate(args):
-            if isinstance(a, EmulatePress):
-                self.assertEmulatePress(history[i], a.key, a.mods, a.layer)
-            elif isinstance(a, EmulateRelease):
-                self.assertEmulateRelease(history[i], a.key, a.mods, a.layer)
-            elif isinstance(a, Register):
-                self.assertRegister(history[i], a.keycode, a.mods, a.layer)
-            elif isinstance(a, Unregister):
-                self.assertUnregister(history[i], a.keycode, a.mods, a.layer)
-            else:
-                raise ValueError(f"Unknown type in assertHistory {a}")
-
-    def assertEvent(self, event, row=255, col=255, keycode_value=65535, pressed=True, mods=0, layer_state=0,
-                    smtd_bypass=True):
-        self.assertEqual(event["row"], row, f"{event} doesn't match row={row}")
-        self.assertEqual(event["col"], col, f"{event} doesn't match col={col}")
-        self.assertEqual(event["keycode"], keycode_value, f"{event} doesn't match keycode_value={keycode_value}")
-        self.assertEqual(event["pressed"], pressed, f"{event} doesn't match pressed={pressed}")
-        if (mods >= 0): self.assertEqual(event["mods"], mods, f"{event} doesn't match mods={mods}")
-        if (layer_state >= 0): self.assertEqual(event["layer_state"], layer_state,
-                                                f"{event} doesn't match layer_state={layer_state}")
-        self.assertEqual(event["smtd_bypass"], smtd_bypass, f"{event} doesn't match smtd_bypass={smtd_bypass}")
-
-    def assertRegister(self, event, keycode, mods=0, layer_state=0, smtd_bypass=True):
-        self.assertEvent(event, keycode_value=keycode.value, pressed=True, mods=mods,
-                         layer_state=layer_state, smtd_bypass=smtd_bypass)
-
-    def assertUnregister(self, event, keycode, mods=0, layer_state=0, smtd_bypass=True):
-        self.assertEvent(event, keycode_value=keycode.value, pressed=False, mods=mods,
-                         layer_state=layer_state, smtd_bypass=smtd_bypass)
-
-    def assertEmulatePress(self, event, key, mods=0, layer_state=0):
-        self.assertEvent(event, row=key.row, col=key.col, pressed=True, mods=mods, layer_state=layer_state,
-                         smtd_bypass=True)
-
-    def assertEmulateRelease(self, event, key, mods=0, layer_state=0):
-        self.assertEvent(event, row=key.row, col=key.col, pressed=False, mods=mods, layer_state=layer_state,
-                         smtd_bypass=True)
 
     def test_process_smtd(self):
         """Test that process_smtd function from the actual library works"""
@@ -682,34 +623,6 @@ MTE = Key(smtd, 'MTE', 0, 7, "SMTD_MTE(L*_KC3, KC_LEFT_SHIFT)", all_keycodes)  #
 CTRL = Key(smtd, 'CTRL', 0, 8, "KC_LEFT_CTRL", all_keycodes)
 
 all_keys = [K1, K2, MMT, MT1, MT2, LT1, LT2, MTE, CTRL]
-
-
-@dataclass
-class Register:
-    keycode: Keycode
-    mods: int = -1
-    layer: int = -1
-
-
-@dataclass
-class Unregister:
-    keycode: Keycode
-    mods: int = -1
-    layer: int = -1
-
-
-@dataclass
-class EmulatePress:
-    key: Key
-    mods: int = -1
-    layer: int = -1
-
-
-@dataclass
-class EmulateRelease:
-    key: Key
-    mods: int = -1
-    layer: int = -1
 
 
 def reset():
