@@ -242,7 +242,7 @@ def load_smtd_lib() -> SmtdBindings:
     compile_cmd = (f"clang -shared "
                    f"-DSMTD_UNIT_TEST "
                    f"-o {lib_path} "
-                   f"-fPIC {os.path.join(project_root, 'tests/test_mocks.c')} "
+                   f"-fPIC {os.path.join(project_root, 'tests/test_layout_config.c')} "
                    f"-I{project_root} ")
 
     print(f"Compiling sm_td library: {compile_cmd}")

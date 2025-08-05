@@ -13,6 +13,7 @@ enum KEYCODES {
     L0_KC0 = 100, L0_KC1, L0_KC2, L0_KC3, L0_KC4, L0_KC5, L0_KC6, L0_KC7, L0_KC8,//
     L1_KC0 = 200, L1_KC1, L1_KC2, L1_KC3, L1_KC4, L1_KC5, L1_KC6, L1_KC7, L1_KC8,//
     L2_KC0 = 300, L2_KC1, L2_KC2, L2_KC3, L2_KC4, L2_KC5, L2_KC6, L2_KC7, L2_KC8,//
+    L3_KC0 = 400, L3_KC1, L3_KC2, L3_KC3, L3_KC4, L3_KC5, L3_KC6, L3_KC7, L3_KC8,//
     MACRO0 = 500, MACRO1, MACRO2, MACRO3, MACRO4, MACRO5, MACRO6, MACRO7, MACRO8,//
 };
 
@@ -31,6 +32,7 @@ uint16_t const keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [L0] = { L0_KC0, L0_KC1, L0_KC2, L0_KC3, L0_KC4, L0_KC5, L0_KC6, L0_KC7, L0_KC8, },
     [L1] = { L1_KC0, L1_KC1, L1_KC2, L1_KC3, L1_KC4, L1_KC5, L1_KC6, L1_KC7, L1_KC8, },
     [L2] = { L2_KC0, L2_KC1, L2_KC2, L2_KC3, L2_KC4, L2_KC5, L2_KC6, L2_KC7, L2_KC8, },
+    [L3] = { L3_KC0, L3_KC1, L3_KC2, L3_KC3, L3_KC4, L3_KC5, L3_KC6, L3_KC7, L3_KC8, },
 };
 
 smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
@@ -95,6 +97,15 @@ char* smtd_keycode_to_str_user(uint16_t keycode) {
         case L2_KC6: return "L2_KC6";
         case L2_KC7: return "L2_KC7";
         case L2_KC8: return "L2_KC8";
+        case L3_KC0: return "L3_KC0";
+        case L3_KC1: return "L3_KC1";
+        case L3_KC2: return "L3_KC2";
+        case L3_KC3: return "L3_KC3";
+        case L3_KC4: return "L3_KC4";
+        case L3_KC5: return "L3_KC5";
+        case L3_KC6: return "L3_KC6";
+        case L3_KC7: return "L3_KC7";
+        case L3_KC8: return "L3_KC8";
         case MACRO0: return "MACRO0";
         case MACRO1: return "MACRO1";
         case MACRO2: return "MACRO2";

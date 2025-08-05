@@ -560,6 +560,7 @@ smtd = load_smtd_lib()
 L0 = 0
 L1 = 1
 L2 = 2
+L3 = 3
 
 # Keycodes
 
@@ -593,6 +594,16 @@ L2_KC6 = Keycode(smtd, 306, 0, 6, L2)
 L2_KC7 = Keycode(smtd, 307, 0, 7, L2)
 L2_KC8 = Keycode(smtd, 308, 0, 8, L2)
 
+L3_KC0 = Keycode(smtd, 400, 0, 0, L3)
+L3_KC1 = Keycode(smtd, 401, 0, 1, L3)
+L3_KC2 = Keycode(smtd, 402, 0, 2, L3)
+L3_KC3 = Keycode(smtd, 403, 0, 3, L3)
+L3_KC4 = Keycode(smtd, 404, 0, 4, L3)
+L3_KC5 = Keycode(smtd, 405, 0, 5, L3)
+L3_KC6 = Keycode(smtd, 406, 0, 6, L3)
+L3_KC7 = Keycode(smtd, 407, 0, 7, L3)
+L3_KC8 = Keycode(smtd, 408, 0, 8, L3)
+
 MACRO0 = Keycode(smtd, 500, 0, 0, -100)
 MACRO1 = Keycode(smtd, 501, 0, 1, -100)
 MACRO2 = Keycode(smtd, 502, 0, 2, -100)
@@ -607,6 +618,7 @@ all_keycodes = [
     L0_KC0, L0_KC1, L0_KC2, L0_KC3, L0_KC4, L0_KC5, L0_KC6, L0_KC7, L0_KC8,
     L1_KC0, L1_KC1, L1_KC2, L1_KC3, L1_KC4, L1_KC5, L1_KC6, L1_KC7, L1_KC8,
     L2_KC0, L2_KC1, L2_KC2, L2_KC3, L2_KC4, L2_KC5, L2_KC6, L2_KC7, L2_KC8,
+    L3_KC0, L3_KC1, L3_KC2, L3_KC3, L3_KC4, L3_KC5, L3_KC6, L3_KC7, L3_KC8,
     MACRO0, MACRO1, MACRO2, MACRO3, MACRO4, MACRO5, MACRO6, MACRO7, MACRO8,
 ]
 
