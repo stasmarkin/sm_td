@@ -2,6 +2,11 @@
 
 #include "sm_td_bindings.c"
 
+// Forward declarations for post-functions
+void post_register_code16(uint16_t keycode);
+void post_unregister_code16(uint16_t keycode);
+void post_process_record(keyrecord_t *record);
+
 enum LAYERS { L0 = 0, L1 = 1, L2 = 2, L3 = 3 };
 
 enum KEYCODES {
@@ -101,4 +106,22 @@ char* smtd_keycode_to_str_user(uint16_t keycode) {
         case MACRO8: return "MACRO8";
         default:     return "UNKNWN";
     }
+}
+
+// Post-function implementations
+void post_register_code16(uint16_t keycode) {
+    if (keycode == L0_KC8) register_mods(MOD_BIT(KC_LEFT_CTRL));
+    if (keycode == L1_KC8) register_mods(MOD_BIT(KC_LEFT_CTRL));
+    if (keycode == L2_KC8) register_mods(MOD_BIT(KC_LEFT_CTRL));
+}
+
+void post_unregister_code16(uint16_t keycode) {
+    if (keycode == L0_KC8) unregister_mods(MOD_BIT(KC_LEFT_CTRL));
+    if (keycode == L1_KC8) unregister_mods(MOD_BIT(KC_LEFT_CTRL));
+    if (keycode == L2_KC8) unregister_mods(MOD_BIT(KC_LEFT_CTRL));
+}
+
+void post_process_record(keyrecord_t *record) {
+    if (record->event.key.col == 8 && record->event.pressed) register_mods(MOD_BIT(KC_LEFT_CTRL));
+    if (record->event.key.col == 8 && !record->event.pressed) unregister_mods(MOD_BIT(KC_LEFT_CTRL));
 }

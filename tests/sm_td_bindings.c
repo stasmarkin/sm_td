@@ -155,9 +155,7 @@ void unregister_code16(uint16_t keycode) {
     };
     record_count++;
 
-    if (keycode == L0_KC8) unregister_mods(MOD_BIT(KC_LEFT_CTRL));
-    if (keycode == L1_KC8) unregister_mods(MOD_BIT(KC_LEFT_CTRL));
-    if (keycode == L2_KC8) unregister_mods(MOD_BIT(KC_LEFT_CTRL));
+    post_unregister_code16(keycode);
 }
 
 void register_code16(uint16_t keycode) {
@@ -173,9 +171,7 @@ void register_code16(uint16_t keycode) {
     };
     record_count++;
 
-    if (keycode == L0_KC8) register_mods(MOD_BIT(KC_LEFT_CTRL));
-    if (keycode == L1_KC8) register_mods(MOD_BIT(KC_LEFT_CTRL));
-    if (keycode == L2_KC8) register_mods(MOD_BIT(KC_LEFT_CTRL));
+    post_register_code16(keycode);
 }
 
 void tap_code16(uint16_t keycode) {
@@ -195,8 +191,7 @@ bool process_record(keyrecord_t *record) {
     };
     record_count++;
 
-    if (record->event.key.col == 8 && record->event.pressed) register_mods(MOD_BIT(KC_LEFT_CTRL));
-    if (record->event.key.col == 8 && !record->event.pressed) unregister_mods(MOD_BIT(KC_LEFT_CTRL));
+    post_process_record(record);
 
     return true;
 }
