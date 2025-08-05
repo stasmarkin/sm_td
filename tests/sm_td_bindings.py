@@ -233,14 +233,14 @@ class SmtdBindings:
 
 
 # Compile and load the shared library
-def load_smtd_lib() -> SmtdBindings:
+def load_smtd_lib(path: str) -> SmtdBindings:
     """Compile and load the sm_td shared library"""
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     lib_path = os.path.join(project_root, "libsm_td.dylib")
 
     compile_cmd = (f"clang -shared "
                    f"-o {lib_path} "
-                   f"-fPIC {os.path.join(project_root, 'tests/test_layout_config.c')} "
+                   f"-fPIC {os.path.join(project_root, path)} "
                    f"-I{project_root} ")
 
     print(f"Compiling sm_td library: {compile_cmd}")

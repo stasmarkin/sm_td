@@ -1,6 +1,6 @@
 import itertools
 import random
-from test_assertions import *
+from sm_td_assertions import *
 
 
 class TestSmTd(SmTdAssertions):
@@ -553,7 +553,7 @@ class TestSmTd(SmTdAssertions):
         )
 
 
-smtd = load_smtd_lib()
+smtd = load_smtd_lib('tests/test_complex_layout.c')
 
 # Layers
 
