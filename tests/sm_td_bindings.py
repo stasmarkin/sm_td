@@ -116,7 +116,6 @@ class Key:
         self.name = name
         self.row = row
         self.col = col
-        self.rowcol = (row, col) #fixme-sm remove rowcol
         self.comment = comment
         self.all_keycodes = all_keycodes
         self.pressed = None
@@ -159,15 +158,20 @@ class Key:
         if self.released: return self.released.try_prolong()
         raise "both pressed and released are None"
 
-    def rowcol(self):
-        return self.rowcol
-
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
         return f"Key.{self.name} # {self.comment}"
 
+def create_keyrecord(row: int, col: int, pressed: bool) -> KeyRecord:
+    """Helper to create a keyrecord structure"""
+    record = KeyRecord()
+    record.event.key.row = row
+    record.event.key.col = col
+    record.event.keycode = 0
+    record.event.pressed = pressed
+    return record
 
 class SmtdBindings:
     """Encapsulates all SMTD library bindings and functions"""
@@ -175,18 +179,9 @@ class SmtdBindings:
     def __init__(self, lib: ctypes.CDLL):
         self.lib = lib
 
-    def create_keyrecord(self, row: int, col: int, pressed: bool) -> KeyRecord:
-        """Helper to create a keyrecord structure"""
-        record = KeyRecord()
-        record.event.key.row = row
-        record.event.key.col = col
-        record.event.keycode = 0
-        record.event.pressed = pressed
-        return record
-
     def process_key_and_timeout(self, keycode: Keycode, pressed: bool) -> Tuple[bool, Optional[int]]:
         execs_before = self.get_deferred_execs()
-        record_ptr = ctypes.pointer(self.create_keyrecord(keycode.row, keycode.col, pressed))
+        record_ptr = ctypes.pointer(create_keyrecord(keycode.row, keycode.col, pressed))
         result = self.lib.process_smtd(ctypes.c_uint(keycode.value), record_ptr)
         execs_after = self.get_deferred_execs()
         execs_diff = execs_after[len(execs_before):]

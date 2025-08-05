@@ -121,11 +121,11 @@ class TestSmTd(unittest.TestCase):
             else:
                 raise ValueError(f"Unknown type in assertHistory {a}")
 
-    def assertEvent(self, event, rowcol=(255, 255), keycodeValue=65535, pressed=True, mods=0, layer_state=0,
+    def assertEvent(self, event, row=255, col=255, keycode_value=65535, pressed=True, mods=0, layer_state=0,
                     smtd_bypass=True):
-        self.assertEqual(event["row"], rowcol[0], f"{event} doesn't match rowcol={rowcol}")
-        self.assertEqual(event["col"], rowcol[1], f"{event} doesn't match rowcol={rowcol}")
-        self.assertEqual(event["keycode"], keycodeValue, f"{event} doesn't match keycodeValue={keycodeValue}")
+        self.assertEqual(event["row"], row, f"{event} doesn't match row={row}")
+        self.assertEqual(event["col"], col, f"{event} doesn't match col={col}")
+        self.assertEqual(event["keycode"], keycode_value, f"{event} doesn't match keycode_value={keycode_value}")
         self.assertEqual(event["pressed"], pressed, f"{event} doesn't match pressed={pressed}")
         if (mods >= 0): self.assertEqual(event["mods"], mods, f"{event} doesn't match mods={mods}")
         if (layer_state >= 0): self.assertEqual(event["layer_state"], layer_state,
@@ -133,18 +133,18 @@ class TestSmTd(unittest.TestCase):
         self.assertEqual(event["smtd_bypass"], smtd_bypass, f"{event} doesn't match smtd_bypass={smtd_bypass}")
 
     def assertRegister(self, event, keycode, mods=0, layer_state=0, smtd_bypass=True):
-        self.assertEvent(event, keycodeValue=keycode.value, pressed=True, mods=mods,
+        self.assertEvent(event, keycode_value=keycode.value, pressed=True, mods=mods,
                          layer_state=layer_state, smtd_bypass=smtd_bypass)
 
     def assertUnregister(self, event, keycode, mods=0, layer_state=0, smtd_bypass=True):
-        self.assertEvent(event, keycodeValue=keycode.value, pressed=False, mods=mods,
+        self.assertEvent(event, keycode_value=keycode.value, pressed=False, mods=mods,
                          layer_state=layer_state, smtd_bypass=smtd_bypass)
 
     def assertEmulatePress(self, event, key, mods=0, layer_state=0):
-        self.assertEvent(event, key.rowcol(), pressed=True, mods=mods, layer_state=layer_state, smtd_bypass=True)
+        self.assertEvent(event, row=key.row, col=key.col, pressed=True, mods=mods, layer_state=layer_state, smtd_bypass=True)
 
     def assertEmulateRelease(self, event, key, mods=0, layer_state=0):
-        self.assertEvent(event, key.rowcol(), pressed=False, mods=mods, layer_state=layer_state, smtd_bypass=True)
+        self.assertEvent(event, row=key.row, col=key.col, pressed=False, mods=mods, layer_state=layer_state, smtd_bypass=True)
 
     def test_process_smtd(self):
         """Test that process_smtd function from the actual library works"""
@@ -450,7 +450,7 @@ class TestSmTd(unittest.TestCase):
         Since number of combinations is huge, we just sample a few of them.
         """
         sample_size = 100
-        faceroll_keys = [k for k in Key]
+        faceroll_keys = [k for k in all_keys]
 
         def fn_prolong(key, *args):
             return (
