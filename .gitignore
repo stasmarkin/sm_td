@@ -57,4 +57,4 @@ cmake-build-debug
 CMakeLists.txt
 
 build/
-.claude/
+.claude/**
