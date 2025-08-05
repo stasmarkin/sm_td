@@ -2,7 +2,7 @@ import ctypes
 import os
 import subprocess
 import atexit
-from enum import Enum
+from typing import Dict, List, Optional, Tuple, Any
 
 
 # Structure definitions
@@ -64,136 +64,180 @@ SMTD_TIMEOUT_RELEASE = 2
 SMTD_FEATURE_AGGREGATE_TAPS = 0
 
 
-class Layer(Enum):
-    L0 = 0
-    L1 = 1
-    L2 = 2
+class Keycode:
+    def __init__(self, smtd, value, row, col, layer):
+        self.smtd = smtd
+        self.value = value
+        self.pressed = False
+        self.defer_idx = None
+        self.row = row
+        self.col = col
+        self.layer = layer
 
-
-class Keycode(Enum):
-    L0_KC0 = 100
-    L0_KC1 = 101
-    L0_KC2 = 102
-    L0_KC3 = 103
-    L0_KC4 = 104
-    L0_KC5 = 105
-    L0_KC6 = 106
-    L0_KC7 = 107
-    L0_KC8 = 108
-
-    L1_KC0 = 200
-    L1_KC1 = 201
-    L1_KC2 = 202
-    L1_KC3 = 203
-    L1_KC4 = 204
-    L1_KC5 = 205
-    L1_KC6 = 206
-    L1_KC7 = 207
-    L1_KC8 = 208
-
-    L2_KC0 = 300
-    L2_KC1 = 301
-    L2_KC2 = 302
-    L2_KC3 = 303
-    L2_KC4 = 304
-    L2_KC5 = 305
-    L2_KC6 = 306
-    L2_KC7 = 307
-    L2_KC8 = 308
-
-    L3_KC0 = 400
-    L3_KC1 = 401
-    L3_KC2 = 402
-    L3_KC3 = 403
-    L3_KC4 = 404
-    L3_KC5 = 405
-    L3_KC6 = 406
-    L3_KC7 = 407
-    L3_KC8 = 408
-
-    MACRO0 = 500
-    MACRO1 = 501
-    MACRO2 = 502
-    MACRO3 = 503
-    MACRO4 = 504
-    MACRO5 = 505
-    MACRO6 = 506
-    MACRO7 = 507
-    MACRO8 = 508
-
-    @classmethod
-    def from_rowcol(cls, rowcol):
-        return cls.from_layer_rowcol(get_layer_state(), rowcol)
-
-    @classmethod
-    def from_layer_rowcol(cls, layer, rowcol):
-        return cls.from_value(100 + layer * 100 + rowcol[0] * 10 + rowcol[1])
-
-    @classmethod
-    def from_value(cls, value):
-        """Get the enum member from its value"""
-        for member in cls:
-            if member.value == value:
-                return member
-        raise ValueError(f"No enum member with value {value}")
-
-    @classmethod
-    def reset(cls):
-        for member in cls:
-            member.__init__(member._value)
-
-    def __init__(self, value):
-        self._value = value
-        self._pressed = False
-        self._defer_idx = None
 
     def press(self):
-        assert self._pressed == False
-        assert get_layer_state() == self.layer()
-        self._pressed = True
-        result, defer_idx = process_key_and_timeout(self, True)
-        self._defer_idx = defer_idx
+        assert self.pressed == False
+        assert self.smtd.get_layer_state() == self.layer
+        self.pressed = True
+        result, defer_idx = self.smtd.process_key_and_timeout(self, True)
+        self.defer_idx = defer_idx
         return result
 
     def release(self):
-        assert self._pressed == True
-        self._pressed = False
-        result, defer_idx = process_key_and_timeout(self, False)
-        self._defer_idx = defer_idx
+        assert self.pressed == True
+        self.pressed = False
+        result, defer_idx = self.smtd.process_key_and_timeout(self, False)
+        self.defer_idx = defer_idx
         return result
 
     def prolong(self):
-        assert self._defer_idx is not None
-        execute_deferred(self._defer_idx)
-        self._defer_idx = None
+        assert self.defer_idx is not None
+        self.smtd.execute_deferred(self.defer_idx)
+        self.defer_idx = None
 
     def try_prolong(self):
-        if self._defer_idx is None: return
-        execute_deferred(self._defer_idx, False)
-        self._defer_idx = None
-
-    def layer(self):
-        """Get the layer of the keycode"""
-        if self.value < 500:
-            return -1 + self.value // 100
-        raise "MACRO keycodes are not supported"
-
-    # noinspection PyRedundantParentheses
-    def rowcol(self):
-        """Convert the keycode to row and column"""
-        if self.value < 500:
-            return (0, self.value % 100)
-        raise "MACRO keycodes are not supported"
+        if self.defer_idx is None: return
+        self.smtd.execute_deferred(self.defer_idx, False)
+        self.defer_idx = None
 
     def __str__(self):
-        return self.name
+        return self.value
 
     def __repr__(self):
-        return self.name
+        return self.value
+
+
+class Key:
+    def __init__(self, smtd, name, row, col, comment):
+        self.smtd = smtd
+        self.name = name
+        self.rowcol = (row, col)
+        self.comment = comment
+        self.pressed = None
+        self.released = None
+
+    def press(self):
+        assert self.pressed is None
+        self.released = None
+        self.pressed = Keycode.from_rowcol(self.rowcol())
+        return self.pressed.press()
+
+    def release(self):
+        assert self.pressed is not None
+        assert self.released is None
+        result = self.pressed.release()
+        self.released = self.pressed
+        self.pressed = None
+        return result
+
+    def prolong(self):
+        if self.pressed: return self.pressed.prolong()
+        if self.released: return self.released.prolong()
+        raise "both pressed and released are None"
+
+    def try_prolong(self):
+        if self.pressed: return self.pressed.try_prolong()
+        if self.released: return self.released.try_prolong()
+        raise "both pressed and released are None"
+
+    def rowcol(self):
+        return self.rowcol
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return f"Key.{self.name} # {self.comment}"
+
+
+class SmtdBindings:
+    """Encapsulates all SMTD library bindings and functions"""
+
+    def __init__(self, lib: ctypes.CDLL):
+        self.lib = lib
+
+    def create_keyrecord(self, row: int, col: int, pressed: bool) -> KeyRecord:
+        """Helper to create a keyrecord structure"""
+        record = KeyRecord()
+        record.event.key.row = row
+        record.event.key.col = col
+        record.event.keycode = 0
+        record.event.pressed = pressed
+        return record
+
+    def process_key_and_timeout(self, keycode: Keycode, pressed: bool) -> Tuple[bool, Optional[int]]:
+        execs_before = self.get_deferred_execs()
+        record_ptr = ctypes.pointer(self.create_keyrecord(keycode.row, keycode.col, pressed))
+        result = self.lib.process_smtd(ctypes.c_uint(keycode.value), record_ptr)
+        execs_after = self.get_deferred_execs()
+        execs_diff = execs_after[len(execs_before):]
+        if len(execs_diff) == 0:
+            return result, None
+        return result, execs_diff[-1]["idx"]
+
+    def set_bypass(self, enabled: bool) -> None:
+        """Set the smtd_bypass flag"""
+        self.lib.TEST_set_smtd_bypass(ctypes.c_bool(enabled))
+
+    def reset(self) -> None:
+        """Reset the test state"""
+        self.lib.TEST_reset()
+        # fixme-sm Keycode.reset()
+
+    def get_record_history(self) -> List[Dict[str, Any]]:
+        """Get the history of key records processed"""
+        records = (History * 100)()  # MAX_RECORD_HISTORY is 100
+        count = ctypes.c_uint8(0)
+        self.lib.TEST_get_record_history(records, ctypes.byref(count))
+
+        result = []
+        for i in range(count.value):
+            result.append({
+                "row": records[i].row,
+                "col": records[i].col,
+                "keycode": records[i].keycode,
+                "pressed": records[i].pressed,
+                "mods": records[i].mods,
+                "layer_state": records[i].layer_state,
+                "smtd_bypass": records[i].smtd_bypass,
+            })
+        return result
+
+    def get_deferred_execs(self) -> List[Dict[str, Any]]:
+        """Get the list of deferred executions scheduled in the test environment"""
+        execs_array = (DeferredExecInfo * 100)()  # MAX_DEFERRED_EXECS is 100
+        count = ctypes.c_uint8(0)
+        self.lib.TEST_get_deferred_execs(execs_array, ctypes.byref(count))
+
+        result = []
+        for i in range(count.value):
+            result.append({
+                "idx": i + 1,
+                "delay_ms": execs_array[i].delay_ms,
+                "active": execs_array[i].active
+            })
+        return result
+
+    def execute_deferred(self, idx: int, make_asserts: bool = True) -> None:
+        """Execute a specific deferred execution by its id"""
+        if make_asserts:
+            assert self.get_deferred_execs()[idx - 1]["active"] == True
+        if not self.get_deferred_execs()[idx - 1]["active"]:
+            return
+        self.lib.TEST_execute_deferred(ctypes.c_uint8(idx))
+        assert self.get_deferred_execs()[idx - 1]["active"] == False
+
+    def get_mods(self) -> int:
+        """Get the current modifier state"""
+        return self.lib.get_mods()
+
+    def get_layer_state(self) -> int:
+        """Get the current layer state"""
+        return self.lib.TEST_get_layer_state()
 
 
 # Compile and load the shared library
-def _load_smtd_lib() -> ctypes.CDLL:
+def load_smtd_lib() -> SmtdBindings:
     """Compile and load the sm_td shared library"""
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     lib_path = os.path.join(project_root, "libsm_td.dylib")
@@ -255,93 +299,4 @@ def _load_smtd_lib() -> ctypes.CDLL:
     lib.TEST_get_layer_state.argtypes = []
     lib.TEST_get_layer_state.restype = ctypes.c_uint8
 
-    return lib
-
-# Load the library and set up function definitions
-lib: ctypes.CDLL = _load_smtd_lib()
-
-# Helper functions
-def create_keyrecord(row, col, pressed):
-    """Helper to create a keyrecord structure"""
-    record = KeyRecord()
-    record.event.key.row = row
-    record.event.key.col = col
-    record.event.keycode = 0
-    record.event.pressed = pressed
-    return record
-
-
-def process_key_and_timeout(keycode: Keycode, pressed: bool):
-    execs_before = get_deferred_execs()
-    record = create_keyrecord(0, int(keycode.name[5:]), pressed)
-    record_ptr = ctypes.pointer(record)
-    result = lib.process_smtd(ctypes.c_uint(keycode.value), record_ptr)
-    execs_after = get_deferred_execs()
-    execs_diff = execs_after[len(execs_before):]
-    if len(execs_diff) == 0: return result, None
-    return result, execs_diff[-1]["idx"]
-
-
-def set_bypass(enabled):
-    """Set the smtd_bypass flag"""
-    lib.TEST_set_smtd_bypass(ctypes.c_bool(enabled))
-
-
-def reset():
-    """Reset the test state"""
-    lib.TEST_reset()
-    Keycode.reset()
-
-
-def get_record_history():
-    """Get the history of key records processed"""
-    records = (History * 100)()  # MAX_RECORD_HISTORY is 100
-    count = ctypes.c_uint8(0)
-    lib.TEST_get_record_history(records, ctypes.byref(count))
-
-    result = []
-    for i in range(count.value):
-        result.append({
-            "row": records[i].row,
-            "col": records[i].col,
-            "keycode": records[i].keycode,
-            "pressed": records[i].pressed,
-            "mods": records[i].mods,
-            "layer_state": records[i].layer_state,
-            "smtd_bypass": records[i].smtd_bypass,
-        })
-    return result
-
-
-def get_deferred_execs():
-    """Get the list of deferred executions scheduled in the test environment"""
-    execs_array = (DeferredExecInfo * 100)()  # MAX_DEFERRED_EXECS is 100
-    count = ctypes.c_uint8(0)
-    lib.TEST_get_deferred_execs(execs_array, ctypes.byref(count))
-
-    result = []
-    for i in range(count.value):
-        result.append({
-            "idx": i + 1,
-            "delay_ms": execs_array[i].delay_ms,
-            "active": execs_array[i].active
-        })
-    return result
-
-
-def execute_deferred(idx, make_asserts=True):
-    """Execute a specific deferred execution by its id"""
-    if make_asserts: assert get_deferred_execs()[idx - 1]["active"] == True
-    if not get_deferred_execs()[idx - 1]["active"]: return
-    lib.TEST_execute_deferred(ctypes.c_uint8(idx))
-    assert get_deferred_execs()[idx - 1]["active"] == False
-
-
-def get_mods():
-    """Get the current modifier state"""
-    return lib.get_mods()
-
-
-def get_layer_state():
-    """Get the current layer state"""
-    return lib.TEST_get_layer_state()
+    return SmtdBindings(lib)

@@ -72,7 +72,6 @@ enum KEYCODES {
     L0_KC0 = 100, L0_KC1, L0_KC2, L0_KC3, L0_KC4, L0_KC5, L0_KC6, L0_KC7, L0_KC8,//
     L1_KC0 = 200, L1_KC1, L1_KC2, L1_KC3, L1_KC4, L1_KC5, L1_KC6, L1_KC7, L1_KC8,//
     L2_KC0 = 300, L2_KC1, L2_KC2, L2_KC3, L2_KC4, L2_KC5, L2_KC6, L2_KC7, L2_KC8,//
-    L3_KC0 = 400, L3_KC1, L3_KC2, L3_KC3, L3_KC4, L3_KC5, L3_KC6, L3_KC7, L3_KC8,//
     MACRO0 = 500, MACRO1, MACRO2, MACRO3, MACRO4, MACRO5, MACRO6, MACRO7, MACRO8,//
 };
 
@@ -265,12 +264,10 @@ smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap
         SMTD_MT(L0_KC3, KC_LEFT_ALT)
         SMTD_MT(L1_KC3, KC_LEFT_ALT)
         SMTD_MT(L2_KC3, KC_LEFT_ALT)
-        SMTD_MT(L3_KC3, KC_LEFT_ALT)
 
         SMTD_MT(L0_KC4, KC_LEFT_CTRL)
         SMTD_MT(L1_KC4, KC_LEFT_CTRL)
         SMTD_MT(L2_KC4, KC_LEFT_CTRL)
-        SMTD_MT(L3_KC4, KC_LEFT_CTRL)
 
         SMTD_LT(L0_KC5, L1)
         SMTD_LT(L2_KC5, L3)
@@ -281,7 +278,6 @@ smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap
         SMTD_MTE(L0_KC7, KC_LEFT_SHIFT)
         SMTD_MTE(L1_KC7, KC_LEFT_SHIFT)
         SMTD_MTE(L2_KC7, KC_LEFT_SHIFT)
-        SMTD_MTE(L3_KC7, KC_LEFT_SHIFT)
     }
     return SMTD_RESOLUTION_UNHANDLED;
 }
