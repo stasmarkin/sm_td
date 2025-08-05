@@ -225,10 +225,10 @@ def _load_smtd_lib():
 
     atexit.register(cleanup)
 
-    return lib, lib_path
+    return lib
 
 # Load the library and set up function definitions
-lib, lib_path = _load_smtd_lib()
+lib = _load_smtd_lib()
 
 # Define function prototypes
 lib.process_smtd.argtypes = [ctypes.c_uint, ctypes.POINTER(KeyRecord)]
