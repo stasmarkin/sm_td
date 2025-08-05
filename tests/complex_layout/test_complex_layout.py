@@ -1,7 +1,9 @@
 import itertools
 import random
-from sm_td_assertions import *
 
+from tests.sm_td_assertions import *
+
+smtd = load_smtd_lib('tests/complex_layout/test_complex_layout.c')
 
 class TestSmTd(SmTdAssertions):
     def __init__(self, *args, **kwargs):
@@ -551,9 +553,6 @@ class TestSmTd(SmTdAssertions):
             Unregister(L0_KC3, mods=-1),
             EmulateRelease(CTRL, mods=-1),
         )
-
-
-smtd = load_smtd_lib('tests/test_complex_layout.c')
 
 # Layers
 
