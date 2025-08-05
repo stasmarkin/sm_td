@@ -1,6 +1,5 @@
 /* Layout configuration for sm_td tests */
 #define SMTD_UNIT_TEST
-#define SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
 
 #define MATRIX_ROWS 1
 #define MATRIX_COLS 4

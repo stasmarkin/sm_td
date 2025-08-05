@@ -2,6 +2,12 @@
 #define SMTD_UNIT_TEST
 #define CAPS_WORD_ENABLE
 
+#define MATRIX_ROWS 5
+#define MATRIX_COLS 9
+
+#define TAPPING_TERM 200
+
+
 #include "../sm_td_bindings.c"
 
 enum LAYERS { L0 = 0, L1 = 1, L2 = 2, L3 = 3 };

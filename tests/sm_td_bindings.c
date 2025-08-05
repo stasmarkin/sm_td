@@ -19,11 +19,6 @@
 #define LSFT(kc) ((kc) | 0x1000)
 #define PROGMEM
 
-#define MATRIX_ROWS 1
-#define MATRIX_COLS 9
-
-#define TAPPING_TERM 200
-
 #define MAX_RECORD_HISTORY 100
 #define MAX_DEFERRED_EXECS 100
 
