@@ -2,11 +2,6 @@
 
 #include "sm_td_bindings.c"
 
-// Forward declarations for post-functions
-void post_register_code16(uint16_t keycode);
-void post_unregister_code16(uint16_t keycode);
-void post_process_record(keyrecord_t *record);
-
 enum LAYERS { L0 = 0, L1 = 1, L2 = 2, L3 = 3 };
 
 enum KEYCODES {

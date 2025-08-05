@@ -7,7 +7,6 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
-#include "../sm_td.h"
 
 #define SMTD_PRINT(...) TEST_print(__VA_ARGS__);
 #define SMTD_SNPRINT(bffr, bsize, ...) TEST_snprintf(bffr, bsize, __VA_ARGS__);
@@ -76,6 +75,11 @@ static uint8_t deferred_exec_count = 0;
 
 void TEST_print(const char* format, ...);
 void TEST_snprintf(char* buffer, size_t bsize, const char* format, ...);
+
+// Forward declarations for post-functions (to be implemented in layout config)
+void post_register_code16(uint16_t keycode);
+void post_unregister_code16(uint16_t keycode);
+void post_process_record(keyrecord_t *record);
 
 uint32_t timer_read32(void) {
     return 0;
@@ -225,6 +229,8 @@ void TEST_snprintf(char* buffer, size_t bsize, const char* format, ...) {
     vsnprintf(buffer, bsize, format, args);
     va_end(args);
 }
+
+#include "../sm_td.h"
 
 void TEST_reset() {
     layer_state = 0;
