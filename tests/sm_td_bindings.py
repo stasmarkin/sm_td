@@ -193,7 +193,7 @@ class Keycode(Enum):
 
 
 # Compile and load the shared library
-def _load_smtd_lib():
+def _load_smtd_lib() -> ctypes.CDLL:
     """Compile and load the sm_td shared library"""
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     lib_path = os.path.join(project_root, "libsm_td.dylib")
@@ -213,10 +213,10 @@ def _load_smtd_lib():
         raise RuntimeError("Failed to compile sm_td library")
 
     # Load the compiled library
-    lib = ctypes.CDLL(lib_path)
+    lib: ctypes.CDLL = ctypes.CDLL(lib_path)
 
     # Register cleanup to remove the library file
-    def cleanup():
+    def cleanup() -> None:
         try:
             if os.path.exists(lib_path):
                 os.remove(lib_path)
@@ -258,7 +258,7 @@ def _load_smtd_lib():
     return lib
 
 # Load the library and set up function definitions
-lib = _load_smtd_lib()
+lib: ctypes.CDLL = _load_smtd_lib()
 
 # Helper functions
 def create_keyrecord(row, col, pressed):
