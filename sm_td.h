@@ -74,6 +74,10 @@
 #endif
 
 // SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
+// fixme-sm looks like this flag is not useful anymore.
+//          I think, it should be removed in next versions
+//          This flag was introduced to make sm_td usable with non-sm_td modifier (like generic shift)
+//          But after X refactorings, it looks like sm_td behaves the same with and without that flag
 
 #include <stdint.h>
 

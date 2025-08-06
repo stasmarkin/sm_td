@@ -9,7 +9,7 @@ except ImportError:
 smtd = load_smtd_lib('tests/global_mods_propagation_disabled/layout.c')
 
 
-class TestSmTdWithGlobalModsPropagationEnabled(SmTdAssertions):
+class TestSmTdWithGlobalModsPropagationDisabled(SmTdAssertions):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.smtd = smtd

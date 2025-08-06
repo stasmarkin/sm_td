@@ -1,4 +1,5 @@
 import ctypes
+import hashlib
 import os
 import subprocess
 import atexit
@@ -236,7 +237,10 @@ class SmtdBindings:
 def load_smtd_lib(path: str) -> SmtdBindings:
     """Compile and load the sm_td shared library"""
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    lib_path = os.path.join(project_root, "libsm_td.dylib")
+    
+    # Create unique library name based on the layout path to avoid conflicts
+    path_hash = hashlib.md5(path.encode()).hexdigest()[:8]
+    lib_path = os.path.join(project_root, f"libsm_td_{path_hash}.dylib")
 
     compile_cmd = (f"clang -shared "
                    f"-o {lib_path} "
