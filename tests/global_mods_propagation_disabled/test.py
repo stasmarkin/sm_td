@@ -6,7 +6,7 @@ try:
 except ImportError:
     from sm_td_assertions import *
 
-smtd = load_smtd_lib('tests/global_mods_propagation_enabled/layout.c')
+smtd = load_smtd_lib('tests/global_mods_propagation_disabled/layout.c')
 
 
 class TestSmTdWithGlobalModsPropagationEnabled(SmTdAssertions):
@@ -219,10 +219,21 @@ class TestSmTdWithGlobalModsPropagationEnabled(SmTdAssertions):
         self.assertFalse(SHIFT.release())
         self.assertFalse(K3.release())
 
+        # with global mod propagation this should happen:
+        # self.assertHistory(
+        #     pressed(K2, mods=1),
+        #     pressed(KC_SHIFT, mods=1),
+        #     released(K2, mods=0),
+        #     pressed(K3, mods=2),
+        #     released(K3, mods=2),
+        #     released(KC_SHIFT, mods=2),
+        # )
+
+        # but without it we have:
         self.assertHistory(
             pressed(K2, mods=1),
             pressed(KC_SHIFT, mods=1),
-            released(K2, mods=0),
+            released(K2, mods=2),
             pressed(K3, mods=2),
             released(K3, mods=2),
             released(KC_SHIFT, mods=2),
@@ -246,7 +257,6 @@ class TestSmTdWithGlobalModsPropagationEnabled(SmTdAssertions):
             released(K3, mods=2),
             released(SHIFT, mods=2),
         )
-
 
 # Layers
 
