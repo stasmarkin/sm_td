@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.5.0-RC10
- * Date: 2025-08-03
+ * Version: 0.5.0
+ * Date: 2025-08-06
  */
 #pragma once
 
@@ -51,7 +51,7 @@
 #define SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS 0
 #endif
 
-#ifdef SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS > 0
+#if SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS > 0
 #define SMTD_SIMULTANEOUS_PRESSES_DELAY wait_ms(SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS);
 #else
 #define SMTD_SIMULTANEOUS_PRESSES_DELAY
@@ -1223,8 +1223,8 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
 #define EXEC(code) do { code } while(0)
 #endif
 
-#define SMTD_LIMIT(limit, then, otherwise) \
-    if (tap_count < limit) { then; } else { otherwise; }
+#define SMTD_LIMIT(limit, if_under_limit, otherwise) \
+    if (tap_count < limit) { if_under_limit; } else { otherwise; }
 
 #define SMTD_DANCE(macro_key, touch_action, tap_action, hold_action, release_action)    \
     case macro_key: {                                                                   \
