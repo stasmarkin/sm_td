@@ -112,25 +112,6 @@ There is a [/docs](https://github.com/stasmarkin/sm_td/blob/main/docs/) folder w
 Also, you may check [my layout](https://github.com/stasmarkin/sm_voyager_keymap) for a real-world example of using this library.
 
 
-## Roadmap
-
-#### `v0.5.0` (RC8)
-- 3 finger roll interpretation
-- a collection of useful macros
-- fix 'SMTD_KEYCODES_BEGIN' undeclared error on compilation (removed entirely)
-- some bug fixes
-
-#### `v0.5.1+` and further `v0.x`
-- dynamic timeouts
-- feature requests (see [issues](https://github.com/stasmarkin/sm_td/issues))
-
-#### `v1.0.0`
-- stable API
-- memory optimizations (on storing active states)
-- memory optimizations (on state machine stack size)
-- split into header and source files
-
-
 ## Community
 
 First of all, there are issues and pull requests on this repository. You may ask any questions there.
@@ -140,42 +121,42 @@ Then you may join the [SM_TD Discord Channel](https://discord.gg/GHuqxtGftX) for
 Also, you may email me or tag/text me on Reddit (u/stasmarkin) or Discord (stasmarkin).
 
 
-## What is `on_smtd_action()` function?
+## Support This Project
 
-When you press a key, all state machines in the stack start working.
-Other keys you press after the sm_td state machine has run will also be processed by the sm_td state machine.
-This state machine might decide to postpone the processing of the key you pressed, so that it will be considered a tap or hold later.
-You don't have to worry about this, sm_td will process all keys you press in the correct order and in a very predictable way.
-You don't need to understand the internal implementation of the state machine stack, but you do need to know what output you will get from sm_td's state machine.
-As soon as you press keys assigned to sm_td, it will call the `on_smtd_action()` function with the following arguments
-- uint16_t keycode - keycode of the key you pressed
-- smtd_action action - result interpreted action (`SMTD_ACTION_TOUCH`, `SMTD_ACTION_TAP`, `SMTD_ACTION_HOLD`, `SMTD_ACTION_RELEASE`). tap, hold and release are self-explanatory. Touch action fired on key press (without knowing if it is a tap or hold).
-- uint8_t tap_count - number of consecutive taps before the current action. (will be reset after hold, pause or any other keypress)
+If you find this library helpful, consider supporting the project:
 
-There are only two execution flows for the `on_smtd_action` function:
-- `SMTD_ACTION_TOUCH` → `SMTD_ACTION_TAP`.
-- `SMTD_ACTION_TOUCH` → `SMTD_ACTION_HOLD` → `SMTD_ACTION_RELEASE`.
+[![GitHub Sponsors](https://img.shields.io/badge/sponsor-30363D?style=for-the-badge&logo=GitHub-Sponsors&logoColor=#EA4AAA)](https://github.com/sponsors/stasmarkin)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/stasmarkin)
 
-Consider the following example to understand the execution flow.
-Let's say you want to tap, tap, hold and tap again a custom key `KC`. Here are your finger movements:
+**Crypto support:**
+- USDT on TRON: `TE4QifvjnPSQoT4oJXYnYAnZxBKAvwUFCN`
+- ByBit ID: `230327759`
 
-- `↓KC` 50ms `↑KC` (first tap finished) 50ms
-- `↓KC` 50ms `↑KC` (second tap finished) 50ms
-- `↓KC` 200ms (holding long enough for hold action) `↑KC` 50ms
-- `↓KC` 50ms `↑KC` (third tap finished)
+Your support helps me continue developing and maintaining this project. Thank you for using SM_TD!
 
-For this example, you will get the following `on_smtd_action()` calls:
-- `on_smtd_action(KC, SMTD_ACTION_TOUCH, 0)` right after pressing `↓KC`
-- `on_smtd_action(KC, SMTD_ACTION_TAP, 0)` right after releasing `↑KC` (first tap finished)
-- `on_smtd_action(KC, SMTD_ACTION_TOUCH, 1)` right after pressing `↓KC` second time
-- `on_smtd_action(KC, SMTD_ACTION_TAP, 1)` right after releasing `↑KC` second time (second tap finished)
-- `on_smtd_action(KC, SMTD_ACTION_TOUCH, 2)` right after pressing `↓KC` third time
-- `on_smtd_action(KC, SMTD_ACTION_HOLD, 2)` after holding `KC` long enough
-- `on_smtd_action(KC, SMTD_ACTION_RELEASE, 2)` right after releasing `↑KC` (hold)
-- `on_smtd_action(KC, SMTD_ACTION_TOUCH, 0)` right after pressing `↓KC` fourth time
-- `on_smtd_action(KC, SMTD_ACTION_TAP, 0)` right after releasing `↑KC` (third tap finished)
+👋 I’m open to new opportunities — feel free to reach out if you’re working on interesting projects or have roles that might be a good fit.
+My core expertise lies in Java, Kotlin, and TypeScript for backend development, but I’m always excited to explore R&D challenges across different domains.
 
-If you need, there is a deeper documentation on execution flow, please see [state machine description](https://github.com/stasmarkin/sm_td/blob/main/docs/090_deep_explanation_stages.md) and further [one key explanation](https://github.com/stasmarkin/sm_td/blob/main/docs/100_deep_explanation_one_stage_example.md), [two key explanation](https://github.com/stasmarkin/sm_td/blob/main/docs/110_deep_explanation_two_stages_example.md) and [state machine stack](https://github.com/stasmarkin/sm_td/blob/main/docs/120_deep_explanation_stack.md).
+
+## Roadmap
+
+#### `v0.5.0` (we are here)
+- 3 finger roll interpretation
+- a collection of useful macros
+- fix 'SMTD_KEYCODES_BEGIN' undeclared error on compilation (removed entirely)
+- some bug fixes
+
+#### `v0.5.1+` and further `v0.x`
+- dynamic timeouts
+- qmk module integration
+- better combo support
+- other feature requests (see [issues](https://github.com/stasmarkin/sm_td/issues))
+
+#### `v1.0.0`
+- stable API
+- memory optimizations (on storing active states)
+- memory optimizations (on state machine stack size)
+- split into header and source files
 
 
 ## Special thanks to beta-testers
@@ -192,7 +173,9 @@ If you need, there is a deeper documentation on execution flow, please see [stat
 - [WhoAmiI](https://github.com/chuan2984)
 - [Slava](https://github.com/shofel)
 
-(please, let me know, if I have forgotten someone) 
+(please, let me know, if I have forgotten someone)
+
+
 
 ## Star History
 
