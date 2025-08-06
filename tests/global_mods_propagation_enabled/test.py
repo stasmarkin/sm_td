@@ -22,9 +22,9 @@ class TestSmTdWithGlobalModsPropagationEnabled(SmTdAssertions):
         """Test that process_smtd function from the actual library works"""
         self.assertFalse(K2.press(), "process_smtd should block future key events")
 
-        records = smtd.get_record_history()
-        self.assertEqual(len(records), 1)
-        self.assertEmulatePress(records[0], K2)
+        self.assertHistory(
+            pressed(K2)
+        )
 
     def test_bypass_mode(self):
         """Test the actual bypass mode in the library"""
@@ -46,29 +46,23 @@ class TestSmTdWithGlobalModsPropagationEnabled(SmTdAssertions):
     def test_generic_tap(self):
         """Test the generic tap function"""
         self.assertFalse(K2.press(), "press should block future key events")
-        records = smtd.get_record_history()
-        self.assertEqual(len(records), 1)
-        self.assertEmulatePress(records[0], K2)
-
         K2.prolong()
-        self.assertEqual(len(records), 1)
-
         self.assertFalse(K2.release(), "release should block future key events")
-        records = smtd.get_record_history()
-        self.assertEqual(len(records), 2)
-        self.assertEmulateRelease(records[1], K2)
+
+        self.assertHistory(
+            pressed(K2),
+            released(K2)
+        )
 
     def test_MT_CTRL_tap(self):
         """Test the basic MT function"""
         self.assertFalse(MT_CTRL.press(), "press should block future key events")
-        records = smtd.get_record_history()
-        self.assertEqual(len(records), 0)
-
         self.assertFalse(MT_CTRL.release(), "release should return true")
-        records = smtd.get_record_history()
-        self.assertEqual(len(records), 2, "tap should happer after release")
-        self.assertRegister(records[0], KC1_MT_CTRL)
-        self.assertUnregister(records[1], KC1_MT_CTRL)
+
+        self.assertHistory(
+            registered(KC1_MT_CTRL),
+            unregistered(KC1_MT_CTRL)
+        )
 
     def test_MT_CTRL_hold(self):
         """Test the basic MT function"""
@@ -87,21 +81,18 @@ class TestSmTdWithGlobalModsPropagationEnabled(SmTdAssertions):
     def test_shift_key(self):
         """Test the basic MT function"""
         self.assertFalse(SHIFT.press())
-        records = smtd.get_record_history()
-        self.assertEqual(len(records), 1)
         self.assertEqual(smtd.get_mods(), 2)
 
         SHIFT.prolong()
-        records = smtd.get_record_history()
-        self.assertEqual(len(records), 1)
         self.assertEqual(smtd.get_mods(), 2)
 
         SHIFT.release()
-        records = smtd.get_record_history()
-        self.assertEqual(len(records), 2)
         self.assertEqual(smtd.get_mods(), 0)
-        self.assertEmulatePress(records[0], KC_SHIFT, mods = 0)
-        self.assertEmulateRelease(records[1], KC_SHIFT, mods = 2)
+        
+        self.assertHistory(
+            pressed(KC_SHIFT, mods=0),
+            released(KC_SHIFT, mods=2)
+        )
 
     def test_SKKS(self):
         self.assertFalse(SHIFT.press())
@@ -109,12 +100,12 @@ class TestSmTdWithGlobalModsPropagationEnabled(SmTdAssertions):
         self.assertFalse(KC2.release())
         self.assertFalse(SHIFT.release())
 
-        records = smtd.get_record_history()
-        self.assertEqual(len(records), 4)
-        self.assertEmulatePress(records[0], SHIFT, mods = 0)
-        self.assertEmulatePress(records[1], K2, mods = 2)
-        self.assertEmulateRelease(records[2], K2, mods = 2)
-        self.assertEmulateRelease(records[3], SHIFT, mods = 2)
+        self.assertHistory(
+            pressed(KC_SHIFT, mods=0),
+            pressed(K2, mods=2),
+            released(K2, mods=2),
+            released(KC_SHIFT, mods=2)
+        )
 
     def test_SKSK(self):
         self.assertFalse(SHIFT.press())
@@ -122,12 +113,12 @@ class TestSmTdWithGlobalModsPropagationEnabled(SmTdAssertions):
         self.assertFalse(SHIFT.release())
         self.assertFalse(KC2.release())
 
-        records = smtd.get_record_history()
-        self.assertEqual(len(records), 4)
-        self.assertEmulatePress(records[0], SHIFT, mods = 0)
-        self.assertEmulatePress(records[1], K2, mods = 2)
-        self.assertEmulateRelease(records[2], SHIFT, mods = 2)
-        self.assertEmulateRelease(records[3], K2, mods = 0)
+        self.assertHistory(
+            pressed(KC_SHIFT, mods=0),
+            pressed(K2, mods=2),
+            released(K2, mods=2),
+            released(KC_SHIFT, mods=2)
+        )
 
     def test_KSKS(self):
         self.assertFalse(KC2.press())
@@ -135,12 +126,12 @@ class TestSmTdWithGlobalModsPropagationEnabled(SmTdAssertions):
         self.assertFalse(KC2.release())
         self.assertFalse(SHIFT.release())
 
-        records = smtd.get_record_history()
-        self.assertEqual(len(records), 4)
-        self.assertEmulatePress(records[0], K2, mods = 0)
-        self.assertEmulatePress(records[1], SHIFT, mods = 0)
-        self.assertEmulateRelease(records[2], K2, mods = 2)
-        self.assertEmulateRelease(records[3], SHIFT, mods = 2)
+        self.assertHistory(
+            pressed(K2, mods=0),
+            pressed(KC_SHIFT, mods=0),
+            released(KC_SHIFT, mods=2),
+            released(K2, mods=0)
+        )
 
     def test_SCKKCS(self):
         self.assertFalse(SHIFT.press())
@@ -151,10 +142,10 @@ class TestSmTdWithGlobalModsPropagationEnabled(SmTdAssertions):
         self.assertFalse(SHIFT.release())
 
         self.assertHistory(
-            pressed(SHIFT, mods=0),
+            pressed(KC_SHIFT, mods=0),
             pressed(K2, mods=3),
             released(K2, mods=3),
-            released(SHIFT, mods=2)
+            released(KC_SHIFT, mods=2)
         )
 
 
