@@ -68,7 +68,7 @@ On the other hand, `↓h` `↓i` `↑h` (long pause) `↑i` will be interpreted 
    ```
 
 
-8. Create an `on_smtd_action()` function that handles actions for custom keycodes. 
+6. Create an `on_smtd_action()` function that handles actions for custom keycodes. 
    For example, if you want to use `KC_A`, `KC_S`, `KC_D` and `KC_F` for Home Row Mods, your `on_smtd_action()` function will look like this
    ```c
    smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
@@ -84,25 +84,23 @@ On the other hand, `↓h` `↓i` `↑h` (long pause) `↑i` will be interpreted 
    ```
    See the documentation for more behavior configurations in the [Customization Guide](https://github.com/stasmarkin/sm_td/blob/main/docs/050_customization.md) with cool [Examples](https://github.com/stasmarkin/sm_td/blob/main/docs/060_customization_examples.md).
 
-9. (optional) Add global configuration parameters to your `config.h` file (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
-10. (optional) Add per-key configuration (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
+7. (optional) Add global configuration parameters to your `config.h` file (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
+8. (optional) Add per-key configuration (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
 
 
 ## Macros for `on_smtd_action()`
 
-- `SMTD_MT(KC_A, KC_LEFT_GUI)` -- the most simple macro. Tapping `KC_A` will result into single tap and holding will result into `KC_LEFT_GUI` hold.
-- `SMTD_MT(KC_A, KC_LEFT_GUI, 2)` -- almost the same as the previous, but holding `KC_A` after 2 (you may use any number) sequential taps will result into `KC_A` hold.
-   E.g. `↓KC_A , ↑KC_A , ↓KC_A ...` will result into `KC_A` tap and then `KC_LEFT_GUI` hold
-   but `↓KC_A , ↑KC_A , ↓KC_A , ↑KC_A, ↓KC_A ...` will result into double `KC_A` tap and then `KC_A` hold
-- `SMTD_MT(KC_A, KC_LEFT_GUI, 1, false)` -- disables QMK's caps lock feature for `KC_A`
-- `SMTD_MTE(KC_A, KC_LEFT_GUI)` -- is an eager version of `SMTD_MT`. It will hold `KC_LEFT_GUI` as soon as `KC_A` key is pressed. 
-   If you immediately release `KC_A`, then `KC_LEFT_GUI` will be released and `KC_A` will be tapped
-   If you continue pressing `KC_A`, then `KC_LEFT_GUI` will be held until you release the key. No `KC_A` will be tapped after.
-   This is useful macro for mouse clicks, allowing for faster mod+mouse clicks
-- `SMTD_MTE(KC_A, KC_LEFT_GUI, 2)` and `SMTD_MTE(KC_A, KC_LEFT_GUI, 1, false)` are the versions of `SMTD_MT(KC_A, KC_LEFT_GUI, 2)` and `SMTD_MT(KC_A, KC_LEFT_GUI, 1, false)` with eager mode.
-- `SMTD_LT(KC_A, 2)` -- the macro for momentary switching layers. Works the same way as `SMTD_MT`, but instead for holding modifier it switches a layer.
-- `SMTD_LT(KC_A, KC_LEFT_GUI, 2)` -- the same, as `SMTD_MT(KC_A, KC_LEFT_GUI, 2)`, allows you to hold `KC_A` after 2 sequential taps.
-- `SMTD_LT(KC_A, KC_LEFT_GUI, 1, false)` -- disables QMK's caps lock feature for `KC_A`.
+| Macro | Description |
+|-------|-------------|
+| `SMTD_MT(KC_A, KC_LEFT_GUI)` | **Basic mod-tap**: Tap `KC_A` → single tap, Hold `KC_A` → `KC_LEFT_GUI` hold |
+| `SMTD_MT(KC_A, KC_LEFT_GUI, 2)` | **Tap count mod-tap**: Same as above, but hold after 2 sequential taps results in `KC_A` hold<br>• `↓KC_A, ↑KC_A, ↓KC_A...` → `KC_A` tap + `KC_LEFT_GUI` hold<br>• `↓KC_A, ↑KC_A, ↓KC_A, ↑KC_A, ↓KC_A...` → 2× `KC_A` tap + `KC_A` hold |
+| `SMTD_MT(KC_A, KC_LEFT_GUI, 1, false)` | **Caps word disabled**: Basic mod-tap with QMK's caps word feature disabled |
+| `SMTD_MTE(KC_A, KC_LEFT_GUI)` | **Eager mod-tap**: Holds `KC_LEFT_GUI` immediately on press<br>• Quick release → `KC_LEFT_GUI` released + `KC_A` tapped<br>• Continue holding → `KC_LEFT_GUI` held, no `KC_A` tap<br>• Useful for fast mod+mouse clicks |
+| `SMTD_MTE(KC_A, KC_LEFT_GUI, 2)` | **Eager with tap count**: Eager version of tap count mod-tap |
+| `SMTD_MTE(KC_A, KC_LEFT_GUI, 1, false)` | **Eager caps disabled**: Eager version with caps word disabled |
+| `SMTD_LT(KC_A, 2)` | **Layer tap**: Momentary layer switching (layer 2), works like `SMTD_MT` but switches layers instead of modifiers |
+| `SMTD_LT(KC_A, 2, 3)` | **Layer tap with count**: Hold after 3 sequential taps results in `KC_A` hold<br>• `↓KC_A, ↑KC_A, ↓KC_A...` → `KC_A` tap + layer 2 activation<br>• `↓KC_A, ↑KC_A, ↓KC_A, ↑KC_A, ↓KC_A, ↑KC_A, ↓KC_A...` → 3× `KC_A` tap + `KC_A` hold |
+| `SMTD_LT(KC_A, KC_LEFT_GUI, 1, false)` | **Layer tap caps disabled**: Layer tap with QMK's caps word feature disabled |
 
 
 ## Documentation
