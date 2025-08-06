@@ -1,3 +1,11 @@
+#### `v0.5.0`
+- 3+ finger roll interpretation
+- simplified configuration (no more custom keycodes are needed)
+- no more SMTD_KEYCODES_BEGIN and SMTD_KEYCODES_END are needed
+- simplified SMTD_MT, SMTD_LT and other macros
+- bunch of useful macros
+- some bug fixes
+
 #### `v0.4.0`
 - simplified installation process (no need to init each key with `SMTD()` macro)
 - added useful `SMTD_MT()`, `SMTD_MTE()`, `SMTD_LT()` macros for easier customization
@@ -9,7 +17,7 @@
 - optional delay between simultaneous key presses (see SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS in [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md))
 
 #### `v0.3.0`
-- bug fix on pressing same macro key on stage SMTD_STAGE_RELEASE
+- bug fix on pressing same macro key on stage SMTD_STAGE_TOUCH_RELEASE
 - reduce args number for get_smtd_timeout_default and smtd_feature_enabled_default functions (see Upgrade instructions)
 - better stage naming
 - comprehensive documentation

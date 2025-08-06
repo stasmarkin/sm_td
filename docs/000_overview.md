@@ -1,3 +1,7 @@
+```
+This documentation is written for version 0.4.1.
+It is a bit outdated for later versions of SM_TD.
+```
 
 This is the `SM Tap Dance` (`sm_td` or `smtd` for short) user library for QMK.
 The main goal of this library is to ultimately fix the Home Row Mods (HRM) and Tap Dance problems in QMK.
