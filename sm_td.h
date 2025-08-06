@@ -126,10 +126,10 @@ typedef struct {
     /** The keycode of a key that QMK thinks was pressed */
     uint16_t pressed_keycode;
 
-#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
+    #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
     /** The mods on key tap */
     uint8_t saved_mods;
-#endif
+    #endif
 
     /** The keycode that should be actually pressed (asked outside or determined by the tap action) */
     uint16_t desired_keycode;
@@ -392,7 +392,7 @@ char* smtd_keycode_to_str(uint16_t keycode) {
 char* smtd_state_to_str(smtd_state *state) {
     static char buffer_state[64];
 
-#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
+    #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
     SMTD_SNDEBUG(buffer_state, sizeof(buffer_state), "S[%d](@%d.%d#%s->%s){%s/%s,m=%x}",
              state->idx,
              state->pressed_keyposition.row,
@@ -402,7 +402,7 @@ char* smtd_state_to_str(smtd_state *state) {
              smtd_stage_to_str(state->stage),
              smtd_resolution_to_str(state->resolution),
              state->saved_mods);
-#else
+    #else
     SMTD_SNDEBUG(buffer_state, sizeof(buffer_state), "S[%d](@%d.%d#%s->%s){%s/%s}",
              state->idx,
              state->pressed_keyposition.row,
@@ -411,7 +411,7 @@ char* smtd_state_to_str(smtd_state *state) {
              smtd_keycode_to_str(state->desired_keycode),
              smtd_stage_to_str(state->stage),
              smtd_resolution_to_str(state->resolution));
-#endif
+    #endif
 
     return buffer_state;
 }
@@ -419,7 +419,7 @@ char* smtd_state_to_str(smtd_state *state) {
 char* smtd_state_to_str2(smtd_state *state) {
     static char buffer_state2[64];
 
-#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
+    #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
     SMTD_SNDEBUG(buffer_state2, sizeof(buffer_state2), "S[%d](@%d.%d#%s->%s){%s/%s,m=%x}",
              state->idx,
              state->pressed_keyposition.row,
@@ -429,7 +429,7 @@ char* smtd_state_to_str2(smtd_state *state) {
              smtd_stage_to_str(state->stage),
              smtd_resolution_to_str(state->resolution),
              state->saved_mods);
-#else
+    #else
     SMTD_SNDEBUG(buffer_state2, sizeof(buffer_state2), "S[%d](@%d.%d#%s->%s){%s/%s}",
              state->idx,
              state->pressed_keyposition.row,
@@ -438,7 +438,7 @@ char* smtd_state_to_str2(smtd_state *state) {
              smtd_keycode_to_str(state->desired_keycode),
              smtd_stage_to_str(state->stage),
              smtd_resolution_to_str(state->resolution));
-#endif
+    #endif
 
     return buffer_state2;
 }
@@ -830,9 +830,9 @@ void reset_state(smtd_state *state) {
     state->pressed_keyposition = MAKE_KEYPOS(0, 0);
     state->pressed_keycode = 0;
     state->desired_keycode = 0;
-#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
+    #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
     state->saved_mods = 0;
-#endif
+    #endif
     state->tap_count = 0;
     state->pressed_time = 0;
     state->released_time = 0;
@@ -865,9 +865,9 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             break;
 
         case SMTD_STAGE_TOUCH:
-#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
+            #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
             state->saved_mods = get_mods();
-#endif
+            #endif
             state->pressed_time = timer_read32();
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_TAP),
                                         timeout_touch, state);
@@ -876,9 +876,9 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             break;
 
         case SMTD_STAGE_SEQUENCE:
-#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
+            #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
             state->saved_mods = get_mods();
-#endif
+            #endif
             state->released_time = timer_read32();
             state->resolution = SMTD_RESOLUTION_UNCERTAIN;
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_SEQUENCE),
