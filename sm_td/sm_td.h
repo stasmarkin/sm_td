@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.5.0
- * Date: 2025-08-06
+ * Version: 0.5.1
+ * Date: 2025-08-07
  */
 #pragma once
 

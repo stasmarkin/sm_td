@@ -1,5 +1,9 @@
 {
-    "module_name": "SM_TD",
-    "maintainer": "stasmarkin",
-    "url": "https://github.com/stasmarkin/sm_td"
+	"module_name": "SM_TD",
+	"maintainer": "stasmarkin",
+	"url": "https://github.com/stasmarkin/sm_td",
+	"license": "MIT License",
+	"features": {
+		"deferred_exec": true
+	}
 }
