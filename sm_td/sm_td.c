@@ -1,4 +1,4 @@
-/* Copyright 2024 Stanislav Markin (https://github.com/stasmarkin)
+/* Copyright 2025 Stanislav Markin (https://github.com/stasmarkin)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal

@@ -2,7 +2,7 @@
 
 This module adds human-friendly Tap Dance and Home Row Mod support to your QMK build.
 
-Add the following to the list of modules in your `keymap.json` to enable this module:
+1. Add the following to the list of modules in your `keymap.json` to enable this module:
 
 ```json
 {
@@ -10,45 +10,28 @@ Add the following to the list of modules in your `keymap.json` to enable this mo
 }
 ```
 
-In your keymap, add an `on_smtd_action` handler:
 
-```c
-void on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
-    // Handle tap, hold, and release actions for your custom keycodes here
-}
-```
-
-Define your custom keycodes between `SMTD_KEYCODES_BEGIN` and `SMTD_KEYCODES_END`:
-
-```c
-enum custom_keycodes {
-    SMTD_KEYCODES_BEGIN = SAFE_RANGE,
-    CKC_A,
-    CKC_S,
-    CKC_D,
-    CKC_F,
-    SMTD_KEYCODES_END,
-};
-```
-
-Include `sm_td.h` in your keymap file:
+2. Include `sm_td.h` and add an `on_smtd_action` handler in your keymap file:
 
 ```c
 #include "sm_td.h"
-```
 
-In your `process_record_user` function, call `process_smtd`:
+// the rest of your code ... 
 
-```c
-bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    if (!process_smtd(keycode, record)) {
-        return false;
+smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
+    switch (keycode) {
+        SMTD_MT(KC_A, KC_LEFT_GUI)
+        SMTD_MT(KC_S, KC_LEFT_ALT)
+        SMTD_MT(KC_D, KC_LEFT_CTRL)
+        SMTD_MT(KC_F, KC_LSFT)
     }
-    // Your code here
-    return true;
+
+    return SMTD_RESOLUTION_UNHANDLED;
 }
 ```
 
-Build and flash your firmware. Your custom keys will now support advanced tap, hold, and multi-tap behaviors with human-friendly timing.
+
+
+Build and flash your firmware. Your keys will now support advanced tap, hold, and multi-tap behaviors with human-friendly timing.
 
 For more details and customization, see the [documentation](https://github.com/stasmarkin/sm_td/tree/main/docs).

@@ -21,7 +21,7 @@ There are only two execution flows for the `on_smtd_action` function:
 - `SMTD_ACTION_TOUCH` → `SMTD_ACTION_HOLD` → `SMTD_ACTION_RELEASE`.
 
 Consider the following example to understand the execution flow.
-Let's say you want to tap, tap, hold and tap again a custom key `KC`. Here are your finger movements:
+Let's say you want to tap, tap, hold and tap again a key `KC`. Here are your finger movements:
 
 - `↓KC` 50ms `↑KC` (first tap finished) 50ms
 - `↓KC` 50ms `↑KC` (second tap finished) 50ms
@@ -41,7 +41,7 @@ For this example, you will get the following `on_smtd_action()` calls:
 
 
 
-## How to add custom behavior to sm_td keycodes?
+## How to add custom behavior to a key?
 
 You need to put all the handlers of your sm_td keycodes into the `on_smtd_action()` function. It's called with the following arguments
 - `uint16_t keycode` - keycode of the macro key you pressed
@@ -51,7 +51,7 @@ You need to put all the handlers of your sm_td keycodes into the `on_smtd_action
 ### `smtd_resolution` return value
 
 The function should return a `smtd_resolution` value to indicate how the action was handled:
-- `SMTD_RESOLUTION_UNHANDLED` - The action was not handled by some custom code. `sm_td` will handle it as normal key action
+- `SMTD_RESOLUTION_UNHANDLED` - The action was not handled by custom handler (e.g. SMTD_MT macro). `sm_td` will handle it as normal key action
 - `SMTD_RESOLUTION_UNCERTAIN` - The action is not yet determined (for example, tapping MT key may result in mod or key, so on tap resolution is uncertain)
 - `SMTD_RESOLUTION_DETERMINED` - The action was handled and determined
 
