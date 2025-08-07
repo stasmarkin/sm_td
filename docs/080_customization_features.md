@@ -1,3 +1,9 @@
+```
+This documentation is written for version 0.4.1.
+It is a bit outdated for later versions of SM_TD.
+```
+
+
 There are global feature flags that may help you with customizing sm_td behavior:
 
 - `SMTD_GLOBAL_AGGREGATE_TAPS` (default is false)

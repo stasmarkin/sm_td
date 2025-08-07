@@ -1,3 +1,12 @@
+## `v0.4.0` → `v0.5.0`
+- replace `sm_td.h` with newer version
+- remove SMTD_KEYCODES_BEGIN and SMTD_KEYCODES_END (if you want to)
+- change function `void on_smtd_action(...)` to `smtd_resolution on_smtd_action(...)`
+- add `return SMTD_RESOLUTION_UNHANDLED;` as the last line of `on_smtd_action(...)` function
+- next you have to upgrade SMTD_* macros. There are two ways of doing this:
+  - **Option 1**: (recommended, but long) for every SMTD_MT (or _LT) macro remove the first argument with custom keycode. So, instead of `SMTD_MT(CKC_A, KC_A, KC_LEFT_GUI, 2)` just leave `SMTD_MT(KC_A, KC_LEFT_GUI, 2)`. You also need to replace every occurrence of CKC_A to KC_A (so, put it in your keycodes matrix, combos and so on). And remove CKC_A from custom_keycodes entirely. 
+  - **Option 2**: (fast, but ugly) replace SMTD_MT with SMTD_MT_ON_MKEY.  So, instead of `SMTD_MT(CKC_A, KC_A, KC_LEFT_GUI, 2)` you just write `SMTD_MT_ON_MKEY(CKC_A, KC_A, KC_LEFT_GUI, 2)`. That's it. 
+
 ## `v0.3.1` → `v0.4.0`
 - replace `sm_td.h` with newer version
 - remove `smtd_state smtd_states[]` and `size_t smtd_states_size`

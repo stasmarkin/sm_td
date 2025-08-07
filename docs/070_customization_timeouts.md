@@ -1,3 +1,9 @@
+```
+This documentation is written for version 0.4.1.
+It is a bit outdated for later versions of SM_TD.
+```
+
+
 There are 4 crucial timeouts for sm_td:
 
 - `SMTD_TIMEOUT_TAP`
