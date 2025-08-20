@@ -50,9 +50,14 @@ On the other hand, `↓h` `↓i` `↑h` (long pause) `↑i` will be interpreted 
 
 
 ## Installation
+
+There are two options to install SM_TD:
+
+### (option 1) Manual installation
+
 1. Add `DEFERRED_EXEC_ENABLE = yes` to your `rules.mk` file.
 2. Add `#define MAX_DEFERRED_EXECUTORS 10` (or add 10 if you already use it) to your `config.h` file.
-3. Clone the `sm_td.h` repository into your `keymaps/your_keymap` folder (next to your `keymap.c`)
+3. Clone the `sm_td/sm_td.h` repository into your `keymaps/your_keymap` folder (next to your `keymap.c`)
 4. Add `#include "sm_td.h"` in your `keymap.c` file.
 5. Check `!process_smtd` first in your `process_record_user` function like this
    ```c
@@ -66,9 +71,30 @@ On the other hand, `↓h` `↓i` `↑h` (long pause) `↑i` will be interpreted 
        return true;
    }
    ```
+   
+
+Now continue with Configuration chapter (next one).   
 
 
-6. Create an `on_smtd_action()` function that handles actions for custom keycodes. 
+### (option 2) QMK submodule installation
+
+1. Add the following to the list of modules in your `keymap.json` to enable this module:
+
+```json
+{
+    "modules": ["stasmarkin/sm_td"]
+}
+```
+
+2. Include `sm_td.h` in your `keymap.c` file.
+
+
+That's it! Now continue with Configuration chapter (next one).
+
+
+## Configuration
+
+1. Create an `on_smtd_action()` function that handles extra actions for keycodes. 
    For example, if you want to use `KC_A`, `KC_S`, `KC_D` and `KC_F` for Home Row Mods, your `on_smtd_action()` function will look like this
    ```c
    smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
@@ -84,8 +110,8 @@ On the other hand, `↓h` `↓i` `↑h` (long pause) `↑i` will be interpreted 
    ```
    See the documentation for more behavior configurations in the [Customization Guide](https://github.com/stasmarkin/sm_td/blob/main/docs/050_customization.md) with cool [Examples](https://github.com/stasmarkin/sm_td/blob/main/docs/060_customization_examples.md).
 
-7. (optional) Add global configuration parameters to your `config.h` file (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
-8. (optional) Add per-key configuration (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
+2. (optional) Add global configuration parameters to your `config.h` file (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
+3. (optional) Add per-key configuration (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
 
 
 ## Macros for `on_smtd_action()`
@@ -140,15 +166,17 @@ My core expertise lies in Java, Kotlin, and TypeScript for backend development, 
 
 ## Roadmap
 
-#### `v0.5.0` (we are here)
+#### `v0.5.0`
 - 3 finger roll interpretation
 - a collection of useful macros
 - fix 'SMTD_KEYCODES_BEGIN' undeclared error on compilation (removed entirely)
 - some bug fixes
 
-#### `v0.5.1+` and further `v0.x`
-- dynamic timeouts
+#### `v0.5.1` (we are here)
 - qmk module integration
+
+#### `v0.5.2+` and further `v0.x`
+- dynamic timeouts
 - better combo support
 - other feature requests (see [issues](https://github.com/stasmarkin/sm_td/issues))
 
@@ -159,8 +187,15 @@ My core expertise lies in Java, Kotlin, and TypeScript for backend development, 
 - split into header and source files
 
 
-## Special thanks to beta-testers
+## Special thanks for every contributor 
 
+### Code contributions
+- [teddybear](https://github.com/teddybear) for [docs fixes](https://github.com/stasmarkin/sm_td/pull/32)
+- [MrMustardTBC](https://github.com/MrMustardTBC) for [docs fixes](https://github.com/stasmarkin/sm_td/pull/24)
+- [mikenrafter](https://github.com/mikenrafter) for [cool macros](https://github.com/stasmarkin/sm_td/pull/18)
+- [alextverdyy](https://github.com/alextverdyy) for [qmk module support](https://github.com/stasmarkin/sm_td/pull/39)
+
+### Beta-testings
 - [Azzam S.A](https://github.com/azzamsa)
 - [Thiago Alves](https://github.com/Townk)
 - [Julian Hirn](https://github.com/nineluj)
@@ -172,6 +207,7 @@ My core expertise lies in Java, Kotlin, and TypeScript for backend development, 
 - [Yousef Hadder](https://github.com/YousefHadder)
 - [WhoAmiI](https://github.com/chuan2984)
 - [Slava](https://github.com/shofel)
+
 
 (please, let me know, if I have forgotten someone)
 

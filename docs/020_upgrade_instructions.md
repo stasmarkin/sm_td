@@ -1,3 +1,6 @@
+## `v0.5.0` → `v0.5.1`
+- nothing to do, we have just added another installation option. If you have already installed it, you're good to go.
+
 ## `v0.4.0` → `v0.5.0`
 - replace `sm_td.h` with newer version
 - remove SMTD_KEYCODES_BEGIN and SMTD_KEYCODES_END (if you want to)

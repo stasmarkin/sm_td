@@ -1,3 +1,6 @@
+#### `v0.5.1`
+- [QMK Community Modules](https://docs.qmk.fm/features/community_modules) installation option
+
 #### `v0.5.0`
 - 3+ finger roll interpretation
 - simplified configuration (no more custom keycodes are needed)

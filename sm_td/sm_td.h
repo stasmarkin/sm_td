@@ -1,4 +1,4 @@
-/* Copyright 2024 Stanislav Markin (https://github.com/stasmarkin)
+/* Copyright 2025 Stanislav Markin (https://github.com/stasmarkin)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.5.0
- * Date: 2025-08-06
+ * Version: 0.5.1
+ * Date: 2025-08-07
  */
 #pragma once
 

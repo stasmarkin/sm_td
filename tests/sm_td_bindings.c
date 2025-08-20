@@ -225,7 +225,7 @@ void TEST_snprintf(char* buffer, size_t bsize, const char* format, ...) {
     va_end(args);
 }
 
-#include "../sm_td.h"
+#include "../sm_td/sm_td.h"
 
 void TEST_reset() {
     layer_state = 0;
