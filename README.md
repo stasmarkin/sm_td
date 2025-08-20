@@ -187,8 +187,15 @@ My core expertise lies in Java, Kotlin, and TypeScript for backend development, 
 - split into header and source files
 
 
-## Special thanks to beta-testers
+## Special thanks for every contributor 
 
+### Code contributions
+- [teddybear](https://github.com/teddybear) for [docs fixes](https://github.com/stasmarkin/sm_td/pull/32)
+- [MrMustardTBC](https://github.com/MrMustardTBC) for [docs fixes](https://github.com/stasmarkin/sm_td/pull/24)
+- [mikenrafter](https://github.com/mikenrafter) for [cool macros](https://github.com/stasmarkin/sm_td/pull/18)
+- [alextverdyy](https://github.com/alextverdyy) for [qmk module support](https://github.com/stasmarkin/sm_td/pull/39)
+
+### Beta-testings
 - [Azzam S.A](https://github.com/azzamsa)
 - [Thiago Alves](https://github.com/Townk)
 - [Julian Hirn](https://github.com/nineluj)
@@ -200,6 +207,7 @@ My core expertise lies in Java, Kotlin, and TypeScript for backend development, 
 - [Yousef Hadder](https://github.com/YousefHadder)
 - [WhoAmiI](https://github.com/chuan2984)
 - [Slava](https://github.com/shofel)
+
 
 (please, let me know, if I have forgotten someone)
 
