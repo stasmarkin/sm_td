@@ -166,15 +166,17 @@ My core expertise lies in Java, Kotlin, and TypeScript for backend development, 
 
 ## Roadmap
 
-#### `v0.5.0` (we are here)
+#### `v0.5.0`
 - 3 finger roll interpretation
 - a collection of useful macros
 - fix 'SMTD_KEYCODES_BEGIN' undeclared error on compilation (removed entirely)
 - some bug fixes
 
-#### `v0.5.1+` and further `v0.x`
-- dynamic timeouts
+#### `v0.5.1` (we are here)
 - qmk module integration
+
+#### `v0.5.2+` and further `v0.x`
+- dynamic timeouts
 - better combo support
 - other feature requests (see [issues](https://github.com/stasmarkin/sm_td/issues))
 
