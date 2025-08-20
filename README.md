@@ -71,6 +71,10 @@ There are two options to install SM_TD:
        return true;
    }
    ```
+   
+
+Now continue with Configuration chapter (next one).   
+
 
 ### (option 2) QMK submodule installation
 
@@ -84,8 +88,8 @@ There are two options to install SM_TD:
 
 2. Include `sm_td.h` in your `keymap.c` file.
 
-That's it!
-For extra information, see [Module Installation README](https://github.com/stasmarkin/sm_td/blob/main/sm_td/README.md).
+
+That's it! Now continue with Configuration chapter (next one).
 
 
 ## Configuration
