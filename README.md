@@ -1,5 +1,9 @@
 # SM_TD (QMK user library)
 
+[![CI](https://github.com/stasmarkin/sm_td/actions/workflows/ci.yml/badge.svg)](https://github.com/stasmarkin/sm_td/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/Python-3.10–3.13-blue.svg)](./.github/workflows/ci.yml)
+[![OS](https://img.shields.io/badge/OS-ubuntu%20%7C%20macOS-lightgrey.svg)](./.github/workflows/ci.yml)
+
 ![SM Tap Dance Logo](docs/assets/SM_TD_logo_bg.png)
 
 ## What is SM_TD?
