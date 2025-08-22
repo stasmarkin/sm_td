@@ -626,8 +626,8 @@ all_keycodes = [
 
 # Keys
 
-K1 = Key(smtd, 'K1', 0, 0, "no special behaviour", all_keycodes)
-K2 = Key(smtd, 'K2', 0, 1, "no special behaviour", all_keycodes)
+K1 = Key(smtd, 'K1', 0, 0, "no special behavior", all_keycodes)
+K2 = Key(smtd, 'K2', 0, 1, "no special behavior", all_keycodes)
 MMT = Key(smtd, 'MMT', 0, 2, "SMTD_MT_ON_MKEY(L0_KC2, MACRO2, KC_LEFT_GUI, 2)", all_keycodes)
 MT1 = Key(smtd, 'MT1', 0, 3, "SMTD_MT(L*_KC3, KC_LEFT_ALT)", all_keycodes)
 MT2 = Key(smtd, 'MT2', 0, 4, "SMTD_MT(L*_KC4, KC_LEFT_CTRL)", all_keycodes)

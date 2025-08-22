@@ -1,6 +1,6 @@
 # SM_TD (QMK user library)
 
-![SM Tap Dance Logo](SM_TD_logo_bg.png)
+![SM Tap Dance Logo](docs/assets/SM_TD_logo_bg.png)
 
 ## What is SM_TD?
 

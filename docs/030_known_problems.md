@@ -41,4 +41,4 @@ The problem is that sm_td suspends key handling execution in users layer and lat
 - post keyboard processing in quantum for release
 - send a key release to OS
 
-so as you see there is extra execution for process_record() and process_record_keyboard(). It's not big deal, if you don't user sm_td keys for anything else, I didn't notice any visible consequences for that behaviour. But there could be some side effects for core libraries (like caps word, i guess), so if you find any bugs here, please create an issue in github here
+so as you see there is extra execution for process_record() and process_record_keyboard(). It's not big deal, if you don't user sm_td keys for anything else, I didn't notice any visible consequences for that behavior. But there could be some side effects for core libraries (like caps word, i guess), so if you find any bugs here, please create an issue in github here

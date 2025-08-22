@@ -16,7 +16,7 @@
    }
    ```
 
-6. Create a `smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count)` function. This is a function to configure behaviour for keys.
+6. Create a `smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count)` function. This is a function to configure behavior for keys.
    For example, if you want to use `KC_A`, `KC_S`, `KC_D` and `KC_F` for HRM, your `on_smtd_action()` function will look like this
    ```c
    smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
