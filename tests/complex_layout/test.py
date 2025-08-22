@@ -63,7 +63,7 @@ class TestSmTd(SmTdAssertions):
 
         self.assertFalse(MMT.release(), "release should return true")
         records = smtd.get_record_history()
-        self.assertEqual(len(records), 2, "tap should happer after release")
+        self.assertEqual(len(records), 2, "tap should happen after release")
         self.assertRegister(records[0], MACRO2)
         self.assertUnregister(records[1], MACRO2)
 

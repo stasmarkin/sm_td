@@ -54,7 +54,10 @@ dkms.conf
 .idea
 
 cmake-build-debug
-CMakeLists.txt
 
 build/
 .claude/
+__pycache__/
+*.pyc
+.DS_Store
+*.log

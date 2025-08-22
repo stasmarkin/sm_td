@@ -32,7 +32,6 @@ def create_ckeyrecord(row: int, col: int, pressed: bool) -> CKeyRecord:
     record = CKeyRecord()
     record.event.key.row = row
     record.event.key.col = col
-    record.event.keycode = 0
     record.event.pressed = pressed
     return record
 
@@ -248,7 +247,8 @@ def load_smtd_lib(path: str) -> SmtdBindings:
                    f"-o {lib_path} "
                    f"-fPIC {os.path.join(project_root, path)} "
                    f"-I{project_root} "
-                   f"-Wunused-variable -Werror=unused-variable ")
+                   f"-std=c11 -Wall -Wextra -Wno-sign-compare -Wno-missing-braces -Wno-unused-parameter "
+                   f"-Wunused-variable -Werror=unused-variable")
 
     print(f"Compiling sm_td library: {compile_cmd}")
     result = subprocess.run(compile_cmd, shell=True, stderr=subprocess.PIPE)

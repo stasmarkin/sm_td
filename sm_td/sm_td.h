@@ -925,7 +925,7 @@ void smtd_handle_action(smtd_state *state, smtd_action action) {
     }
 
     if (smtd_worst_resolution_before(state) < SMTD_RESOLUTION_DETERMINED) {
-        SMTD_DEBUG("%s %s is deffered",
+        SMTD_DEBUG("%s %s is deferred",
                    smtd_state_to_str(state),
                    smtd_action_to_str(action));
         return;
