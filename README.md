@@ -1,9 +1,8 @@
 # SM_TD (QMK user library)
 
 [![CI](https://github.com/stasmarkin/sm_td/actions/workflows/ci.yml/badge.svg)](https://github.com/stasmarkin/sm_td/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/Python-3.10–3.13-blue.svg)](./.github/workflows/ci.yml)
-[![OS](https://img.shields.io/badge/OS-ubuntu%20%7C%20macOS-lightgrey.svg)](./.github/workflows/ci.yml)
-[![QMK](https://img.shields.io/badge/QMK-Community%20Module-blueviolet.svg)](https://docs.qmk.fm/features/community_modules)
+[![Discord](https://img.shields.io/discord/1325285615272595506?label=Discord&logo=discord&logoColor=white&color=5865F2)](https://discord.com/channels/1325285615272595506)
+[![QMK](https://img.shields.io/badge/QMK-0.22+-blueviolet.svg)](https://docs.qmk.fm/features/community_modules)
 
 ![SM Tap Dance Logo](docs/assets/SM_TD_logo_bg.png)
 
