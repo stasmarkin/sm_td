@@ -1,4 +1,5 @@
 import ctypes
+import sys
 import hashlib
 import os
 import subprocess
@@ -240,7 +241,8 @@ def load_smtd_lib(path: str) -> SmtdBindings:
     
     # Create unique library name based on the layout path to avoid conflicts
     path_hash = hashlib.md5(path.encode()).hexdigest()[:8]
-    lib_path = os.path.join(project_root, f"libsm_td_{path_hash}.dylib")
+    ext = '.dylib' if sys.platform == 'darwin' else '.so'
+    lib_path = os.path.join(project_root, f"libsm_td_{path_hash}{ext}")
 
     compile_cmd = (f"clang -shared "
                    f"-o {lib_path} "
