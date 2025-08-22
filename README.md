@@ -85,7 +85,7 @@ That’s it — proceed to Configuration.
 
 ## Configuration
 
-1. Create an `on_smtd_action()` function that handles extra actions for keycodes.
+1. Create an `on_smtd_action()` function in your `keymap.c` that handles extra actions for keycodes.
    For example, to use `KC_A`, `KC_S`, `KC_D`, and `KC_F` for Home Row Mods:
    ```c
    smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
