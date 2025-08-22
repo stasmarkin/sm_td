@@ -3,12 +3,13 @@
 [![CI](https://github.com/stasmarkin/sm_td/actions/workflows/ci.yml/badge.svg)](https://github.com/stasmarkin/sm_td/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.10–3.13-blue.svg)](./.github/workflows/ci.yml)
 [![OS](https://img.shields.io/badge/OS-ubuntu%20%7C%20macOS-lightgrey.svg)](./.github/workflows/ci.yml)
+[![QMK](https://img.shields.io/badge/QMK-Community%20Module-blueviolet.svg)](https://docs.qmk.fm/features/community_modules)
 
 ![SM Tap Dance Logo](docs/assets/SM_TD_logo_bg.png)
 
 ## What is SM_TD?
 
-**SM_TD** is a QMK user library that fixes unreliable behavior in **Home Row Modifiers (HRMs)** and **Tap Dance** keys. It improves how QMK interprets taps vs. holds — especially during fast typing — by analyzing key **releases** rather than **presses**.
+**SM_TD** is a QMK user library that makes **Home Row Modifiers (HRMs)** and **Tap Dance** reliable during fast typing. It improves tap vs. hold decisions by analyzing key **releases** (not just presses).
 
 ## Why SM_TD?
 
@@ -18,88 +19,75 @@ Typing often involves overlapping keypresses. For example:
 ↓h ↓i ↑h ↑i
 ```
 
-This happens when you type "hi" quickly. But QMK's default behavior may misinterpret `↓h` as a **hold**, not a **tap**, just because `↓i` occurred before `↑h`.
+This happens when you type "hi" quickly. But QMK’s default behavior may misinterpret `↓h` as a **hold**, not a **tap**, because `↓i` occurred before `↑h`.
 
 This leads to bugs when using keys like `LT(1, KC_H)` for home row mods — triggering `layer_move(1)` instead of typing `h`.
 
 **SM_TD solves this by:**
-- Interpreting key actions based on release timing
+- Interpreting keys based on release timing
 - Respecting natural typing habits
-- Avoiding false holds in fast sequences
+- Avoiding false holds during fast sequences
 
 ### Background
 
-This library uses the natural way of human typing when we have a small overlap between key taps.
-For example, when a person types `hi` quickly, he does not release `h` before pressing `i`, in other words, the finger movements are: `↓h`, `↓i`, `↑h`, `↑i`.
-The main problem with QMK tap dance is that it does not consider this natural way of typing and tries to interpret all keys pressed and released in the straight order.
-So in the example above, if you put a tap-hold action on the `h` key (e.g. `LT(1, KC_H)`), QMK interprets this as `layer_move(1)` followed by `tap(KC_I)`.
+This library follows the natural overlap that happens when we type quickly. In the `hi` example, most people press `i` before releasing `h` — i.e., `↓h`, `↓i`, `↑h`, `↑i`.
+Stock QMK often interprets these in strict press order, which can misclassify a tap-hold key (e.g., `LT(1, KC_H)`) as a hold, leading to `layer_move(1)` instead of a tap.
 
-There are many other ways to fix this problem with HRM, but all of them are not perfect and require some changes in your typing habits.
-The core principle of this library is respecting human typing habits and not trying to change them.
-The main idea is to pay attention to the time between key releases (instead of key presses) and interpret them in a more human-friendly way.
-So, For instance, `↓h`, `↓i`, `↑h` (tiny pause), `↑i` will be interpreted as `layer_move(1)` + `tap(KC_I)` because as humans we release combo keys almost simultaneously.
-On the other hand, `↓h` `↓i` `↑h` (long pause) `↑i` will be interpreted as `tap(KC_H)` + `tap(KC_I)` because as humans we release sequential keys with a long pause in between.
+SM_TD respects your habits rather than forcing you to change them. It pays attention to the time between key releases and interprets them accordingly:
+- `↓h`, `↓i`, `↑h` (tiny pause), `↑i` → treat as a combo-like overlap: hold/action on `h` + tap `i`
+- `↓h`, `↓i`, `↑h` (long pause), `↑i` → treat as sequential taps: tap `h` + tap `i`
 
 
 ## Features
-- Human-friendly tap+tap vs. hold+tap interpretation both for MT and LT behavior
-- Deeply customizable behavior for each key (e.g. make an action on hold after multiple taps in a row)
-- Immediate response to tap-dance (you can make an action on tap, not on timeout after last release)
-- Customizable timeouts for each key
-- Customizable feature flags globally or for each key
-- Debugging tools (you can see the state machine stack and active states)
-- Support of QMK's caps word support
-- Support of QMK's combo support (partially)
-- Support of QMK's tap dance emulation (make an action after multiple taps in a row and a short pause)
-
+- Human-friendly tap+tap vs. hold+tap interpretation for MT and LT
+- Per-key behavior tuning (e.g., hold after N taps in a row)
+- Immediate Tap Dance-style responses (no extra timeout needed)
+- Configurable timeouts per key or globally
+- Feature flags per key or globally
+- Debugging tools
+- Caps Word: integrates with QMK Caps Word
+- Combos: partial support for QMK Combos
 
 ## Installation
 
-There are two options to install SM_TD:
+There are two ways to install SM_TD:
 
-### (option 1) Manual installation
+### Option 1: Manual
 
-1. Add `DEFERRED_EXEC_ENABLE = yes` to your `rules.mk` file.
-2. Add `#define MAX_DEFERRED_EXECUTORS 10` (or add 10 if you already use it) to your `config.h` file.
-3. Clone the `sm_td/sm_td.h` repository into your `keymaps/your_keymap` folder (next to your `keymap.c`)
-4. Add `#include "sm_td.h"` in your `keymap.c` file.
-5. Check `!process_smtd` first in your `process_record_user` function like this
-   ```c
-   bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-       if (!process_smtd(keycode, record)) {
-           return false;
-       }
-   
-       // your code here
-   
-       return true;
-   }
-   ```
-   
+1. In `rules.mk`, add `DEFERRED_EXEC_ENABLE = yes`.
+2. In `config.h`, add `#define MAX_DEFERRED_EXECUTORS 10` (or increase if already defined).
+3. Copy `sm_td/sm_td.h` into your `keymaps/<your_keymap>/` folder (next to `keymap.c`).
+4. Add `#include "sm_td.h"` in your `keymap.c`.
+5. Check `process_smtd(...)` first in `process_record_user(...)` like this:
+```c
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    if (!process_smtd(keycode, record)) {
+        return false;
+    }
 
-Now continue with Configuration chapter (next one).   
+    // your code here
 
-
-### (option 2) QMK submodule installation
-
-1. Add the following to the list of modules in your `keymap.json` to enable this module:
-
-```json
-{
-    "modules": ["stasmarkin/sm_td"]
+    return true;
 }
 ```
 
-2. Include `sm_td.h` in your `keymap.c` file.
+### Option 2: QMK Community Module
 
+1. In `keymap.json`, add:
 
-That's it! Now continue with Configuration chapter (next one).
+   ```json
+   { "modules": ["stasmarkin/sm_td"] }
+   ```
+
+2. Add `#include "sm_td.h"` in your `keymap.c`.
+
+That’s it — proceed to Configuration.
 
 
 ## Configuration
 
-1. Create an `on_smtd_action()` function that handles extra actions for keycodes. 
-   For example, if you want to use `KC_A`, `KC_S`, `KC_D` and `KC_F` for Home Row Mods, your `on_smtd_action()` function will look like this
+1. Create an `on_smtd_action()` function that handles extra actions for keycodes.
+   For example, to use `KC_A`, `KC_S`, `KC_D`, and `KC_F` for Home Row Mods:
    ```c
    smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
        switch (keycode) {
@@ -112,7 +100,7 @@ That's it! Now continue with Configuration chapter (next one).
        return SMTD_RESOLUTION_UNHANDLED;
    }
    ```
-   See the documentation for more behavior configurations in the [Customization Guide](https://github.com/stasmarkin/sm_td/blob/main/docs/050_customization.md) with cool [Examples](https://github.com/stasmarkin/sm_td/blob/main/docs/060_customization_examples.md).
+   See the [Customization Guide](https://github.com/stasmarkin/sm_td/blob/main/docs/050_customization.md) and practical [Examples](https://github.com/stasmarkin/sm_td/blob/main/docs/060_customization_examples.md) for more patterns.
 
 2. (optional) Add global configuration parameters to your `config.h` file (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
 3. (optional) Add per-key configuration (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
@@ -124,13 +112,13 @@ That's it! Now continue with Configuration chapter (next one).
 |-------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `SMTD_MT(KC_A, KC_LEFT_GUI)` | **Basic mod-tap**: Tap `KC_A` → single tap, Hold `KC_A` → `KC_LEFT_GUI` hold                                                                                                                                                                                                                                                                                                                       |
 | `SMTD_MT(KC_A, KC_LEFT_GUI, 2)` | **Tap count mod-tap**: Same as above, but hold after 2 sequential taps results in `KC_A` hold<br>• `↓KC_A, ↑KC_A, ↓KC_A...` → `KC_A` tap + `KC_LEFT_GUI` hold<br>• `↓KC_A, ↑KC_A, ↓KC_A, ↑KC_A, ↓KC_A...` → 2× `KC_A` tap + `KC_A` hold                                                                                                                                                            |
-| `SMTD_MT(KC_A, KC_LEFT_GUI, 1, false)` | **Caps word disabled**: Basic mod-tap with QMK's caps word feature disabled                                                                                                                                                                                                                                                                                                                        |
+| `SMTD_MT(KC_A, KC_LEFT_GUI, 1, false)` | **Caps Word disabled**: Basic mod-tap with QMK’s Caps Word feature disabled                                                                                                                                                                                                                                                                                                                        |
 | `SMTD_MTE(KC_A, KC_LEFT_GUI)` | **Eager mod-tap**: Holds `KC_LEFT_GUI` immediately on press<br>• Quick release → `KC_LEFT_GUI` released + `KC_A` tapped<br>• Continue holding → `KC_LEFT_GUI` held, no `KC_A` tap<br>• Useful for fast mod+mouse clicks                                                                                                                                                                            |
 | `SMTD_MTE(KC_A, KC_LEFT_GUI, 2)` | **Eager with tap count**: Eager version of tap count mod-tap                                                                                                                                                                                                                                                                                                                                       |
-| `SMTD_MTE(KC_A, KC_LEFT_GUI, 1, false)` | **Eager caps disabled**: Eager version with caps word disabled                                                                                                                                                                                                                                                                                                                                     |
-| `SMTD_LT(KC_A, 2)` | **Layer tap**: Momentary layer switching (layer 2), works like `SMTD_MT` but switches layers instead of modifiers                                                                                                                                                                                                                                                                                  |
-| `SMTD_LT(KC_A, 2, 3)` | **Layer tap with count**: Hold after 3 sequential taps results in `KC_A` hold<br>• `↓KC_A, ↑KC_A, ↓KC_A...` → `KC_A` tap + layer 2 activation<br>• `↓KC_A, ↑KC_A, ↓KC_A, ↑KC_A, ↓KC_A, ↑KC_A, ↓KC_A...` → 3× `KC_A` tap + `KC_A` hold                                                                                                                                                              |
-| `SMTD_LT(KC_A, KC_LEFT_GUI, 1, false)` | **Layer tap caps disabled**: Layer tap with QMK's caps word feature disabled                                                                                                                                                                                                                                                                                                                       |
+| `SMTD_MTE(KC_A, KC_LEFT_GUI, 1, false)` | **Eager caps disabled**: Eager version with Caps Word disabled                                                                                                                                                                                                                                                                                                                                     |
+| `SMTD_LT(KC_A, 2)` | **Layer tap**: Momentary layer switching (layer 2), works like `SMTD_MT` but switches layers instead of modifiers |
+| `SMTD_LT(KC_A, 2, 3)` | **Layer tap with count**: Hold after 3 sequential taps results in `KC_A` hold<br>• `↓KC_A, ↑KC_A, ↓KC_A...` → `KC_A` tap + layer 2 activation<br>• `↓KC_A, ↑KC_A, ↓KC_A, ↑KC_A, ↓KC_A, ↑KC_A, ↓KC_A...` → 3× `KC_A` tap + `KC_A` hold |
+| `SMTD_LT(KC_A, 2, 1, false)` | **Layer tap caps disabled**: Same as above with Caps Word disabled |
 | `SMTD_MT_ON_MKEY(CKC_A, KC_A, KC_LEFT_GUI)` | **Mod-tap with custom keycode**: Uses custom keycode `CKC_A` (do not forget to [declare](https://docs.qmk.fm/custom_quantum_functions#custom-keycodes) it) in keymap while treating it as `KC_A` tap and `KC_LEFT_GUI` hold<br>• Might be used if you need different behavior of `KC_A` on different layers<br>• Useful for migration from older SM_TD versions or when you need custom keycodes   |
 | `SMTD_LT_ON_MKEY(CKC_A, KC_A, 2)` | **Layer tap with custom keycode**: Uses custom keycode `CKC_A` (do not forget to [declare](https://docs.qmk.fm/custom_quantum_functions#custom-keycodes) it) in keymap while treating it as `KC_A` tap and layer 2 activation<br>• Might be used if you need different behavior of `KC_A` on different layers<br>• Useful for migration from older SM_TD versions or when you need custom keycodes |
 
@@ -144,9 +132,9 @@ Also, you may check [my layout](https://github.com/stasmarkin/sm_voyager_keymap)
 
 ## Community
 
-First of all, there are issues and pull requests on this repository. You may ask any questions there.
+Start with GitHub issues or pull requests for questions and ideas.
 
-Then you may join the [SM_TD Discord Channel](https://discord.gg/GHuqxtGftX) for any questions or suggestions.
+You can also join the [SM_TD Discord channel](https://discord.gg/GHuqxtGftX), or reach me on Reddit (u/stasmarkin) or Discord (stasmarkin).
 
 Also, you may email me or tag/text me on Reddit (u/stasmarkin) or Discord (stasmarkin).
 
@@ -164,20 +152,17 @@ If you find this library helpful, consider supporting the project:
 
 Your support helps me continue developing and maintaining this project. Thank you for using SM_TD!
 
-👋 I’m open to new opportunities — feel free to reach out if you’re working on interesting projects or have roles that might be a good fit.
-My core expertise lies in Java, Kotlin, and TypeScript for backend development, but I’m always excited to explore R&D challenges across different domains.
-
 
 ## Roadmap
 
 #### `v0.5.0`
-- 3 finger roll interpretation
-- a collection of useful macros
-- fix 'SMTD_KEYCODES_BEGIN' undeclared error on compilation (removed entirely)
-- some bug fixes
+- 3+ finger roll interpretation
+- A collection of useful macros
+- Fix: remove 'SMTD_KEYCODES_BEGIN' undeclared error
+- Bug fixes
 
 #### `v0.5.1` (we are here)
-- qmk module integration
+- QMK community module integration
 
 #### `v0.5.2+` and further `v0.x`
 - dynamic timeouts
@@ -191,7 +176,7 @@ My core expertise lies in Java, Kotlin, and TypeScript for backend development, 
 - split into header and source files
 
 
-## Special thanks for every contributor 
+## Special Thanks
 
 ### Code contributions
 - [teddybear](https://github.com/teddybear) for [docs fixes](https://github.com/stasmarkin/sm_td/pull/32)
@@ -199,7 +184,7 @@ My core expertise lies in Java, Kotlin, and TypeScript for backend development, 
 - [mikenrafter](https://github.com/mikenrafter) for [cool macros](https://github.com/stasmarkin/sm_td/pull/18)
 - [alextverdyy](https://github.com/alextverdyy) for [qmk module support](https://github.com/stasmarkin/sm_td/pull/39)
 
-### Beta-testings
+### Beta testing
 - [Azzam S.A](https://github.com/azzamsa)
 - [Thiago Alves](https://github.com/Townk)
 - [Julian Hirn](https://github.com/nineluj)
