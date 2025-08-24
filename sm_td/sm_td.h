@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.5.1
- * Date: 2025-08-07
+ * Version: 0.5.2
+ * Date: 2025-08-23
  */
 #pragma once
 
@@ -1168,7 +1168,7 @@ uint32_t get_smtd_timeout_default(smtd_timeout timeout) {
 
 uint16_t smtd_current_keycode(keypos_t *key) {
     uint8_t current_layer = get_highest_layer(layer_state);
-    return keymaps[current_layer][key->row][key->col];
+    return keymap_key_to_keycode(current_layer, *key);
 }
 
 bool smtd_feature_enabled_or_default(smtd_state *state, smtd_feature feature) {

@@ -97,6 +97,11 @@ uint8_t get_highest_layer(uint32_t state) {
     return highest;
 }
 
+uint16_t keymap_key_to_keycode(uint8_t layer, keypos_t key) {
+    extern uint16_t const keymaps[][MATRIX_ROWS][MATRIX_COLS];
+    return keymaps[layer][key.row][key.col];
+}
+
 void layer_move(uint8_t layer) {
     TEST_print("             --> Layer moved to %d\n", layer);
     layer_state = layer;

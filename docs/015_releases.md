@@ -1,3 +1,6 @@
+#### `v0.5.2`
+- Fix: smtd_current_keycode is now compatible with AVR (fixes issue #48)
+
 #### `v0.5.1`
 - [QMK Community Modules](https://docs.qmk.fm/features/community_modules) installation option
 

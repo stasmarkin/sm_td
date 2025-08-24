@@ -1,5 +1,10 @@
+## `v0.5.1` → `v0.5.2`
+- replace `sm_td.h` with newer version
+- no need to upgrade if sm_td 0.5.0 or latter compiles for you
+
 ## `v0.5.0` → `v0.5.1`
 - nothing to do, we have just added another installation option. If you have already installed it, you're good to go.
+- no need to upgrade if sm_td 0.5.0 compiles for you
 
 ## `v0.4.0` → `v0.5.0`
 - replace `sm_td.h` with newer version
