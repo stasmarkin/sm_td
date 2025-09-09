@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.5.2
- * Date: 2025-08-23
+ * Version: 0.5.3
+ * Date: 2025-09-08
  */
 
 #include "sm_td.h"

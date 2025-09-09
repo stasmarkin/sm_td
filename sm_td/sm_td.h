@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.5.2
- * Date: 2025-08-23
+ * Version: 0.5.3
+ * Date: 2025-09-08
  */
 #pragma once
 
@@ -1260,33 +1260,35 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
     )
 
 #define SMTD_MTE(...) OVERLOAD4(__VA_ARGS__, SMTD_MTE4, SMTD_MTE3, SMTD_MTE2)(__VA_ARGS__)
-#define SMTD_MTE2(key, mod) SMTD_MTE3_ON_MKEY(key, key, mod)
-#define SMTD_MTE3(key, mod, threshold) SMTD_MTE4_ON_MKEY(key, key, mod, threshold)
-#define SMTD_MTE4(key, mod, threshold, use_cl) SMTD_MTE5_ON_MKEY(key, key, mod, threshold, use_cl)
+#define SMTD_MTE2(key, mod_key) SMTD_MTE3_ON_MKEY(key, key, mod_key)
+#define SMTD_MTE3(key, mod_key, threshold) SMTD_MTE4_ON_MKEY(key, key, mod_key, threshold)
+#define SMTD_MTE4(key, mod_key, threshold, use_cl) SMTD_MTE5_ON_MKEY(key, key, mod_key, threshold, use_cl)
 #define SMTD_MTE_ON_MKEY(...) OVERLOAD5(__VA_ARGS__, SMTD_MTE5_ON_MKEY, SMTD_MTE4_ON_MKEY, SMTD_MTE3_ON_MKEY)(__VA_ARGS__)
 #define SMTD_MTE3_ON_MKEY(...) SMTD_MTE4_ON_MKEY(__VA_ARGS__, 1)
 #define SMTD_MTE4_ON_MKEY(...) SMTD_MTE5_ON_MKEY(__VA_ARGS__, true)
-#define SMTD_MTE5_ON_MKEY(macro_key, tap_key, mod, threshold, use_cl)\
+#define SMTD_MTE5_ON_MKEY(macro_key, tap_key, mod_key, threshold, use_cl) \
+    SMTD_MBTE5_ON_MKEY(macro_key, tap_key, MOD_BIT(mod_key), threshold, use_cl)
+#define SMTD_MBTE5_ON_MKEY(macro_key, tap_key, mods, threshold, use_cl) \
     SMTD_DANCE(macro_key,                                    \
         EXEC(                                                \
-            register_mods(MOD_BIT(mod));                     \
+            register_mods(mods);                             \
             send_keyboard_report();                          \
         ),                                                   \
         EXEC(                                                \
-            unregister_mods(MOD_BIT(mod));                   \
+            unregister_mods(mods);                           \
             SMTD_TAP_16(use_cl, tap_key);                    \
         ),                                                   \
         SMTD_LIMIT(threshold,                                \
             NOTHING,                                         \
             EXEC(                                            \
-                unregister_mods(MOD_BIT(mod));               \
+                unregister_mods(mods);                       \
                 send_keyboard_report();                      \
                 SMTD_REGISTER_16(use_cl, tap_key);           \
             )                                                \
         ),                                                   \
         SMTD_LIMIT(threshold,                                \
             EXEC(                                            \
-                unregister_mods(MOD_BIT(mod));               \
+                unregister_mods(mods);                       \
                 send_keyboard_report();                      \
             ),                                               \
             SMTD_UNREGISTER_16(use_cl, tap_key)              \

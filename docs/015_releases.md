@@ -1,3 +1,6 @@
+#### `v0.5.3`
+- Feature: add SMTD_MBTE5_ON_MKEY macro
+
 #### `v0.5.2`
 - Fix: smtd_current_keycode is now compatible with AVR (fixes issue #48)
 

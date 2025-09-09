@@ -163,10 +163,13 @@ Your support helps me continue developing and maintaining this project. Thank yo
 #### `v0.5.1`
 - QMK community module integration
 
-#### `v0.5.2` (we are here)
+#### `v0.5.2`
 - Fix: smtd_current_keycode is now compatible with AVR (fixes issue #48)
+- 
+#### `v0.5.3` (we are here)
+- Feature: add SMTD_MBTE5_ON_MKEY macro
 
-#### `v0.5.3+` and further `v0.x`
+#### `v0.6.0+` and further `v0.x`
 - dynamic timeouts
 - better combo support
 - other feature requests (see [issues](https://github.com/stasmarkin/sm_td/issues))
