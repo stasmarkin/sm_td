@@ -1,7 +1,7 @@
 # SM_TD (QMK user library)
 
 [![CI](https://github.com/stasmarkin/sm_td/actions/workflows/ci.yml/badge.svg)](https://github.com/stasmarkin/sm_td/actions/workflows/ci.yml)
-[![Discord](https://img.shields.io/discord/1325285615272595506?label=Discord&logo=discord&logoColor=white&color=5865F2)](https://discord.com/channels/1325285615272595506)
+[![Discord](https://img.shields.io/discord/1325285615272595506?label=Discord&logo=discord&logoColor=white&color=5865F2)](https://discord.gg/ny4mVBM7KD)
 [![QMK](https://img.shields.io/badge/QMK-0.22+-blueviolet.svg)](https://docs.qmk.fm/features/community_modules)
 
 ![SM Tap Dance Logo](docs/assets/SM_TD_logo_bg.png)
@@ -133,7 +133,7 @@ Also, you may check [my layout](https://github.com/stasmarkin/sm_voyager_keymap)
 
 Start with GitHub issues or pull requests for questions and ideas.
 
-You can also join the [SM_TD Discord channel](https://discord.gg/GHuqxtGftX), or reach me on Reddit (u/stasmarkin) or Discord (stasmarkin).
+You can also join the [SM_TD Discord channel](https://discord.gg/ny4mVBM7KD), or reach me on Reddit (u/stasmarkin) or Discord (stasmarkin).
 
 Also, you may email me or tag/text me on Reddit (u/stasmarkin) or Discord (stasmarkin).
 
