@@ -78,8 +78,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
    { "modules": ["stasmarkin/sm_td"] }
    ```
 
-2. Add `#include "sm_td.h"` in your `keymap.c`.
-
 That’s it — proceed to Configuration.
 
 
@@ -95,7 +93,7 @@ That’s it — proceed to Configuration.
            SMTD_MT(KC_D, KC_LEFT_CTRL)
            SMTD_MT(KC_F, KC_LSFT)
        }
-   
+
        return SMTD_RESOLUTION_UNHANDLED;
    }
    ```
@@ -165,7 +163,7 @@ Your support helps me continue developing and maintaining this project. Thank yo
 
 #### `v0.5.2`
 - Fix: smtd_current_keycode is now compatible with AVR (fixes issue #48)
-- 
+-
 #### `v0.5.3` (we are here)
 - Feature: add SMTD_MBTE5_ON_MKEY macro
 
