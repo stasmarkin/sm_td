@@ -32,6 +32,17 @@ bool pre_process_record_sm_td(uint16_t keycode, keyrecord_t* record) {
  *         BASE DEFINITIONS              *
  * ************************************* */
 
+#ifdef SMTD_UNIT_TEST
+/* Test mode - externally visible variables */
+smtd_state *smtd_active_states[SMTD_POOL_SIZE] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+smtd_state smtd_states_pool[SMTD_POOL_SIZE] = {
+    EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE,
+    EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE
+};
+uint8_t smtd_active_states_size = 0;
+bool smtd_bypass = false;
+#else
+/* Normal mode - internal variables */
 static smtd_state *smtd_active_states[SMTD_POOL_SIZE] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 static smtd_state smtd_states_pool[SMTD_POOL_SIZE] = {
     EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE,
@@ -39,6 +50,7 @@ static smtd_state smtd_states_pool[SMTD_POOL_SIZE] = {
 };
 static uint8_t smtd_active_states_size = 0;
 static bool smtd_bypass = false;
+#endif
 
 /* ************************************* *
  *           DEBUG CONFIGURATION         *
@@ -904,6 +916,38 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
     }
     return false;
 }
+
+/* ************************************* *
+ *       TEST FRAMEWORK ACCESSORS        *
+ * ************************************* */
+
+#ifdef SMTD_UNIT_TEST
+
+bool smtd_get_bypass(void) {
+    return smtd_bypass;
+}
+
+void smtd_set_bypass(bool bypass) {
+    smtd_bypass = bypass;
+    if (!bypass) {
+        // Reset active states when bypass is disabled (used by test framework)
+        smtd_active_states_size = 0;
+    }
+}
+
+uint8_t smtd_get_active_states_size(void) {
+    return smtd_active_states_size;
+}
+
+smtd_state* smtd_get_state_pool(void) {
+    return smtd_states_pool;
+}
+
+smtd_state** smtd_get_active_states(void) {
+    return smtd_active_states;
+}
+
+#endif
 
 /* ************************************* *
  *             LAYER UTILS               *

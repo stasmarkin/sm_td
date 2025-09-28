@@ -230,7 +230,24 @@ void TEST_snprintf(char* buffer, size_t bsize, const char* format, ...) {
     va_end(args);
 }
 
+/* Include sm_td implementation directly for tests instead of using separate compilation */
+/* First define required macros that would normally come from layout */
+#ifndef MATRIX_ROWS
+#define MATRIX_ROWS 5  /* Will be redefined by actual layout */
+#endif
+#ifndef MATRIX_COLS
+#define MATRIX_COLS 9  /* Will be redefined by actual layout */
+#endif
+#ifndef TAPPING_TERM
+#define TAPPING_TERM 200  /* Will be redefined by actual layout */
+#endif
+
+/* Now include sm_td.h to get types and declarations */
 #include "../sm_td/sm_td.h"
+
+/* Include sm_td.c implementation directly to avoid separate compilation issues */
+/* This creates a unified compilation unit with all functions available */
+#include "../sm_td/sm_td.c"
 
 void TEST_reset() {
     layer_state = 0;
