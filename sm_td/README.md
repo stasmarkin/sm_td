@@ -10,14 +10,6 @@ This module adds human-friendly Tap Dance and Home Row Mod support to your QMK b
 }
 ```
 
-
-2. Include `sm_td.h` and add an `on_smtd_action` handler in your keymap file:
-
-```c
-#include "sm_td.h"
-
-// the rest of your code ... 
-
 smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
     switch (keycode) {
         SMTD_MT(KC_A, KC_LEFT_GUI)

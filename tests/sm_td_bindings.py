@@ -247,6 +247,7 @@ def load_smtd_lib(path: str) -> SmtdBindings:
                    f"-o {lib_path} "
                    f"-fPIC {os.path.join(project_root, path)} "
                    f"-I{project_root} "
+                   f"-DSMTD_UNIT_TEST "
                    f"-std=c11 -Wall -Wextra -Wno-sign-compare -Wno-missing-braces -Wno-unused-parameter "
                    f"-Wunused-variable -Werror=unused-variable")
 
