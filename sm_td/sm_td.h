@@ -271,6 +271,7 @@ bool smtd_feature_enabled_or_default(smtd_state *state, smtd_feature feature);
 #define SMTD_DEBUG_OFFSET_INC
 #define SMTD_DEBUG_OFFSET_DEC
 #define SMTD_DEBUG_FULL(...)
+#define SMTD_DEBUG_JSON(...)
 
 #else
 
@@ -334,6 +335,29 @@ uint32_t last_key_timer = 0;
   }
 #endif
 
+#ifndef SMTD_DEBUG_JSON
+#define SMTD_DEBUG_JSON(timestamp, state_id, from_key, to_key, status, action, \
+exec_status, result, event_type, duration_ms)          \
+std::cout << "{\n"                                                           \
+<< "  \"timestamp\": " << timestamp << ",\n"                       \
+<< "  \"state\": {\n"                                              \
+<< "    \"id\": " << state_id << ",\n"                             \
+<< "    \"from\": \"" << from_key << "\",\n"                       \
+<< "    \"to\": \"" << to_key << "\",\n"                           \
+<< "    \"status\": \"" << status << "\",\n"                       \
+<< "    \"action\": \"" << action << "\"\n"                        \
+<< "  },\n"                                                        \
+<< "  \"event\": {\n"                                              \
+<< "    \"type\": \"" << event_type << "\",\n"                     \
+<< "    \"duration_ms\": " << duration_ms << "\n"                  \
+<< "  },\n"                                                        \
+<< "  \"additional_info\": {\n"                                    \
+<< "    \"exec_status\": \"" << exec_status << "\",\n"             \
+<< "    \"result\": " << result << "\n"                            \
+<< "  }\n"                                                         \
+<< "}\n";
+#endif
+
 static uint8_t smtd_debug_offset = 0;
 
 char *smtd_stage_to_str(smtd_stage stage);
@@ -354,31 +378,7 @@ char* smtd_state_to_str2(smtd_state *state);
 
 char* smtd_record_to_str(keyrecord_t *record);
 
-#define SMTD_DEBUG_JSON(timestamp, state_id, from_key, to_key, status, action, \
-                        exec_status, result, event_type, duration_ms)          \
-  std::cout << "{\n"                                                           \
-            << "  \"timestamp\": " << timestamp << ",\n"                       \
-            << "  \"state\": {\n"                                              \
-            << "    \"id\": " << state_id << ",\n"                             \
-            << "    \"from\": \"" << from_key << "\",\n"                       \
-            << "    \"to\": \"" << to_key << "\",\n"                           \
-            << "    \"status\": \"" << status << "\",\n"                       \
-            << "    \"action\": \"" << action << "\"\n"                        \
-            << "  },\n"                                                        \
-            << "  \"event\": {\n"                                              \
-            << "    \"type\": \"" << event_type << "\",\n"                     \
-            << "    \"duration_ms\": " << duration_ms << "\n"                  \
-            << "  },\n"                                                        \
-            << "  \"additional_info\": {\n"                                    \
-            << "    \"exec_status\": \"" << exec_status << "\",\n"             \
-            << "    \"result\": " << result << "\n"                            \
-            << "  }\n"                                                         \
-            << "}\n";
-
-#else
-
-#define SMTD_DEBUG_JSON(...)
-#endif
+#endif //SMTD_DEBUG_ENABLED
 
 
 /* ************************************* *
