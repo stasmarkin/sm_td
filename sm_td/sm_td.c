@@ -583,6 +583,9 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
     state->timeout = INVALID_DEFERRED_TOKEN;
     state->stage = next_stage;
 
+    uint32_t tap_timeout = get_smtd_timeout_or_default(state, SMTD_TIMEOUT_TAP);
+    uint32_t sequence_timeout = get_smtd_timeout_or_default(state, SMTD_TIMEOUT_SEQUENCE);
+
     switch (state->stage) {
         case SMTD_STAGE_NONE:
             for (uint8_t j = state->idx; j < smtd_active_states_size - 1; j++) {
@@ -600,8 +603,7 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             state->saved_mods = get_mods();
             #endif
             state->pressed_time = timer_read32();
-            state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_TAP),
-                                        timeout_touch, state);
+            state->timeout = defer_exec(tap_timeout, timeout_touch, state);
             SMTD_DEBUG("%s timeout_touch in %lums", smtd_state_to_str(state),
                        get_smtd_timeout_or_default(state, SMTD_TIMEOUT_TAP));
             break;
@@ -612,8 +614,7 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             #endif
             state->released_time = timer_read32();
             state->resolution = SMTD_RESOLUTION_UNCERTAIN;
-            state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_SEQUENCE),
-                                        timeout_sequence, state);
+            state->timeout = defer_exec(sequence_timeout, timeout_sequence, state);
             SMTD_DEBUG("%s timeout_sequence in %lums", smtd_state_to_str(state),
                        get_smtd_timeout_or_default(state, SMTD_TIMEOUT_SEQUENCE));
             break;
@@ -623,6 +624,26 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
 
         case SMTD_STAGE_TOUCH_RELEASE:
             state->released_time = timer_read32();
+            uint32_t p1 = state->pressed_time;
+            uint32_t p2 = state->timeout;
+            uint32_t p3 = state->released_time;
+
+            if (p1 > tap_timeout) {
+                state->timeout = defer_exec(p1 + get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE),
+                                            timeout_hold_release, state);
+                SMTD_DEBUG("%s timeout_hold_release in %lums", smtd_state_to_str(state),
+                           p1 + get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE));
+            } else if (p3 < p2 / SMTD_GLOBAL_RELEASE_RATIO) {
+                state->timeout = defer_exec(p2 / SMTD_GLOBAL_RELEASE_RATIO,
+                                            timeout_touch_release, state);
+                SMTD_DEBUG("%s timeout_touch_release in %lums (tap)",
+                           smtd_state_to_str(state), p2 / SMTD_GLOBAL_RELEASE_RATIO);
+            } else if (p3 < p2) {
+                state->timeout = defer_exec(p2 + p1, timeout_touch_release, state);
+                SMTD_DEBUG("%s timeout_touch_release in %lums (tap)",
+                           smtd_state_to_str(state), p2 + p1);
+            }
+
             state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE),
                                         timeout_touch_release, state);
             SMTD_DEBUG("%s timeout_touch_release in %lums", smtd_state_to_str(state),
@@ -631,10 +652,24 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
 
         case SMTD_STAGE_HOLD_RELEASE:
             state->released_time = timer_read32();
-            state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE),
-                                        timeout_hold_release, state);
-            SMTD_DEBUG("%s timeout_hold_release in %lums", smtd_state_to_str(state),
-                       get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE));
+            uint32_t p1_hold = state->pressed_time;
+            uint32_t p2_hold = state->timeout;
+            uint32_t p3_hold = state->released_time;
+            if (p1_hold > tap_timeout) {
+                state->timeout = defer_exec(p1_hold + get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE),
+                                            timeout_touch_release, state);
+                SMTD_DEBUG("%s timeout_touch_release in %lums", smtd_state_to_str(state),
+                           p1_hold + get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE));
+            } else if (p3_hold < p2_hold / SMTD_GLOBAL_RELEASE_RATIO) {
+                state->timeout = defer_exec(p2_hold / SMTD_GLOBAL_RELEASE_RATIO,
+                                            timeout_touch_release, state);
+                SMTD_DEBUG("%s timeout_touch_release in %lums (tap)",
+                           smtd_state_to_str(state), p2_hold / SMTD_GLOBAL_RELEASE_RATIO);
+            } else if (p3_hold < p1_hold) {
+                state->timeout = defer_exec(p2_hold + p1_hold, timeout_touch_release, state);
+                SMTD_DEBUG("%s timeout_touch_release in %lums (tap)",
+                           smtd_state_to_str(state), p2_hold + p1_hold);
+            }
             break;
     }
 
