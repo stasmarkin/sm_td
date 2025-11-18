@@ -1,3 +1,6 @@
+#### `v0.5.4`
+- Feature: split sm_td into .h and .c file
+
 #### `v0.5.3`
 - Feature: add SMTD_MBTE5_ON_MKEY macro
 
