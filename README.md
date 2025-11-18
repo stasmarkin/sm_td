@@ -164,8 +164,11 @@ Your support helps me continue developing and maintaining this project. Thank yo
 #### `v0.5.2`
 - Fix: smtd_current_keycode is now compatible with AVR (fixes issue #48)
 -
-#### `v0.5.3` (we are here)
+#### `v0.5.3`
 - Feature: add SMTD_MBTE5_ON_MKEY macro
+
+#### `v0.5.4` (we are here)
+- Feature: split sm_td into .h and .c file
 
 #### `v0.6.0+` and further `v0.x`
 - dynamic timeouts
@@ -186,7 +189,7 @@ Your support helps me continue developing and maintaining this project. Thank yo
 - [MrMustardTBC](https://github.com/MrMustardTBC) for [docs fixes](https://github.com/stasmarkin/sm_td/pull/24)
 - [mikenrafter](https://github.com/mikenrafter) for [cool macros](https://github.com/stasmarkin/sm_td/pull/18)
 - [alextverdyy](https://github.com/alextverdyy) for [qmk module support](https://github.com/stasmarkin/sm_td/pull/39)
-- [TickKleiner](https://github.com/TickKleiner) for [community module multiple definition error fix](https://github.com/stasmarkin/sm_td/pull/52)
+- [TickKleiner](https://github.com/TickKleiner) for [community module multiple definition error fix](https://github.com/stasmarkin/sm_td/pull/52) 
 
 ### Beta testing
 - [Azzam S.A](https://github.com/azzamsa)
