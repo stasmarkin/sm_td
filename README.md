@@ -167,8 +167,12 @@ Your support helps me continue developing and maintaining this project. Thank yo
 #### `v0.5.3`
 - Feature: add SMTD_MBTE5_ON_MKEY macro
 
-#### `v0.5.4` (we are here)
+#### `v0.5.4`
 - Feature: split sm_td into .h and .c file
+
+#### `v0.5.5` (we are here)
+- Fix: module installation uses process_record stage instead of pre_process_record
+- Fix: Better place for avoid_unused_variable_on_compile
 
 #### `v0.6.0+` and further `v0.x`
 - dynamic timeouts

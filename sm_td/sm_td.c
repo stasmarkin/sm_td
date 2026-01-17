@@ -18,13 +18,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.5.4
- * Date: 2025-09-25
+ * Version: 0.5.5
+ * Date: 2026-01-17
  */
 
 #include "sm_td.h"
 
-bool pre_process_record_sm_td(uint16_t keycode, keyrecord_t* record) {
+bool process_record_sm_td(uint16_t keycode, keyrecord_t* record) {
 	return process_smtd(keycode, record);
 }
 
@@ -34,20 +34,14 @@ bool pre_process_record_sm_td(uint16_t keycode, keyrecord_t* record) {
 
 #ifdef SMTD_UNIT_TEST
 /* Test mode - externally visible variables */
-smtd_state *smtd_active_states[SMTD_POOL_SIZE] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
-smtd_state smtd_states_pool[SMTD_POOL_SIZE] = {
-    EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE,
-    EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE
-};
+smtd_state *smtd_active_states[SMTD_POOL_SIZE] = {[0 ... SMTD_POOL_SIZE-1] = NULL};
+smtd_state smtd_states_pool[SMTD_POOL_SIZE] = {[0 ... SMTD_POOL_SIZE-1] = EMPTY_STATE};
 uint8_t smtd_active_states_size = 0;
 bool smtd_bypass = false;
 #else
 /* Normal mode - internal variables */
-static smtd_state *smtd_active_states[SMTD_POOL_SIZE] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
-static smtd_state smtd_states_pool[SMTD_POOL_SIZE] = {
-    EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE,
-    EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE, EMPTY_STATE
-};
+static smtd_state *smtd_active_states[SMTD_POOL_SIZE] = {[0 ... SMTD_POOL_SIZE-1] = NULL};
+static smtd_state smtd_states_pool[SMTD_POOL_SIZE] = {[0 ... SMTD_POOL_SIZE-1] = EMPTY_STATE};
 static uint8_t smtd_active_states_size = 0;
 static bool smtd_bypass = false;
 #endif
@@ -359,7 +353,7 @@ void smtd_create_state(uint16_t pressed_keycode, keyrecord_t *record, uint16_t d
         }
     }
 
-    if (!state || state == NULL) {
+    if (state == NULL) {
         SMTD_DEBUG("<< %s NO FREE STATES",
                    smtd_record_to_str(record));
         SMTD_DEBUG_FULL();
@@ -583,6 +577,9 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
     state->timeout = INVALID_DEFERRED_TOKEN;
     state->stage = next_stage;
 
+    uint32_t tap_timeout = get_smtd_timeout_or_default(state, SMTD_TIMEOUT_TAP);
+    uint32_t sequence_timeout = get_smtd_timeout_or_default(state, SMTD_TIMEOUT_SEQUENCE);
+
     switch (state->stage) {
         case SMTD_STAGE_NONE:
             for (uint8_t j = state->idx; j < smtd_active_states_size - 1; j++) {
@@ -600,8 +597,7 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             state->saved_mods = get_mods();
             #endif
             state->pressed_time = timer_read32();
-            state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_TAP),
-                                        timeout_touch, state);
+            state->timeout = defer_exec(tap_timeout, timeout_touch, state);
             SMTD_DEBUG("%s timeout_touch in %lums", smtd_state_to_str(state),
                        get_smtd_timeout_or_default(state, SMTD_TIMEOUT_TAP));
             break;
@@ -612,8 +608,7 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             #endif
             state->released_time = timer_read32();
             state->resolution = SMTD_RESOLUTION_UNCERTAIN;
-            state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_SEQUENCE),
-                                        timeout_sequence, state);
+            state->timeout = defer_exec(sequence_timeout, timeout_sequence, state);
             SMTD_DEBUG("%s timeout_sequence in %lums", smtd_state_to_str(state),
                        get_smtd_timeout_or_default(state, SMTD_TIMEOUT_SEQUENCE));
             break;
@@ -631,10 +626,6 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
 
         case SMTD_STAGE_HOLD_RELEASE:
             state->released_time = timer_read32();
-            state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE),
-                                        timeout_hold_release, state);
-            SMTD_DEBUG("%s timeout_hold_release in %lums", smtd_state_to_str(state),
-                       get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE));
             break;
     }
 
@@ -948,14 +939,3 @@ smtd_state** smtd_get_active_states(void) {
 }
 
 #endif
-
-/* ************************************* *
- *             LAYER UTILS               *
- * ************************************* */
-
-void avoid_unused_variable_on_compile(void *ptr) {
-    // just touch them, so compiler won't throw "defined but not used" error
-    // that variables are used in macros that user may not use
-    if (return_layer == RETURN_LAYER_NOT_SET) return_layer = RETURN_LAYER_NOT_SET;
-    if (return_layer_cnt == 0) return_layer_cnt = 0;
-}

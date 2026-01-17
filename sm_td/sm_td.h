@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.5.4
- * Date: 2025-09-25
+ * Version: 0.5.5
+ * Date: 2026-01-17
  */
 #pragma once
 
@@ -33,10 +33,10 @@
 #endif
 
 #ifdef SMTD_DEBUG_ENABLED
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
 #include "print.h"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #endif
 
 #ifdef SMTD_UNIT_TEST
@@ -52,7 +52,8 @@
 #endif
 
 #if SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS > 0
-#define SMTD_SIMULTANEOUS_PRESSES_DELAY wait_ms(SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS);
+#define SMTD_SIMULTANEOUS_PRESSES_DELAY                                        \
+  wait_ms(SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS);
 #else
 #define SMTD_SIMULTANEOUS_PRESSES_DELAY
 #endif
@@ -71,6 +72,14 @@
 
 #ifndef SMTD_GLOBAL_AGGREGATE_TAPS
 #define SMTD_GLOBAL_AGGREGATE_TAPS false
+#endif
+
+#ifndef SMTD_GLOBAL_RELEASE_RATIO
+#define SMTD_GLOBAL_RELEASE_RATIO 5
+#endif
+
+#ifndef SMTD_GLOBAL_DEPRECATED_FIXED_TIMEOUTS
+#define SMTD_GLOBAL_DEPRECATED_FIXED_TIMEOUTS 0
 #endif
 
 // SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
@@ -196,8 +205,9 @@ typedef struct {
 }
 #endif
 
-
+#ifndef SMTD_POOL_SIZE
 #define SMTD_POOL_SIZE 10
+#endif
 
 /* ************************************* *
  *           PUBLIC FUNCTIONS            *
@@ -234,10 +244,6 @@ void smtd_execute_action(smtd_state *state, smtd_action action);
 
 void smtd_emulate_key(keypos_t *keypos, bool press);
 
-#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
-void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t mods_after_action);
-#endif
-
 smtd_resolution smtd_worst_resolution_before(smtd_state *state);
 
 uint16_t smtd_current_keycode(keypos_t *key);
@@ -250,6 +256,9 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature);
 
 bool smtd_feature_enabled_or_default(smtd_state *state, smtd_feature feature);
 
+#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
+void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t mods_after_action);
+#endif
 
 /* ************************************* *
  *           DEBUG CONFIGURATION         *
@@ -262,6 +271,7 @@ bool smtd_feature_enabled_or_default(smtd_state *state, smtd_feature feature);
 #define SMTD_DEBUG_OFFSET_INC
 #define SMTD_DEBUG_OFFSET_DEC
 #define SMTD_DEBUG_FULL(...)
+#define SMTD_DEBUG_JSON(...)
 
 #else
 
@@ -276,7 +286,10 @@ uint32_t last_key_timer = 0;
 #endif
 
 #ifndef SMTD_DEBUG_PRINT_OFFSETS
-#define SMTD_DEBUG_PRINT_OFFSETS for (uint8_t __i__ = 0; __i__ < smtd_debug_offset; __i__++) { SMTD_PRINT("  "); }
+#define SMTD_DEBUG_PRINT_OFFSETS                                               \
+  for (uint8_t __i__ = 0; __i__ < smtd_debug_offset; __i__++) {                \
+    SMTD_PRINT("  ");                                                          \
+  }
 #endif
 
 #ifndef SMTD_DEBUG_OFFSET_INC
@@ -288,20 +301,21 @@ uint32_t last_key_timer = 0;
 #endif
 
 #ifndef SMTD_DEBUG
-#define SMTD_DEBUG(...) do { \
-SMTD_PRINT("[%4d] ", __LINE__); \
-SMTD_DEBUG_PRINT_OFFSETS; \
-SMTD_PRINT(__VA_ARGS__); \
-SMTD_PRINT("\n"); \
-} while (0);
+#define SMTD_DEBUG(...)                                                        \
+  do {                                                                         \
+    SMTD_PRINT("[%4d] ", __LINE__);                                            \
+    SMTD_DEBUG_PRINT_OFFSETS;                                                  \
+    SMTD_PRINT(__VA_ARGS__);                                                   \
+    SMTD_PRINT("\n");                                                          \
+  } while (0);
 #endif
 
 #ifndef SMTD_DEBUG_INPUT
-#define SMTD_DEBUG_INPUT(...) \
-SMTD_DEBUG("%s", ""); \
-SMTD_DEBUG(">> +%lums", timer_elapsed32(last_key_timer)); \
-SMTD_DEBUG(__VA_ARGS__); \
-last_key_timer = timer_read32();
+#define SMTD_DEBUG_INPUT(...)                                                  \
+  SMTD_DEBUG("%s", "");                                                        \
+  SMTD_DEBUG(">> +%lums", timer_elapsed32(last_key_timer));                    \
+  SMTD_DEBUG(__VA_ARGS__);                                                     \
+  last_key_timer = timer_read32();
 #endif
 
 #ifndef SMTD_SNDEBUG
@@ -309,10 +323,39 @@ last_key_timer = timer_read32();
 #endif
 
 #ifndef SMTD_DEBUG_FULL
-#define SMTD_DEBUG_FULL() \
-  SMTD_DEBUG("## active_statses %d", smtd_active_states_size); \
-  if (smtd_active_states_size == 0) { SMTD_DEBUG("## %s", ""); SMTD_DEBUG("## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##\n"); }; \
-  for(int asdf=0; asdf<smtd_active_states_size; asdf++) { SMTD_DEBUG("## %s", smtd_state_to_str(smtd_active_states[asdf])); }
+#define SMTD_DEBUG_FULL()                                                      \
+  SMTD_DEBUG("## active_statses %d", smtd_active_states_size);                 \
+  if (smtd_active_states_size == 0) {                                          \
+    SMTD_DEBUG("## %s", "");                                                   \
+    SMTD_DEBUG("## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## "  \
+               "## ## ## ## ## ## ## ## ## ## ## ## ##\n");                    \
+  };                                                                           \
+  for (int asdf = 0; asdf < smtd_active_states_size; asdf++) {                 \
+    SMTD_DEBUG("## %s", smtd_state_to_str(smtd_active_states[asdf]));          \
+  }
+#endif
+
+#ifndef SMTD_DEBUG_JSON
+#define SMTD_DEBUG_JSON(timestamp, state_id, from_key, to_key, status, action, \
+exec_status, result, event_type, duration_ms)          \
+std::cout << "{\n"                                                           \
+<< "  \"timestamp\": " << timestamp << ",\n"                       \
+<< "  \"state\": {\n"                                              \
+<< "    \"id\": " << state_id << ",\n"                             \
+<< "    \"from\": \"" << from_key << "\",\n"                       \
+<< "    \"to\": \"" << to_key << "\",\n"                           \
+<< "    \"status\": \"" << status << "\",\n"                       \
+<< "    \"action\": \"" << action << "\"\n"                        \
+<< "  },\n"                                                        \
+<< "  \"event\": {\n"                                              \
+<< "    \"type\": \"" << event_type << "\",\n"                     \
+<< "    \"duration_ms\": " << duration_ms << "\n"                  \
+<< "  },\n"                                                        \
+<< "  \"additional_info\": {\n"                                    \
+<< "    \"exec_status\": \"" << exec_status << "\",\n"             \
+<< "    \"result\": " << result << "\n"                            \
+<< "  }\n"                                                         \
+<< "}\n";
 #endif
 
 static uint8_t smtd_debug_offset = 0;
@@ -335,7 +378,7 @@ char* smtd_state_to_str2(smtd_state *state);
 
 char* smtd_record_to_str(keyrecord_t *record);
 
-#endif
+#endif //SMTD_DEBUG_ENABLED
 
 
 /* ************************************* *
@@ -434,7 +477,10 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature);
 #define OVERLOAD2(_1, _2, NAME, ...) NAME
 #endif
 #ifndef EXEC
-#define EXEC(code) do { code } while(0)
+#define EXEC(code)                                                             \
+  do {                                                                         \
+    code                                                                       \
+  } while (0)
 #endif
 
 #define SMTD_LIMIT(limit, if_under_limit, otherwise) \
@@ -590,23 +636,28 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature);
 
 #define RETURN_LAYER_NOT_SET 13
 
-static uint8_t return_layer = RETURN_LAYER_NOT_SET;
-static uint8_t return_layer_cnt = 0;
+static uint8_t smtd_return_layer = RETURN_LAYER_NOT_SET;
+static uint8_t smtd_return_layer_cnt = 0;
 
-void avoid_unused_variable_on_compile(void *ptr);
+#define LAYER_PUSH(layer)                                   \
+    smtd_return_layer_cnt++;                                \
+    if (smtd_return_layer == RETURN_LAYER_NOT_SET) {        \
+        smtd_return_layer = get_highest_layer(layer_state); \
+    }                                                       \
+    layer_move(layer)
 
-#define LAYER_PUSH(layer)                              \
-    return_layer_cnt++;                                \
-    if (return_layer == RETURN_LAYER_NOT_SET) {        \
-        return_layer = get_highest_layer(layer_state); \
-    }                                                  \
-    layer_move(layer);
-
-#define LAYER_RESTORE()                          \
-    if (return_layer_cnt > 0) {                  \
-        return_layer_cnt--;                      \
-        if (return_layer_cnt == 0) {             \
-            layer_move(return_layer);            \
-            return_layer = RETURN_LAYER_NOT_SET; \
-        }                                        \
+#define LAYER_RESTORE()                               \
+    if (smtd_return_layer_cnt > 0) {                  \
+        smtd_return_layer_cnt--;                      \
+        if (smtd_return_layer_cnt == 0) {             \
+            layer_move(smtd_return_layer);            \
+            smtd_return_layer = RETURN_LAYER_NOT_SET; \
+        }                                             \
     }
+
+static inline void avoid_unused_variable_on_compile(void *ptr) {
+    // just touch them, so compiler won't throw "defined but not used" error
+    // that variables are used in macros that user may not use
+    if (smtd_return_layer == RETURN_LAYER_NOT_SET) smtd_return_layer = RETURN_LAYER_NOT_SET;
+    if (smtd_return_layer_cnt == 0) smtd_return_layer_cnt = 0;
+}

@@ -1,3 +1,7 @@
+#### `v0.5.5`
+- Fix: module installation uses process_record stage instead of pre_process_record
+- Fix: Better place for avoid_unused_variable_on_compile
+
 #### `v0.5.4`
 - Feature: split sm_td into .h and .c file
 
