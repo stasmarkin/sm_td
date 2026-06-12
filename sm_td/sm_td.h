@@ -104,14 +104,6 @@
 #define SMTD_QMK_TAPHOLD_USE_CAPS_WORD true
 #endif
 
-// SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
-// When enabled, sm_td snapshots get_mods() on TOUCH/SEQUENCE and runs all actions
-// with that snapshot, then restores the mods that were active when the action started.
-// If an action changes mods, sm_td propagates those changes forward to later active states.
-// This helps when some modifiers are handled outside sm_td or when keys bypass sm_td.
-// Limitation: only get_mods() (real_mods) is captured; weak/oneshot/speculative/override
-// modifiers are not included, so effective host mods may still differ.
-
 #include <stdint.h>
 
 
@@ -160,11 +152,6 @@ typedef struct {
     /** The keycode of a key that QMK thinks was pressed */
     uint16_t pressed_keycode;
 
-    #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
-    /** The mods on key tap */
-    uint8_t saved_mods;
-    #endif
-
     /** The keycode that should be actually pressed (asked outside or determined by the tap action) */
     uint16_t desired_keycode;
 
@@ -200,24 +187,6 @@ typedef struct {
 } smtd_state;
 
 
-#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
-#define EMPTY_STATE {                               \
-        .pressed_keyposition = MAKE_KEYPOS(0, 0),   \
-        .pressed_keycode = 0,                       \
-        .desired_keycode = 0,                       \
-        .saved_mods = 0,                            \
-        .tap_count = 0,                             \
-        .pressed_time = 0,                          \
-        .released_time = 0,                         \
-        .timeout = INVALID_DEFERRED_TOKEN,          \
-        .stage = SMTD_STAGE_NONE,                   \
-        .resolution = SMTD_RESOLUTION_UNCERTAIN,    \
-        .action_performed = -1,                     \
-        .action_required = -1,                      \
-        .idx = 0,                                   \
-        .emulated_register = false,                 \
-}
-#else
 #define EMPTY_STATE {                               \
         .pressed_keyposition = MAKE_KEYPOS(0, 0),   \
         .pressed_keycode = 0,                       \
@@ -233,7 +202,6 @@ typedef struct {
         .idx = 0,                                   \
         .emulated_register = false,                 \
 }
-#endif
 
 #ifndef SMTD_POOL_SIZE
 #define SMTD_POOL_SIZE 10
@@ -285,10 +253,6 @@ uint32_t get_smtd_timeout_or_default(smtd_state *state, smtd_timeout timeout);
 bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature);
 
 bool smtd_feature_enabled_or_default(smtd_state *state, smtd_feature feature);
-
-#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
-void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t mods_after_action);
-#endif
 
 /* ************************************* *
  *           DEBUG CONFIGURATION         *
@@ -450,10 +414,6 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage);
 void smtd_handle_action(smtd_state *state, smtd_action action);
 
 void smtd_execute_action(smtd_state *state, smtd_action action);
-
-#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
-void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t mods_after_action);
-#endif
 
 /* ************************************* *
  *      UTILITY FUNCTIONS                *

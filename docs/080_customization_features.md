@@ -23,13 +23,6 @@ There are global feature flags that may help you with customizing sm_td behavior
   If a key conflicts with another `process_record`-based feature (e.g. it is part of a Combo), you can disable the pipeline for that key via `SMTD_FEATURE_PIPELINE_TAPS` in `smtd_feature_enabled` (see below).
 
 
-- `SMTD_GLOBAL_MODS_PROPAGATION_ENABLED` (default is false)
-
-  When enabled, sm_td snapshots `get_mods()` on TOUCH/SEQUENCE and runs actions with that snapshot, then restores mods that were active when the action started. If an action changes mods, sm_td propagates those changes forward to later active states. This makes tap/hold actions more predictable when modifiers are handled outside sm_td.
-  
-  Limitation: this uses QMK `get_mods()` (real_mods) only. Weak mods, oneshot mods, speculative hold mods, and key overrides are not captured, so effective host mods may still differ.
-
-
 - `SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS` (default is 0)
 
   One some stages sm_td may generate several events that would be sent immediately to OS. For example, by releasing following key sm_td may decide to unset modifier, send first key press, then set modifier and send following key press and release — everything one by one as soon as possible. In some cases corresponding keyboard driver or app may not register that events correctly. So, that SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS will help you with that case. If you sent SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS bigger than 0, sm_td will make a small pauses between sending events to OS.
@@ -53,7 +46,7 @@ bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature) {
 }
 ```
 
-Note: `smtd_feature` currently includes `SMTD_FEATURE_AGGREGATE_TAPS` and `SMTD_FEATURE_PIPELINE_TAPS`. `SMTD_GLOBAL_MODS_PROPAGATION_ENABLED` is a global-only flag, and simultaneous presses delay cannot be overridden per key.
+Note: `smtd_feature` currently includes `SMTD_FEATURE_AGGREGATE_TAPS` and `SMTD_FEATURE_PIPELINE_TAPS`. Simultaneous presses delay cannot be overridden per key.
 
 
 
@@ -93,28 +86,3 @@ That emulates QMK's Tap Dance. If SMTD_FEATURE_AGGREGATE_TAPS = true, `on_smtd_a
                      |                                             | on_smtd_action(macro, SMTD_ACTION_TAP, 2)   |
 ```
 
-## SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
-
-Since sm_td sends actions later than the physical press, modifier state can change in between. For example: `↓shift` (not sm_td), `↓smtd_macro`, `↑shift`, `↑smtd_macro`. Without mods propagation, the tap action executes after shift is released, so the tap is unshifted. With `SMTD_GLOBAL_MODS_PROPAGATION_ENABLED`, sm_td snapshots `get_mods()` at TOUCH, temporarily restores that snapshot before each action, then restores the current mods afterward. This makes tap/hold output match the modifier state that was active when the sm_td key was pressed.
-
-Limitation reminder: only `get_mods()` (real_mods) is captured. Weak/oneshot/speculative/override mods are not included.
-
-```
-                             | SMTD_GLOBAL_MODS_PROPAGATION_ENABLED = false | SMTD_GLOBAL_MODS_PROPAGATION_ENABLED = true  |
-                             |                                           |                                           |
-0ms  - - - ┌—————┐ - - - - - | - - - - - - - - - - - - - - - - - - - - - | - - - - - - - - - - - - - - - - - - - - - |
-           │shift│           | press(shift)                              | press(shift)                              |
-           │ key │           |                                           |                                           |
-           │     │           |                                           |                                           |
-10ms - - - │ - - │ ┌—————┐ - | - - - - - - - - - - - - - - - - - - - - - | - - - - - - - - - - - - - - - - - - - - - |
-           │     │ │macro│   |                                           |                                           |
-           │     │ │ key │   |                                           |                                           |
-           │     │ │     │   |                                           |                                           |
-20ms - - - └—————┘ │ - - │ - | - - - - - - - - - - - - - - - - - - - - - | - - - - - - - - - - - - - - - - - - - - - |
-                   │     │   | release(shift)                            | release(shift)                            |
-                   │     │   |                                           |                                           |
-30ms - - - - - - - └—————┘ - | - - - - - - - - - - - - - - - - - - - - - | - - - - - - - - - - - - - - - - - - - - - |
-                             | on_smtd_action(macro, SMTD_ACTION_TAP, 0) | press(shift)                              |
-                             |                                           | on_smtd_action(macro, SMTD_ACTION_TAP, 0) |
-                             |                                           | release(shift)                            |
-```

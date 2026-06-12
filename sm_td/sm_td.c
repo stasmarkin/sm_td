@@ -120,17 +120,6 @@ char* smtd_keycode_to_str(uint16_t keycode) {
 char* smtd_state_to_str(smtd_state *state) {
     static char buffer_state[64];
 
-    #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
-    SMTD_SNDEBUG(buffer_state, sizeof(buffer_state), "S[%d](@%d.%d#%s->%s){%s/%s,m=%x}",
-             state->idx,
-             state->pressed_keyposition.row,
-             state->pressed_keyposition.col,
-             smtd_keycode_to_str(state->pressed_keycode),
-             smtd_keycode_to_str(state->desired_keycode),
-             smtd_stage_to_str(state->stage),
-             smtd_resolution_to_str(state->resolution),
-             state->saved_mods);
-    #else
     SMTD_SNDEBUG(buffer_state, sizeof(buffer_state), "S[%d](@%d.%d#%s->%s){%s/%s}",
              state->idx,
              state->pressed_keyposition.row,
@@ -139,7 +128,6 @@ char* smtd_state_to_str(smtd_state *state) {
              smtd_keycode_to_str(state->desired_keycode),
              smtd_stage_to_str(state->stage),
              smtd_resolution_to_str(state->resolution));
-    #endif
 
     return buffer_state;
 }
@@ -147,17 +135,6 @@ char* smtd_state_to_str(smtd_state *state) {
 char* smtd_state_to_str2(smtd_state *state) {
     static char buffer_state2[64];
 
-    #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
-    SMTD_SNDEBUG(buffer_state2, sizeof(buffer_state2), "S[%d](@%d.%d#%s->%s){%s/%s,m=%x}",
-             state->idx,
-             state->pressed_keyposition.row,
-             state->pressed_keyposition.col,
-             smtd_keycode_to_str(state->pressed_keycode),
-             smtd_keycode_to_str(state->desired_keycode),
-             smtd_stage_to_str(state->stage),
-             smtd_resolution_to_str(state->resolution),
-             state->saved_mods);
-    #else
     SMTD_SNDEBUG(buffer_state2, sizeof(buffer_state2), "S[%d](@%d.%d#%s->%s){%s/%s}",
              state->idx,
              state->pressed_keyposition.row,
@@ -166,7 +143,6 @@ char* smtd_state_to_str2(smtd_state *state) {
              smtd_keycode_to_str(state->desired_keycode),
              smtd_stage_to_str(state->stage),
              smtd_resolution_to_str(state->resolution));
-    #endif
 
     return buffer_state2;
 }
@@ -557,9 +533,6 @@ void reset_state(smtd_state *state) {
     state->pressed_keyposition = MAKE_KEYPOS(0, 0);
     state->pressed_keycode = 0;
     state->desired_keycode = 0;
-    #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
-    state->saved_mods = 0;
-    #endif
     state->tap_count = 0;
     state->pressed_time = 0;
     state->released_time = 0;
@@ -596,9 +569,6 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             break;
 
         case SMTD_STAGE_TOUCH:
-            #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
-            state->saved_mods = get_mods();
-            #endif
             state->pressed_time = timer_read32();
             state->timeout = defer_exec(tap_timeout, timeout_touch, state);
             SMTD_DEBUG("%s timeout_touch in %lums", smtd_state_to_str(state),
@@ -606,9 +576,6 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
             break;
 
         case SMTD_STAGE_SEQUENCE:
-            #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
-            state->saved_mods = get_mods();
-            #endif
             state->released_time = timer_read32();
             state->resolution = SMTD_RESOLUTION_UNCERTAIN;
             state->timeout = defer_exec(sequence_timeout, timeout_sequence, state);
@@ -795,17 +762,6 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
                smtd_state_to_str(state),
                smtd_action_to_str(action));
 
-    #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
-    uint8_t mods_on_start = get_mods();
-    uint8_t mods_on_restore = state->saved_mods;
-
-    if (state->saved_mods != mods_on_start) {
-        set_mods(state->saved_mods);
-        send_keyboard_report();
-        SMTD_SIMULTANEOUS_PRESSES_DELAY
-    }
-    #endif
-
     smtd_state *prev_executing_state = smtd_executing_state;
     smtd_executing_state = state;
     smtd_bypass = true;
@@ -843,62 +799,10 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
         SMTD_DEBUG_OFFSET_DEC;
     }
 
-    #ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
-    uint8_t mods_after_action = get_mods();
-
-    if (mods_on_restore != mods_after_action) {
-        state->saved_mods = mods_after_action;
-        SMTD_DEBUG_OFFSET_INC;
-        smtd_propagate_mods(state, mods_on_restore, mods_after_action);
-        SMTD_DEBUG_OFFSET_DEC;
-    }
-
-    if (mods_on_start != mods_on_restore) {
-        uint8_t changed_mods = mods_on_start ^ mods_on_restore;
-        uint8_t enabled_mods = mods_on_start & changed_mods;
-        uint8_t disabled_mods = mods_on_restore & changed_mods;
-
-        uint8_t current_mods = get_mods();
-        current_mods |= enabled_mods;
-        current_mods &= ~disabled_mods;
-
-        set_mods(current_mods);
-        send_keyboard_report();
-        SMTD_SIMULTANEOUS_PRESSES_DELAY
-    }
-    #endif
-
     SMTD_DEBUG("%s exec done with %s",
                smtd_state_to_str(state),
                smtd_action_to_str(action));
 }
-
-#ifdef SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
-void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t mods_after_action) {
-    uint8_t changed_mods = mods_after_action ^ mods_before_action;
-    uint8_t enabled_mods = mods_after_action & changed_mods;
-    uint8_t disabled_mods = mods_before_action & changed_mods;
-
-    SMTD_DEBUG("%s mods: before:%x  after:%x  ^^:%x  ++:%x  --:%x",
-               smtd_state_to_str(state), mods_before_action, mods_after_action,
-               changed_mods, enabled_mods, disabled_mods);
-
-    for (uint8_t i = state->idx + 1; i < smtd_active_states_size; i++) {
-        SMTD_DEBUG("%s mods upd %s by +%x -%x",
-                   smtd_state_to_str(state),
-                   smtd_state_to_str2(smtd_active_states[i]),
-                   enabled_mods,
-                   disabled_mods);
-
-        smtd_active_states[i]->saved_mods |= enabled_mods;
-        smtd_active_states[i]->saved_mods &= ~disabled_mods;
-
-        SMTD_DEBUG("%s changed mods %s",
-                   smtd_state_to_str(state),
-                   smtd_state_to_str2(smtd_active_states[i]));
-    }
-}
-#endif
 
 /* ************************************* *
  *      UTILITY FUNCTIONS                *

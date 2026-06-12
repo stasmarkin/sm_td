@@ -6,10 +6,10 @@ try:
 except ImportError:
     from sm_td_assertions import *
 
-smtd = load_smtd_lib('tests/global_mods_propagation_disabled/layout.c')
+smtd = load_smtd_lib('tests/external_mods/layout.c')
 
 
-class TestSmTdWithGlobalModsPropagationDisabled(SmTdAssertions):
+class TestSmTdWithExternalMods(SmTdAssertions):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.smtd = smtd
@@ -219,17 +219,6 @@ class TestSmTdWithGlobalModsPropagationDisabled(SmTdAssertions):
         self.assertFalse(SHIFT.release())
         self.assertFalse(K3.release())
 
-        # with global mod propagation this should happen:
-        # self.assertHistory(
-        #     pressed(K2, mods=1),
-        #     pressed(KC_SHIFT, mods=1),
-        #     released(K2, mods=0),
-        #     pressed(K3, mods=2),
-        #     released(K3, mods=2),
-        #     released(KC_SHIFT, mods=2),
-        # )
-
-        # but without it we have:
         self.assertHistory(
             pressed(K2, mods=1),
             pressed(KC_SHIFT, mods=1),

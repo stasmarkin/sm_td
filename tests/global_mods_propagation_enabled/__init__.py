@@ -1,1 +1,0 @@
-# Global mods propagation enabled tests
