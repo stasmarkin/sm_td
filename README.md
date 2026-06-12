@@ -44,7 +44,9 @@ SM_TD respects your habits rather than forcing you to change them. It pays atten
 - Configurable timeouts per key or globally
 - Feature flags per key or globally
 - Debugging tools
-- Caps Word: integrates with QMK Caps Word
+- Caps Word: full integration with QMK Caps Word (shifts letters, ends on word-breaking keys, respects `caps_word_press_user`)
+- Standard QMK `MT()` / `LT()` keycodes support (via `SMTD_ENABLE_QMK_TAPHOLD`)
+- Plays well with other QMK features: sm_td taps go through the regular `process_record()` pipeline
 - Combos: partial support for QMK Combos
 
 ## Installation
@@ -53,9 +55,9 @@ There are two ways to install SM_TD:
 
 ### Option 1: Manual
 
-1. In `rules.mk`, add `DEFERRED_EXEC_ENABLE = yes`.
+1. In `rules.mk`, add `DEFERRED_EXEC_ENABLE = yes` and `SRC += sm_td.c`.
 2. In `config.h`, add `#define MAX_DEFERRED_EXECUTORS 10` (or increase if already defined).
-3. Copy `sm_td/sm_td.h` into your `keymaps/<your_keymap>/` folder (next to `keymap.c`).
+3. Copy `sm_td/sm_td.h` and `sm_td/sm_td.c` into your `keymaps/<your_keymap>/` folder (next to `keymap.c`).
 4. Add `#include "sm_td.h"` in your `keymap.c`.
 5. Check `process_smtd(...)` first in `process_record_user(...)` like this:
 ```c
@@ -167,16 +169,21 @@ Your support helps me continue developing and maintaining this project. Thank yo
 
 #### `v0.5.2`
 - Fix: smtd_current_keycode is now compatible with AVR (fixes issue #48)
--
+
 #### `v0.5.3`
 - Feature: add SMTD_MBTE5_ON_MKEY macro
 
 #### `v0.5.4`
 - Feature: split sm_td into .h and .c file
 
-#### `v0.5.5` (we are here)
+#### `v0.5.5`
 - Fix: module installation uses process_record stage instead of pre_process_record
 - Fix: Better place for avoid_unused_variable_on_compile
+
+#### `v0.5.6` (we are here)
+- Feature: sm_td taps go through the full QMK pipeline, so Caps Word and other QMK features finally see them (fixes #23); new `SMTD_GLOBAL_PIPELINE_TAPS` / `SMTD_FEATURE_PIPELINE_TAPS` flags
+- Feature: `SMTD_ENABLE_QMK_TAPHOLD` — use standard QMK `MT()` / `LT()` keycodes with sm_td timing
+- Removed: `SMTD_GLOBAL_MODS_PROPAGATION_ENABLED` (was off by default and half-baked)
 
 #### `v0.6.0+` and further `v0.x`
 - dynamic timeouts
@@ -187,7 +194,6 @@ Your support helps me continue developing and maintaining this project. Thank yo
 - stable API
 - memory optimizations (on storing active states)
 - memory optimizations (on state machine stack size)
-- split into header and source files
 
 
 ## Special Thanks

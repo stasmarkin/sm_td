@@ -33,6 +33,11 @@ smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap
 
 uint32_t get_smtd_timeout(uint16_t keycode, smtd_timeout timeout) { return get_smtd_timeout_default(timeout); }
 bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature) { return smtd_feature_enabled_default(keycode, feature); }
+
+// Required stubs for the test bindings (customize if the suite needs side effects)
+void post_register_code16(uint16_t keycode) {}
+void post_unregister_code16(uint16_t keycode) {}
+void post_process_record(keyrecord_t *record) {}
 ```
 
 ## test.py (minimal skeleton)

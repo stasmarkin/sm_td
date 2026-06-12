@@ -1,3 +1,9 @@
+#### `v0.5.6`
+- Feature: sm_td taps now go through the full QMK `process_record()` pipeline, so Caps Word, Auto Shift, Key Overrides and other QMK features can see them (fixes #23). Controlled by `SMTD_GLOBAL_PIPELINE_TAPS` (default on) and per-key `SMTD_FEATURE_PIPELINE_TAPS`
+- Feature: `SMTD_ENABLE_QMK_TAPHOLD` — standard QMK `MT()` / `LT()` keycodes are handled with sm_td timing, no `SMTD_MT` / `SMTD_LT` macros required
+- Fix: derived keycodes (multi-tap alternates, `*_ON_MKEY` macros) get a proper Caps Word pass instead of a hardcoded shift; no more stuck shift when Caps Word turns off mid-hold
+- Removed: `SMTD_GLOBAL_MODS_PROPAGATION_ENABLED` (was disabled by default; captured only real mods and could flicker a physically held modifier)
+
 #### `v0.5.5`
 - Fix: module installation uses process_record stage instead of pre_process_record
 - Fix: Better place for avoid_unused_variable_on_compile

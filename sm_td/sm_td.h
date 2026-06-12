@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.5.5
- * Date: 2026-01-17
+ * Version: 0.5.6
+ * Date: 2026-06-12
  */
 #pragma once
 
@@ -83,14 +83,6 @@
 // Can be overridden per key via SMTD_FEATURE_PIPELINE_TAPS in smtd_feature_enabled.
 #ifndef SMTD_GLOBAL_PIPELINE_TAPS
 #define SMTD_GLOBAL_PIPELINE_TAPS true
-#endif
-
-#ifndef SMTD_GLOBAL_RELEASE_RATIO
-#define SMTD_GLOBAL_RELEASE_RATIO 5
-#endif
-
-#ifndef SMTD_GLOBAL_DEPRECATED_FIXED_TIMEOUTS
-#define SMTD_GLOBAL_DEPRECATED_FIXED_TIMEOUTS 0
 #endif
 
 // Enable automatic handling for standard QMK MT() / LT() keycodes.

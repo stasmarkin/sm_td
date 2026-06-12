@@ -1,7 +1,5 @@
 ```
-This documentation is written for version 0.4.1.
-It is a bit outdated for later versions of SM_TD.
-Some sections below were updated for newer releases.
+This documentation is up to date for version 0.5.6.
 ```
 
 
@@ -26,6 +24,16 @@ There are global feature flags that may help you with customizing sm_td behavior
 - `SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS` (default is 0)
 
   One some stages sm_td may generate several events that would be sent immediately to OS. For example, by releasing following key sm_td may decide to unset modifier, send first key press, then set modifier and send following key press and release — everything one by one as soon as possible. In some cases corresponding keyboard driver or app may not register that events correctly. So, that SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS will help you with that case. If you sent SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS bigger than 0, sm_td will make a small pauses between sending events to OS.
+
+
+- `SMTD_ENABLE_QMK_TAPHOLD` (default is 0)
+
+  When set to 1, standard QMK `MT()` / `LT()` keycodes that are left unhandled by your `on_smtd_action` are processed by sm_td with its timing: tap sends the tap keycode, hold registers the mods / pushes the layer. This lets you keep plain `MT()` / `LT()` in your keymap without `SMTD_MT` / `SMTD_LT` macros. Advanced features like tap-count thresholds still require the macros.
+
+
+- `SMTD_QMK_TAPHOLD_USE_CAPS_WORD` (default is true)
+
+  Whether taps produced by `SMTD_ENABLE_QMK_TAPHOLD` handling respect Caps Word. Set to false to hide those taps from Caps Word.
 
 
 You make redefine any of this global flags in your config.h.

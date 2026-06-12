@@ -1,8 +1,8 @@
 
 
-1. Add `DEFERRED_EXEC_ENABLE = yes` to your `rules.mk` file.
+1. Add `DEFERRED_EXEC_ENABLE = yes` and `SRC += sm_td.c` to your `rules.mk` file.
 2. Add `#define MAX_DEFERRED_EXECUTORS 10` (or add 10 if you already use it) to your `config.h` file.
-3. Clone the `sm_td/sm_td.h` repository into your `keymaps/your_keymap` folder (next to your `keymap.c`)
+3. Copy `sm_td/sm_td.h` and `sm_td/sm_td.c` from this repository into your `keymaps/your_keymap` folder (next to your `keymap.c`)
 4. Add `#include "sm_td.h"` to your `keymap.c` file
 5. Check `!process_smtd` first in your `process_record_user` function like this
    ```c
@@ -27,7 +27,7 @@
            SMTD_MT(KC_F, KC_LSFT)
        }
    
-       return SMTD_RESOLUTION_NONE;
+       return SMTD_RESOLUTION_UNHANDLED;
    }
    ```
    See extensive documentation in the [Customization Guide](https://github.com/stasmarkin/sm_td/blob/main/docs/050_customization.md) for all available customisations.

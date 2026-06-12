@@ -1,6 +1,5 @@
 ```
-This documentation is written for version 0.4.1.
-It is a bit outdated for later versions of SM_TD.
+This documentation is up to date for version 0.5.6.
 ```
 
 
@@ -69,8 +68,6 @@ You will never get a tap between hold and release or miss a touch action. So you
 One possible structure to describe macro behavior is nested switch-cases. Top level for macro key selection, second for action, third (optional) for tap_count. For example
 
 
---- EVERYTHING BELOW IS A BIT OUTDATED ---
-
 ```c
 smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
     switch (keycode) {
@@ -133,18 +130,20 @@ So instead of writing a multiline handler for each sm_td keycode, you can write 
 ```c
 smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
     switch (keycode) {
-        SMTD_MT(CKC_A, KC_A, KC_LEFT_GUI)
-        SMTD_MT(CKC_S, KC_S, KC_LEFT_ALT)
-        SMTD_MT(CKC_D, KC_D, KC_LEFT_CTRL)
-        SMTD_MT(CKC_F, KC_F, KC_LSFT)
+        SMTD_MT(KC_A, KC_LEFT_GUI)
+        SMTD_MT(KC_S, KC_LEFT_ALT)
+        SMTD_MT(KC_D, KC_LEFT_CTRL)
+        SMTD_MT(KC_F, KC_LSFT)
 
-        SMTD_LT(CKC_SPACE, KC_SPACE, LAYER_NUM)
-        SMTD_LT(CKC_ENTER, KC_ENTER, LAYER_FN)
+        SMTD_LT(KC_SPACE, LAYER_NUM)
+        SMTD_LT(KC_ENTER, LAYER_FN)
     } // End of switch (keycode)
     
     return SMTD_RESOLUTION_UNHANDLED;
 } // End of on_smtd_action function
 ```
+
+If you need a custom keycode in your keymap (e.g. different behavior of the same key on different layers), there are `*_ON_MKEY` versions of every macro, e.g. `SMTD_MT_ON_MKEY(CKC_A, KC_A, KC_LEFT_GUI)` — `CKC_A` goes into the keymap, `KC_A` is what gets tapped.
 
 Optional: if you prefer to keep standard QMK `MT()` / `LT()` in your keymap (no `SMTD_MT` / `SMTD_LT`),
 define `SMTD_ENABLE_QMK_TAPHOLD 1` in `config.h`.

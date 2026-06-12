@@ -1,30 +1,30 @@
 ```
-This documentation is written for version 0.4.1.
-It is a bit outdated for later versions of SM_TD.
+This documentation is up to date for version 0.5.6.
 ```
 
 
 ## Emulate LT(LAYER, KEY)
 There is `SMTD_LT` macro for that. You can use it in 3 different forms:
-* `SMTD_LT(macro_key, tap_key, layer)`
-* `SMTD_LT(macro_key, tap_key, layer, threshold)`
-* `SMTD_LT(macro_key, tap_key, layer, threshold, use_cl)`
+* `SMTD_LT(key, layer)`
+* `SMTD_LT(key, layer, threshold)`
+* `SMTD_LT(key, layer, threshold, use_cl)`
+
+If you need a custom keycode in your keymap, use the `SMTD_LT_ON_MKEY(macro_key, tap_key, layer, ...)` versions, where `macro_key` is the keycode in the keymap and `tap_key` is what gets tapped.
 
 Parameters are:
 
-- `macro_key` - smtd keycode that would be monitored
-- `tap_key` - the key that would be pressed if the sm_td library detects a key tap
+- `key` - the keycode in your keymap; it is also the key that would be pressed if the sm_td library detects a key tap
 - `layer` - number of the layer to move when the sm_td library detects a key hold
-- `threshold` - number of consecutive taps to hold `tap_key` instead of moving to the layer. For example, with `SMTD_LT(CKC_SPACE, KC_SPACE, SOME_LAYER, 2)` you can tap CKC_SPACE twice and then hold it, and OS will get double KC_SPACE and hold KC_SPACE.
-- `use_cl' - a boolean that indicates whether the key should be visible to QMK's Caps Word feature. By default (`true`) sm_td runs the key through Caps Word processing: letters get shifted, word-breaking keys (e.g. space) turn Caps Word off, and your `caps_word_press_user` is respected. Set this to `false` to hide the key from Caps Word entirely (it won't be shifted and won't end Caps Word).
+- `threshold` - number of consecutive taps to hold `key` instead of moving to the layer. For example, with `SMTD_LT(KC_SPACE, SOME_LAYER, 2)` you can tap KC_SPACE twice and then hold it, and OS will get double KC_SPACE and hold KC_SPACE.
+- `use_cl` - a boolean that indicates whether the key should be visible to QMK's Caps Word feature. By default (`true`) sm_td runs the key through Caps Word processing: letters get shifted, word-breaking keys (e.g. space) turn Caps Word off, and your `caps_word_press_user` is respected. Set this to `false` to hide the key from Caps Word entirely (it won't be shifted and won't end Caps Word).
 
 With all that you can easily emulate `LT(LAYER, KEY)` like that:
 ```c
 smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
     switch (keycode) {
-        SMTD_LT(CKC_SPACE, KC_SPACE, LAYER_NUM)
-        SMTD_LT(CKC_ENTER, KC_ENTER, LAYER_SYMBOLS, 2)
-        SMTD_LT(CKC_1, KC_1, LAYER_SYS, 2, false)
+        SMTD_LT(KC_SPACE, LAYER_NUM)
+        SMTD_LT(KC_ENTER, LAYER_SYMBOLS, 2)
+        SMTD_LT(KC_1, LAYER_SYS, 2, false)
     } // end of switch (keycode)
     
     return SMTD_RESOLUTION_UNHANDLED;
@@ -86,17 +86,18 @@ But if it's a hold after two sequential taps, it will send KEY press and will be
 
 ## Emulate MT(MOD, KEY)
 There is `SMTD_MT` macro for that. You can use it in 3 different forms:
-- `SMTD_MT(macro_key, tap_key, mod)`
-- `SMTD_MT(macro_key, tap_key, mod, threshold)`
-- `SMTD_MT(macro_key, tap_key, mod, threshold, use_cl)`
+- `SMTD_MT(key, mod)`
+- `SMTD_MT(key, mod, threshold)`
+- `SMTD_MT(key, mod, threshold, use_cl)`
+
+If you need a custom keycode in your keymap, use the `SMTD_MT_ON_MKEY(macro_key, tap_key, mod, ...)` versions, where `macro_key` is the keycode in the keymap and `tap_key` is what gets tapped.
 
 Parameters are:
 
-- `macro_key` - smtd keycode that would be monitored
-- `tap_key` - the key that would be pressed if the sm_td library detects a key tap
+- `key` - the keycode in your keymap; it is also the key that would be pressed if the sm_td library detects a key tap
 - `mod` - modifier to be pressed if the sm_td library detects a key hold
-- `threshold` - number of consecutive taps to hold `tap_key` instead of holding a mod. For example, with `SMTD_MTE(CKC_A, KC_A, KC_LEFT_GUI, 2)` you can tap CKC_A twice and then hold it, and OS will get double KC_A and hold KC_A (instead of holding KC_LEFT_GUI).
-- `use_cl' - a boolean that indicates whether the key should be visible to QMK's Caps Word feature. By default (`true`) sm_td runs the key through Caps Word processing: letters get shifted, word-breaking keys (e.g. space) turn Caps Word off, and your `caps_word_press_user` is respected. Set this to `false` to hide the key from Caps Word entirely (it won't be shifted and won't end Caps Word).
+- `threshold` - number of consecutive taps to hold `key` instead of holding a mod. For example, with `SMTD_MTE(KC_A, KC_LEFT_GUI, 2)` you can tap KC_A twice and then hold it, and OS will get double KC_A and hold KC_A (instead of holding KC_LEFT_GUI).
+- `use_cl` - a boolean that indicates whether the key should be visible to QMK's Caps Word feature. By default (`true`) sm_td runs the key through Caps Word processing: letters get shifted, word-breaking keys (e.g. space) turn Caps Word off, and your `caps_word_press_user` is respected. Set this to `false` to hide the key from Caps Word entirely (it won't be shifted and won't end Caps Word).
 
 There is also a `SMTD_MTE` macro in the same 3 forms. The only difference is `E` - eager.
 So when you press a macro key, the modifier is immediately turned on. But if you release a key fast enough to be interpreted as a tap, the modifier is turned off and a normal tap is sent to the OS.
@@ -105,10 +106,10 @@ With all that you can easily emulate `MT(MOD, KEY)` like that:
 ```c
 smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
     switch (keycode) {
-        SMTD_MT(CKC_A, KC_A, KC_LEFT_GUI)
-        SMTD_MT(CKC_S, KC_S, KC_LEFT_ALT, 3)
-        SMTD_MTE(CKC_D, KC_D, KC_LEFT_CTRL, 3, false)
-        SMTD_MTE(CKC_F, KC_F, KC_LEFT_SHIFT)
+        SMTD_MT(KC_A, KC_LEFT_GUI)
+        SMTD_MT(KC_S, KC_LEFT_ALT, 3)
+        SMTD_MTE(KC_D, KC_LEFT_CTRL, 3, false)
+        SMTD_MTE(KC_F, KC_LEFT_SHIFT)
     } // end of switch (keycode)
     
     return SMTD_RESOLUTION_UNHANDLED;

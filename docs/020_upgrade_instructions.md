@@ -1,3 +1,8 @@
+## `v0.5.5` → `v0.5.6`
+- replace both `sm_td.h` and `sm_td.c` with newer versions (or just update the community module)
+- behavior change: sm_td now sends taps through the full QMK pipeline, so QMK features like Caps Word see them. If this causes problems for a specific key (e.g. a key that is part of a Combo), disable it per key via `SMTD_FEATURE_PIPELINE_TAPS` in `smtd_feature_enabled`, or globally with `#define SMTD_GLOBAL_PIPELINE_TAPS false`
+- if you defined `SMTD_GLOBAL_MODS_PROPAGATION_ENABLED` in your `config.h`, remove it — the flag is gone and the define has no effect anymore
+
 ## `v0.5.4` → `v0.5.5`
 - replace `sm_td.h` with newer version
 - no need to upgrade if sm_td 0.5.0 or latter is good for you

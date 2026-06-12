@@ -1,21 +1,14 @@
 ```
-This documentation is written for version 0.4.1.
-It is a bit outdated for later versions of SM_TD.
+This documentation is up to date for version 0.5.6.
 ```
 
 
-There are 4 crucial timeouts for sm_td:
+There are 3 crucial timeouts for sm_td:
 
 - `SMTD_TIMEOUT_TAP`
 
   This is the time in ms between macro key press and release to consider it as a tap action.
   So if you press and release a key within this time, it will be considered as a tap action. If you hold a key longer than this time, it will be considered as a hold action.
-
-
-- `SMTD_TIMEOUT_FOLLOWING_TAP`
-
-  This is the time in ms between following key press (second after macro key pressed) and release to consider macro is still might be a tap action.
-  In other words, if you hold both macro and following keys longer than this time, macro key will be considered as a hold action.
 
 
 - `SMTD_TIMEOUT_SEQUENCE`
@@ -31,7 +24,6 @@ There are 4 crucial timeouts for sm_td:
 
 Each of them has coresponding default global value:
 - `SMTD_GLOBAL_TAP_TERM` (default is TAPPING_TERM)
-- `SMTD_GLOBAL_FOLLOWING_TAP_TERM` (default is TAPPING_TERM)
 - `SMTD_GLOBAL_SEQUENCE_TERM` (default is TAPPING_TERM / 2)
 - `SMTD_GLOBAL_RELEASE_TERM` (default is TAPPING_TERM / 4)
 
