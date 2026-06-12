@@ -1,6 +1,7 @@
 ```
 This documentation is written for version 0.4.1.
 It is a bit outdated for later versions of SM_TD.
+Some sections below were updated for newer releases.
 ```
 
 
@@ -11,9 +12,22 @@ There are global feature flags that may help you with customizing sm_td behavior
   Default behavior of sm_td library is to call tap action every time it's considered as a tap. This option allows to aggregate taps and call tap action only once after tap sequence is finished (same as original QMK Tap Dance).
 
 
-- `SMTD_GLOBAL_MODS_RECALL` (default is true)
+- `SMTD_GLOBAL_PIPELINE_TAPS` (default is true)
 
-  Since tap action may be executed after a small delay (not immediately after key press), modifiers might be changed in that period. This option saves modifiers on key press and restores in on tap action.
+  When enabled, sm_td sends resolved tap keys through the full QMK pipeline (`process_record`) instead of raw `tap_code16` / `register_code16` calls. This way other QMK features (Caps Word, Auto Shift, Key Overrides, Repeat Key, etc.) can see the keys sm_td sends: for example, Caps Word properly shifts letters, turns itself off after a space on an `SMTD_LT` key and calls your `caps_word_press_user`.
+
+  This only works when the key being sent matches the keycode in your keymap at the pressed position (the common case for `SMTD_MT` / `SMTD_LT` macros without custom keycodes). Derived keycodes — alternate multi-tap keys, `*_ON_MKEY` macro keycodes — are still sent directly, but with a manual Caps Word pass, so Caps Word stays correct for them too.
+
+  Keys with `use_cl = false` are always sent directly and stay invisible to Caps Word.
+
+  If a key conflicts with another `process_record`-based feature (e.g. it is part of a Combo), you can disable the pipeline for that key via `SMTD_FEATURE_PIPELINE_TAPS` in `smtd_feature_enabled` (see below).
+
+
+- `SMTD_GLOBAL_MODS_PROPAGATION_ENABLED` (default is false)
+
+  When enabled, sm_td snapshots `get_mods()` on TOUCH/SEQUENCE and runs actions with that snapshot, then restores mods that were active when the action started. If an action changes mods, sm_td propagates those changes forward to later active states. This makes tap/hold actions more predictable when modifiers are handled outside sm_td.
+  
+  Limitation: this uses QMK `get_mods()` (real_mods) only. Weak mods, oneshot mods, speculative hold mods, and key overrides are not captured, so effective host mods may still differ.
 
 
 - `SMTD_GLOBAL_SIMULTANEOUS_PRESSES_DELAY_MS` (default is 0)
@@ -24,21 +38,22 @@ There are global feature flags that may help you with customizing sm_td behavior
 You make redefine any of this global flags in your config.h.
 
 
-Or you may want to redefine that flags for single keys.
-And you may also override feature flags per key with adding `bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature)` function to your keymap.c:
+Or you may want to redefine some flags for single keys.
+You can override per-key feature flags by adding `bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature)` to your keymap.c:
 
 ```c
-bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature);
+bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature) {
     switch (keycode) {
         case MACRO_KEY_CODE:
-            if (feature == SMTD_FEATURE_MODS_RECALL) return false;
+            if (feature == SMTD_FEATURE_AGGREGATE_TAPS) return false;
+            break;
     }
 
-    return smtd_feature_enabled_default(feature);
+    return smtd_feature_enabled_default(keycode, feature);
 }
 ```
 
-Note, that smtd_feature type has only two possible values: SMTD_FEATURE_MODS_RECALL and SMTD_FEATURE_AGGREGATE_TAPS. You may not redefine simultaneous presses delay per key basis.
+Note: `smtd_feature` currently includes `SMTD_FEATURE_AGGREGATE_TAPS` and `SMTD_FEATURE_PIPELINE_TAPS`. `SMTD_GLOBAL_MODS_PROPAGATION_ENABLED` is a global-only flag, and simultaneous presses delay cannot be overridden per key.
 
 
 
@@ -78,12 +93,14 @@ That emulates QMK's Tap Dance. If SMTD_FEATURE_AGGREGATE_TAPS = true, `on_smtd_a
                      |                                             | on_smtd_action(macro, SMTD_ACTION_TAP, 2)   |
 ```
 
-## SMTD_FEATURE_MODS_RECALL
+## SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
 
-Since sm_td send key press a bit later after real physical key press has occurred, that may lead to unexpected behavior with mod keys. So, if you you hit `↓shift` (that is not a part of sm_td), `↓smtd_macro`, `↑shift` and `↑smtd_macro`. Actual tap of smtd_macro wouldn't be sent to OS until you physically release that key. So OS will receive that sequence: `↓shift`, `↑shift` (from physical pressing and releasing shift key), then `↓↑smtd_macro_tap_action` (after macro key release). The feature SMTD_FEATURE_MODS_RECALL (it is ON by default) is implemented just to make that macro taps more predictable while holding modifiers. Mods recall feature will re-register actual on physical pressing modifiers right before sending SMTD_ACTION_TAP. See a chart below for better explanation
+Since sm_td sends actions later than the physical press, modifier state can change in between. For example: `↓shift` (not sm_td), `↓smtd_macro`, `↑shift`, `↑smtd_macro`. Without mods propagation, the tap action executes after shift is released, so the tap is unshifted. With `SMTD_GLOBAL_MODS_PROPAGATION_ENABLED`, sm_td snapshots `get_mods()` at TOUCH, temporarily restores that snapshot before each action, then restores the current mods afterward. This makes tap/hold output match the modifier state that was active when the sm_td key was pressed.
+
+Limitation reminder: only `get_mods()` (real_mods) is captured. Weak/oneshot/speculative/override mods are not included.
 
 ```
-                             | SMTD_FEATURE_MODS_RECALL = false          | SMTD_FEATURE_MODS_RECALL = true           |
+                             | SMTD_GLOBAL_MODS_PROPAGATION_ENABLED = false | SMTD_GLOBAL_MODS_PROPAGATION_ENABLED = true  |
                              |                                           |                                           |
 0ms  - - - ┌—————┐ - - - - - | - - - - - - - - - - - - - - - - - - - - - | - - - - - - - - - - - - - - - - - - - - - |
            │shift│           | press(shift)                              | press(shift)                              |

@@ -156,8 +156,8 @@ class TestSmTd(SmTdAssertions):
         MTE.release()
         self.assertEqual(smtd.get_mods(), 0)
         self.assertHistory(
-            Register(L0_KC7),
-            Unregister(L0_KC7),
+            EmulatePress(MTE),
+            EmulateRelease(MTE),
         )
 
     def test_LT_MT_KEY_DOWN__MT_LT_KEY_UP(self):
@@ -456,8 +456,8 @@ class TestSmTd(SmTdAssertions):
 
         self.assertHistory(
             EmulatePress(CTRL, mods=0),
-            Register(L0_KC3, mods=1),
-            Unregister(L0_KC3, mods=1),
+            EmulatePress(MT1, mods=1),
+            EmulateRelease(MT1, mods=1),
             EmulateRelease(CTRL, mods=1),
         )
 
@@ -469,8 +469,8 @@ class TestSmTd(SmTdAssertions):
 
         self.assertHistory(
             EmulatePress(CTRL, mods=0),
-            Register(L0_KC3, mods=1),
-            Unregister(L0_KC3, mods=1),
+            EmulatePress(MT1, mods=1),
+            EmulateRelease(MT1, mods=1),
             EmulateRelease(CTRL, mods=1),
         )
 
@@ -483,8 +483,8 @@ class TestSmTd(SmTdAssertions):
 
         self.assertHistory(
             EmulatePress(CTRL, mods=0),
-            Register(L0_KC3, mods=1),
-            Unregister(L0_KC3, mods=1),
+            EmulatePress(MT1, mods=1),
+            EmulateRelease(MT1, mods=1),
             EmulateRelease(CTRL, mods=1),
         )
 
@@ -524,8 +524,8 @@ class TestSmTd(SmTdAssertions):
 
         self.assertHistory(
             EmulatePress(CTRL, mods=0),
-            Register(L0_KC3, mods=1),
-            Unregister(L0_KC3, mods=-1),
+            EmulatePress(MT1, mods=1),
+            EmulateRelease(MT1, mods=-1),
             EmulateRelease(CTRL, mods=-1),
         )
 
@@ -538,8 +538,8 @@ class TestSmTd(SmTdAssertions):
 
         self.assertHistory(
             EmulatePress(CTRL, mods=0),
-            Register(L0_KC3, mods=1),
-            Unregister(L0_KC3, mods=-1),
+            EmulatePress(MT1, mods=1),
+            EmulateRelease(MT1, mods=-1),
             EmulateRelease(CTRL, mods=-1),
         )
 
@@ -552,8 +552,8 @@ class TestSmTd(SmTdAssertions):
 
         self.assertHistory(
             EmulatePress(CTRL, mods=0),
-            Register(L0_KC3, mods=1),
-            Unregister(L0_KC3, mods=-1),
+            EmulatePress(MT1, mods=1),
+            EmulateRelease(MT1, mods=-1),
             EmulateRelease(CTRL, mods=-1),
         )
 

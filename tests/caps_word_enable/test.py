@@ -157,8 +157,8 @@ class TestSmTdWithCapsWord(SmTdAssertions):
         MTE.release()
         self.assertEqual(smtd.get_mods(), 0)
         self.assertHistory(
-            Register(L0_KC7),
-            Unregister(L0_KC7),
+            EmulatePress(MTE),
+            EmulateRelease(MTE),
         )
 
     def test_LT_MT_KEY_DOWN__MT_LT_KEY_UP(self):
@@ -459,8 +459,8 @@ class TestSmTdWithCapsWord(SmTdAssertions):
 
         self.assertHistory(
             EmulatePress(CTRL, mods=0),
-            Register(L0_KC3, mods=1),
-            Unregister(L0_KC3, mods=1),
+            EmulatePress(MT1, mods=1),
+            EmulateRelease(MT1, mods=1),
             EmulateRelease(CTRL, mods=1),
         )
 
@@ -472,8 +472,8 @@ class TestSmTdWithCapsWord(SmTdAssertions):
 
         self.assertHistory(
             EmulatePress(CTRL, mods=0),
-            Register(L0_KC3, mods=1),
-            Unregister(L0_KC3, mods=1),
+            EmulatePress(MT1, mods=1),
+            EmulateRelease(MT1, mods=1),
             EmulateRelease(CTRL, mods=1),
         )
 
@@ -486,8 +486,8 @@ class TestSmTdWithCapsWord(SmTdAssertions):
 
         self.assertHistory(
             EmulatePress(CTRL, mods=0),
-            Register(L0_KC3, mods=1),
-            Unregister(L0_KC3, mods=1),
+            EmulatePress(MT1, mods=1),
+            EmulateRelease(MT1, mods=1),
             EmulateRelease(CTRL, mods=1),
         )
 
@@ -527,8 +527,8 @@ class TestSmTdWithCapsWord(SmTdAssertions):
 
         self.assertHistory(
             EmulatePress(CTRL, mods=0),
-            Register(L0_KC3, mods=1),
-            Unregister(L0_KC3, mods=-1),
+            EmulatePress(MT1, mods=1),
+            EmulateRelease(MT1, mods=-1),
             EmulateRelease(CTRL, mods=-1),
         )
 
@@ -541,8 +541,8 @@ class TestSmTdWithCapsWord(SmTdAssertions):
 
         self.assertHistory(
             EmulatePress(CTRL, mods=0),
-            Register(L0_KC3, mods=1),
-            Unregister(L0_KC3, mods=-1),
+            EmulatePress(MT1, mods=1),
+            EmulateRelease(MT1, mods=-1),
             EmulateRelease(CTRL, mods=-1),
         )
 
@@ -555,10 +555,99 @@ class TestSmTdWithCapsWord(SmTdAssertions):
 
         self.assertHistory(
             EmulatePress(CTRL, mods=0),
-            Register(L0_KC3, mods=1),
-            Unregister(L0_KC3, mods=-1),
+            EmulatePress(MT1, mods=1),
+            EmulateRelease(MT1, mods=-1),
             EmulateRelease(CTRL, mods=-1),
         )
+
+    def test_caps_word_tap_applies_shift(self):
+        """A tap routed through the QMK pipeline gets the Caps Word weak shift"""
+        smtd.set_caps_word(True)
+
+        MT1.press()
+        MT1.release()
+
+        self.assertHistory(
+            EmulatePress(MT1, mods=2),
+            EmulateRelease(MT1, mods=2),
+        )
+        self.assertTrue(smtd.is_caps_word_on())
+
+    def test_caps_word_tap_hold_applies_shift(self):
+        """Tap-then-hold registers the key through the pipeline with weak shift applied"""
+        smtd.set_caps_word(True)
+
+        MT1.press()
+        MT1.release()
+        MT1.press()
+        MT1.prolong()
+        MT1.release()
+
+        self.assertHistory(
+            EmulatePress(MT1, mods=2),
+            EmulateRelease(MT1, mods=2),
+            EmulatePress(MT1, mods=2),
+            EmulateRelease(MT1, mods=2),
+        )
+        self.assertTrue(smtd.is_caps_word_on())
+
+    def test_caps_word_turns_off_on_word_breaking_tap(self):
+        """Issue #23: a tap on a word-breaking key (e.g. space on LT) must end Caps Word"""
+        smtd.set_caps_word(True)
+
+        LT1.press()
+        LT1.release()
+
+        self.assertHistory(
+            EmulatePress(LT1, mods=0),
+            EmulateRelease(LT1, mods=0),
+        )
+        self.assertFalse(smtd.is_caps_word_on())
+
+    def test_caps_word_turns_off_on_unhandled_key(self):
+        """An unhandled (pass-through) key still ends Caps Word"""
+        smtd.set_caps_word(True)
+
+        K2.press()
+        K2.release()
+
+        self.assertHistory(
+            EmulatePress(K2, mods=0),
+            EmulateRelease(K2, mods=0),
+        )
+        self.assertFalse(smtd.is_caps_word_on())
+
+    def test_caps_word_macro_keycode_gets_weak_shift(self):
+        """A derived keycode (not in the keymap) is sent directly,
+        but still passes through the manual Caps Word step"""
+        smtd.set_caps_word(True)
+
+        MMT.press()
+        MMT.release()
+
+        self.assertHistory(
+            Register(MACRO2, mods=2),
+            Unregister(MACRO2, mods=2),
+        )
+        self.assertTrue(smtd.is_caps_word_on())
+
+    def test_caps_word_use_cl_false_key_is_invisible_and_drops_stale_shift(self):
+        """A use_cl=false key must not get the weak shift left by a previous
+        Caps Word key and must not end Caps Word"""
+        smtd.set_caps_word(True)
+
+        MT1.press()
+        MT1.release()
+        MT2.press()
+        MT2.release()
+
+        self.assertHistory(
+            EmulatePress(MT1, mods=2),
+            EmulateRelease(MT1, mods=2),
+            Register(L0_KC4, mods=0),
+            Unregister(L0_KC4, mods=0),
+        )
+        self.assertTrue(smtd.is_caps_word_on())
 
 # Layers
 

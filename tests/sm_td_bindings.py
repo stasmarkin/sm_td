@@ -232,6 +232,18 @@ class SmtdBindings:
         """Get the current layer state"""
         return self.lib.TEST_get_layer_state()
 
+    def set_caps_word(self, on: bool) -> None:
+        """Turn the mocked Caps Word state on or off"""
+        self.lib.TEST_set_caps_word(ctypes.c_bool(on))
+
+    def is_caps_word_on(self) -> bool:
+        """Get the mocked Caps Word state"""
+        return bool(self.lib.TEST_is_caps_word_on())
+
+    def get_weak_mods(self) -> int:
+        """Get the current weak modifier state"""
+        return self.lib.TEST_get_weak_mods()
+
 
 # Compile and load the shared library
 def load_smtd_lib(path: str) -> SmtdBindings:
@@ -300,5 +312,14 @@ def load_smtd_lib(path: str) -> SmtdBindings:
 
     lib.TEST_get_layer_state.argtypes = []
     lib.TEST_get_layer_state.restype = ctypes.c_uint8
+
+    lib.TEST_set_caps_word.argtypes = [ctypes.c_bool]
+    lib.TEST_set_caps_word.restype = None
+
+    lib.TEST_is_caps_word_on.argtypes = []
+    lib.TEST_is_caps_word_on.restype = ctypes.c_bool
+
+    lib.TEST_get_weak_mods.argtypes = []
+    lib.TEST_get_weak_mods.restype = ctypes.c_uint8
 
     return SmtdBindings(lib)

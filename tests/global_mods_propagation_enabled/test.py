@@ -61,8 +61,8 @@ class TestSmTdWithGlobalModsPropagationEnabled(SmTdAssertions):
         self.assertFalse(MT_CTRL.release(), "release should return true")
 
         self.assertHistory(
-            registered(KC1_MT_CTRL),
-            unregistered(KC1_MT_CTRL)
+            pressed(MT_CTRL),
+            released(MT_CTRL)
         )
 
     def test_MT_CTRL_hold(self):

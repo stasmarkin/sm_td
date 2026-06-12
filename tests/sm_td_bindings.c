@@ -17,6 +17,7 @@
 
 #define MOD_BIT(code) (1 << ((code) & 0x07))
 #define LSFT(kc) ((kc) | 0x1000)
+#define KC_LSFT 0xE1
 #define PROGMEM
 
 #define MAX_RECORD_HISTORY 100
@@ -63,6 +64,8 @@ typedef struct {
 
 uint32_t layer_state = 0;
 uint8_t current_mods = 0;
+uint8_t weak_mods = 0;
+bool caps_word_active = false;
 static history_t record_history[MAX_RECORD_HISTORY];
 static uint8_t record_count = 0;
 static deferred_exec_info_t deferred_execs[MAX_DEFERRED_EXECS] = {0};
@@ -107,8 +110,55 @@ void layer_move(uint8_t layer) {
     layer_state = layer;
 }
 
+void add_weak_mods(uint8_t mods) {
+    weak_mods |= mods;
+}
+
+void del_weak_mods(uint8_t mods) {
+    weak_mods &= ~mods;
+}
+
+void clear_weak_mods(void) {
+    weak_mods = 0;
+}
+
+uint8_t get_weak_mods(void) {
+    return weak_mods;
+}
+
 bool is_caps_word_on(void) {
+    return caps_word_active;
+}
+
+void caps_word_on(void) {
+    caps_word_active = true;
+}
+
+void caps_word_off(void) {
+    caps_word_active = false;
+    del_weak_mods(MOD_BIT(KC_LSFT));
+}
+
+/* Test keycodes are arbitrary integers, so suites that enable Caps Word
+ * must define their own caps_word_press_user in layout.c */
+#ifdef CAPS_WORD_ENABLE
+bool caps_word_press_user(uint16_t keycode);
+#else
+bool caps_word_press_user(uint16_t keycode) {
     return false;
+}
+#endif
+
+/* Mirrors the essential part of QMK's process_caps_word */
+bool process_caps_word(uint16_t keycode, keyrecord_t *record) {
+    if (!caps_word_active) return true;
+    if (!record->event.pressed) return true;
+
+    clear_weak_mods();
+    if (caps_word_press_user(keycode)) return true;
+
+    caps_word_off();
+    return true;
 }
 
 void set_mods(uint8_t mods) {
@@ -153,7 +203,7 @@ void unregister_code16(uint16_t keycode) {
         .col = 255,
         .keycode = keycode,
         .pressed = false,
-        .mods = current_mods,
+        .mods = current_mods | weak_mods,
         .layer_state = layer_state,
         .smtd_bypass = get_smtd_bypass(),
     };
@@ -169,7 +219,7 @@ void register_code16(uint16_t keycode) {
         .col = 255,
         .keycode = keycode,
         .pressed = true,
-        .mods = current_mods,
+        .mods = current_mods | weak_mods,
         .layer_state = layer_state,
         .smtd_bypass = get_smtd_bypass(),
     };
@@ -184,12 +234,17 @@ void tap_code16(uint16_t keycode) {
 }
 
 bool process_record(keyrecord_t *record) {
+    /* Mirrors the part of QMK's pipeline relevant for sm_td tests:
+     * Caps Word sees every emulated event before the key action is taken */
+    uint16_t keycode = keymap_key_to_keycode(get_highest_layer(layer_state), record->event.key);
+    process_caps_word(keycode, record);
+
     record_history[record_count] = (history_t) {
         .row = record->event.key.row,
         .col = record->event.key.col,
         .keycode = 65535,
         .pressed = record->event.pressed,
-        .mods = current_mods,
+        .mods = current_mods | weak_mods,
         .layer_state = layer_state,
         .smtd_bypass = get_smtd_bypass(),
     };
@@ -252,10 +307,13 @@ void TEST_snprintf(char* buffer, size_t bsize, const char* format, ...) {
 void TEST_reset() {
     layer_state = 0;
     current_mods = 0;
+    weak_mods = 0;
+    caps_word_active = false;
     record_count = 0;
     deferred_exec_count = 0;
-    return_layer = RETURN_LAYER_NOT_SET;
-    return_layer_cnt = 0;
+    smtd_return_layer = RETURN_LAYER_NOT_SET;
+    smtd_return_layer_cnt = 0;
+    smtd_executing_state = NULL;
     for (uint8_t i = 0; i < MAX_RECORD_HISTORY; i++) {
         record_history[i] = (history_t){0};
     }
@@ -280,6 +338,19 @@ void TEST_set_smtd_bypass(const bool bypass) {
 
 bool TEST_get_layer_state() {
     return layer_state;
+}
+
+void TEST_set_caps_word(bool on) {
+    caps_word_active = on;
+    weak_mods = 0;
+}
+
+bool TEST_is_caps_word_on() {
+    return caps_word_active;
+}
+
+uint8_t TEST_get_weak_mods() {
+    return weak_mods;
 }
 
 void TEST_get_record_history(history_t *out_records, uint8_t *out_count) {

@@ -46,7 +46,7 @@ smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap
         SMTD_MT(L1_KC3, KC_LEFT_ALT)
         SMTD_MT(L2_KC3, KC_LEFT_ALT)
 
-        SMTD_MT(L0_KC4, KC_LEFT_CTRL)
+        SMTD_MT4(L0_KC4, KC_LEFT_CTRL, 1, false) /* use_cl=false: key is hidden from Caps Word */
         SMTD_MT(L1_KC4, KC_LEFT_CTRL)
         SMTD_MT(L2_KC4, KC_LEFT_CTRL)
 
@@ -69,6 +69,25 @@ uint32_t get_smtd_timeout(uint16_t keycode, smtd_timeout timeout) {
 
 bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature) {
     return smtd_feature_enabled_default(keycode, feature);
+}
+
+/* "Letters" continue Caps Word with shift, MACRO4 continues without shift,
+ * everything else (e.g. L0_KC5 acting as space) ends it */
+bool caps_word_press_user(uint16_t keycode) {
+    switch (keycode) {
+        case L0_KC3:
+        case L1_KC3:
+        case L2_KC3:
+        case MACRO2:
+            add_weak_mods(MOD_BIT(KC_LEFT_SHIFT));
+            return true;
+
+        case MACRO4:
+            return true;
+
+        default:
+            return false;
+    }
 }
 
 char* smtd_keycode_to_str_user(uint16_t keycode) {

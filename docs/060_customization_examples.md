@@ -16,7 +16,7 @@ Parameters are:
 - `tap_key` - the key that would be pressed if the sm_td library detects a key tap
 - `layer` - number of the layer to move when the sm_td library detects a key hold
 - `threshold` - number of consecutive taps to hold `tap_key` instead of moving to the layer. For example, with `SMTD_LT(CKC_SPACE, KC_SPACE, SOME_LAYER, 2)` you can tap CKC_SPACE twice and then hold it, and OS will get double KC_SPACE and hold KC_SPACE.
-- `use_cl' - a boolean that indicates whether you want to follow the caps_word settings or not. Since sm_td pauses and emulates keystrokes, it's not very friendly with other QMK features. So it has to manually check if caps_word is enabled and implicitly init shift modifiers. In some cases, you may not need to press shift even if caps_word is on (e.g. for numbers). So you should set this to `false` for such cases.
+- `use_cl' - a boolean that indicates whether the key should be visible to QMK's Caps Word feature. By default (`true`) sm_td runs the key through Caps Word processing: letters get shifted, word-breaking keys (e.g. space) turn Caps Word off, and your `caps_word_press_user` is respected. Set this to `false` to hide the key from Caps Word entirely (it won't be shifted and won't end Caps Word).
 
 With all that you can easily emulate `LT(LAYER, KEY)` like that:
 ```c
@@ -96,7 +96,7 @@ Parameters are:
 - `tap_key` - the key that would be pressed if the sm_td library detects a key tap
 - `mod` - modifier to be pressed if the sm_td library detects a key hold
 - `threshold` - number of consecutive taps to hold `tap_key` instead of holding a mod. For example, with `SMTD_MTE(CKC_A, KC_A, KC_LEFT_GUI, 2)` you can tap CKC_A twice and then hold it, and OS will get double KC_A and hold KC_A (instead of holding KC_LEFT_GUI).
-- `use_cl' - a boolean that indicates whether you want to follow the caps_word settings or not. Since sm_td pauses and emulates keystrokes, it's not very friendly with other QMK features. So it has to manually check if caps_word is enabled and implicitly init shift modifiers. In some cases, you may not need to press shift even if caps_word is on (e.g. for numbers). So you should set this to `false` for such cases.
+- `use_cl' - a boolean that indicates whether the key should be visible to QMK's Caps Word feature. By default (`true`) sm_td runs the key through Caps Word processing: letters get shifted, word-breaking keys (e.g. space) turn Caps Word off, and your `caps_word_press_user` is respected. Set this to `false` to hide the key from Caps Word entirely (it won't be shifted and won't end Caps Word).
 
 There is also a `SMTD_MTE` macro in the same 3 forms. The only difference is `E` - eager.
 So when you press a macro key, the modifier is immediately turned on. But if you release a key fast enough to be interpreted as a tap, the modifier is turned off and a normal tap is sent to the OS.

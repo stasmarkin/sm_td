@@ -74,6 +74,17 @@
 #define SMTD_GLOBAL_AGGREGATE_TAPS false
 #endif
 
+// When enabled, sm_td sends resolved tap keys through the full QMK pipeline
+// (process_record) instead of raw tap_code16/register_code16 calls, so QMK
+// features like Caps Word, Auto Shift or Key Overrides can see them.
+// This only works when the key sent is the same as the keycode in the keymap
+// at the pressed position; derived keycodes (e.g. alternate multi-tap keys)
+// are still sent directly with a manual Caps Word pass.
+// Can be overridden per key via SMTD_FEATURE_PIPELINE_TAPS in smtd_feature_enabled.
+#ifndef SMTD_GLOBAL_PIPELINE_TAPS
+#define SMTD_GLOBAL_PIPELINE_TAPS true
+#endif
+
 #ifndef SMTD_GLOBAL_RELEASE_RATIO
 #define SMTD_GLOBAL_RELEASE_RATIO 5
 #endif
@@ -83,10 +94,12 @@
 #endif
 
 // SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
-// fixme-sm looks like this flag is not useful anymore.
-//          I think, it should be removed in next versions
-//          This flag was introduced to make sm_td usable with non-sm_td modifier (like generic shift)
-//          But after X refactorings, it looks like sm_td behaves the same with and without that flag
+// When enabled, sm_td snapshots get_mods() on TOUCH/SEQUENCE and runs all actions
+// with that snapshot, then restores the mods that were active when the action started.
+// If an action changes mods, sm_td propagates those changes forward to later active states.
+// This helps when some modifiers are handled outside sm_td or when keys bypass sm_td.
+// Limitation: only get_mods() (real_mods) is captured; weak/oneshot/speculative/override
+// modifiers are not included, so effective host mods may still differ.
 
 #include <stdint.h>
 
@@ -125,6 +138,7 @@ typedef enum {
 
 typedef enum {
     SMTD_FEATURE_AGGREGATE_TAPS,
+    SMTD_FEATURE_PIPELINE_TAPS,
 } smtd_feature;
 
 
@@ -169,6 +183,9 @@ typedef struct {
 
     /** The index of the state in the active states array */
     uint8_t idx;
+
+    /** Whether the last SMTD_REGISTER_16 was emulated through the full QMK pipeline */
+    bool emulated_register;
 } smtd_state;
 
 
@@ -187,6 +204,7 @@ typedef struct {
         .action_performed = -1,                     \
         .action_required = -1,                      \
         .idx = 0,                                   \
+        .emulated_register = false,                 \
 }
 #else
 #define EMPTY_STATE {                               \
@@ -202,6 +220,7 @@ typedef struct {
         .action_performed = -1,                     \
         .action_required = -1,                      \
         .idx = 0,                                   \
+        .emulated_register = false,                 \
 }
 #endif
 
@@ -448,15 +467,15 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature);
  *         CUSTOMIZATION MACROS          *
  * ************************************* */
 
-#ifdef CAPS_WORD_ENABLE
-#define SMTD_TAP_16(use_cl, key) tap_code16(use_cl && is_caps_word_on() ? LSFT(key) : key)
-#define SMTD_REGISTER_16(use_cl, key) register_code16(use_cl && is_caps_word_on() ? LSFT(key) : key)
-#define SMTD_UNREGISTER_16(use_cl, key) unregister_code16(use_cl && is_caps_word_on() ? LSFT(key) : key)
-#else
-#define SMTD_TAP_16(use_cl, key) tap_code16(key)
-#define SMTD_REGISTER_16(use_cl, key) register_code16(key)
-#define SMTD_UNREGISTER_16(use_cl, key) unregister_code16(key)
-#endif
+void smtd_tap_code16(bool use_cl, uint16_t key);
+
+void smtd_register_code16(bool use_cl, uint16_t key);
+
+void smtd_unregister_code16(bool use_cl, uint16_t key);
+
+#define SMTD_TAP_16(use_cl, key) smtd_tap_code16(use_cl, key)
+#define SMTD_REGISTER_16(use_cl, key) smtd_register_code16(use_cl, key)
+#define SMTD_UNREGISTER_16(use_cl, key) smtd_unregister_code16(use_cl, key)
 
 #ifndef NOTHING
 #define NOTHING

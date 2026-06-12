@@ -38,12 +38,14 @@ smtd_state *smtd_active_states[SMTD_POOL_SIZE] = {[0 ... SMTD_POOL_SIZE-1] = NUL
 smtd_state smtd_states_pool[SMTD_POOL_SIZE] = {[0 ... SMTD_POOL_SIZE-1] = EMPTY_STATE};
 uint8_t smtd_active_states_size = 0;
 bool smtd_bypass = false;
+smtd_state *smtd_executing_state = NULL;
 #else
 /* Normal mode - internal variables */
 static smtd_state *smtd_active_states[SMTD_POOL_SIZE] = {[0 ... SMTD_POOL_SIZE-1] = NULL};
 static smtd_state smtd_states_pool[SMTD_POOL_SIZE] = {[0 ... SMTD_POOL_SIZE-1] = EMPTY_STATE};
 static uint8_t smtd_active_states_size = 0;
 static bool smtd_bypass = false;
+static smtd_state *smtd_executing_state = NULL;
 #endif
 
 /* ************************************* *
@@ -566,6 +568,7 @@ void reset_state(smtd_state *state) {
     state->idx = 0;
     state->action_performed = -1;
     state->action_required = -1;
+    state->emulated_register = false;
 }
 
 void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
@@ -749,9 +752,12 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
     }
     #endif
 
+    smtd_state *prev_executing_state = smtd_executing_state;
+    smtd_executing_state = state;
     smtd_bypass = true;
     smtd_resolution new_resolution = on_smtd_action(state->desired_keycode, action, state->tap_count);
     smtd_bypass = false;
+    smtd_executing_state = prev_executing_state;
 
     SMTD_SIMULTANEOUS_PRESSES_DELAY
     if (new_resolution > state->resolution) {
@@ -841,6 +847,7 @@ void smtd_propagate_mods(smtd_state *state, uint8_t mods_before_action, uint8_t 
 void smtd_emulate_key(keypos_t *keypos, bool press) {
     SMTD_DEBUG("--> EMULATE %s %s", press ? "PRESS" : "RELEASE",
                smtd_keycode_to_str(smtd_current_keycode(keypos)));
+    bool bypass_before = smtd_bypass;
     smtd_bypass = true;
     //fixme-sm how to emulate keypresses with row,col = (0,0) // like combos for example
     keyevent_t event_press = MAKE_KEYEVENT(keypos->row, keypos->col, press);
@@ -848,8 +855,91 @@ void smtd_emulate_key(keypos_t *keypos, bool press) {
     SMTD_DEBUG_OFFSET_INC;
     process_record(&record_press);
     SMTD_DEBUG_OFFSET_DEC;
-    smtd_bypass = false;
+    smtd_bypass = bypass_before;
     SMTD_SIMULTANEOUS_PRESSES_DELAY
+}
+
+/* ************************************* *
+ *         EMULATED KEY OUTPUT           *
+ * ************************************* */
+
+#ifdef CAPS_WORD_ENABLE
+// Directly sent keys bypass process_record, so QMK's Caps Word never sees them.
+// This mirrors the Caps Word step of the pipeline for a single keycode:
+// it applies the weak shift, resets the idle timer, consults caps_word_press_user
+// and turns Caps Word off on word-breaking keys.
+// Returns false when the keycode must not be sent at all.
+static bool smtd_process_caps_word(bool use_cl, uint16_t key) {
+    if (!is_caps_word_on()) return true;
+
+    if (!use_cl) {
+        // The key is hidden from Caps Word. A weak shift left by a previously
+        // sent shifted key has to be dropped manually, since no process_record
+        // pass will clear it before this key is sent.
+        del_weak_mods(MOD_BIT(KC_LSFT));
+        return true;
+    }
+
+    keyrecord_t record = {.event = MAKE_KEYEVENT(0, 0, true)};
+    return process_caps_word(key, &record);
+}
+#endif
+
+static bool smtd_pipeline_emulation_allowed(bool use_cl, uint16_t key) {
+    if (smtd_executing_state == NULL) return false;
+
+    #ifdef CAPS_WORD_ENABLE
+    // use_cl == false hides the key from Caps Word, which is impossible
+    // to honor on the full pipeline, so such keys are sent directly.
+    if (!use_cl) return false;
+    #endif
+
+    if (!smtd_feature_enabled_or_default(smtd_executing_state, SMTD_FEATURE_PIPELINE_TAPS)) return false;
+
+    // The pipeline resolves a keycode by matrix position, so emulation is only
+    // possible while the keymap still resolves the pressed position to the
+    // requested key. Derived keycodes (e.g. alternate multi-tap keys) and
+    // custom macro keycodes fail this check and are sent directly.
+    return smtd_current_keycode(&smtd_executing_state->pressed_keyposition) == key;
+}
+
+void smtd_tap_code16(bool use_cl, uint16_t key) {
+    if (smtd_pipeline_emulation_allowed(use_cl, key)) {
+        smtd_emulate_key(&smtd_executing_state->pressed_keyposition, true);
+        smtd_emulate_key(&smtd_executing_state->pressed_keyposition, false);
+        return;
+    }
+
+    #ifdef CAPS_WORD_ENABLE
+    if (!smtd_process_caps_word(use_cl, key)) return;
+    #endif
+    tap_code16(key);
+}
+
+void smtd_register_code16(bool use_cl, uint16_t key) {
+    if (smtd_pipeline_emulation_allowed(use_cl, key)) {
+        smtd_executing_state->emulated_register = true;
+        smtd_emulate_key(&smtd_executing_state->pressed_keyposition, true);
+        return;
+    }
+
+    #ifdef CAPS_WORD_ENABLE
+    if (!smtd_process_caps_word(use_cl, key)) return;
+    #endif
+    register_code16(key);
+}
+
+void smtd_unregister_code16(bool use_cl, uint16_t key) {
+    // A register emulated through the pipeline must be released the same way,
+    // even if the layer has changed since: QMK resolves the release keycode
+    // from its own pressed-key cache for that position.
+    if (smtd_executing_state != NULL && smtd_executing_state->emulated_register) {
+        smtd_executing_state->emulated_register = false;
+        smtd_emulate_key(&smtd_executing_state->pressed_keyposition, false);
+        return;
+    }
+
+    unregister_code16(key);
 }
 
 smtd_resolution smtd_worst_resolution_before(smtd_state *state) {
@@ -904,6 +994,8 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
     switch (feature) {
         case SMTD_FEATURE_AGGREGATE_TAPS:
             return SMTD_GLOBAL_AGGREGATE_TAPS;
+        case SMTD_FEATURE_PIPELINE_TAPS:
+            return SMTD_GLOBAL_PIPELINE_TAPS;
     }
     return false;
 }
