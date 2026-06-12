@@ -146,4 +146,9 @@ smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap
 } // End of on_smtd_action function
 ```
 
+Optional: if you prefer to keep standard QMK `MT()` / `LT()` in your keymap (no `SMTD_MT` / `SMTD_LT`),
+define `SMTD_ENABLE_QMK_TAPHOLD 1` in `config.h`.
+Then sm_td will automatically handle QMK mod-tap and layer-tap keycodes using sm_td timing.
+Note: advanced features like tap-count thresholds still require `SMTD_MT` / `SMTD_LT`.
+
 See full documentation for this macro in the next chapter.

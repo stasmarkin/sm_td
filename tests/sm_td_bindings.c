@@ -20,6 +20,21 @@
 #define KC_LSFT 0xE1
 #define PROGMEM
 
+/* QMK tap-hold keycode ranges and accessors (mirror quantum_keycodes.h) */
+#define QK_MOD_TAP 0x2000
+#define QK_MOD_TAP_MAX 0x3FFF
+#define QK_LAYER_TAP 0x4000
+#define QK_LAYER_TAP_MAX 0x4FFF
+#define IS_QK_MOD_TAP(code) ((code) >= QK_MOD_TAP && (code) <= QK_MOD_TAP_MAX)
+#define IS_QK_LAYER_TAP(code) ((code) >= QK_LAYER_TAP && (code) <= QK_LAYER_TAP_MAX)
+#define QK_MOD_TAP_GET_MODS(kc) (((kc) >> 8) & 0x1F)
+#define QK_MOD_TAP_GET_TAP_KEYCODE(kc) ((kc) & 0xFF)
+#define QK_LAYER_TAP_GET_LAYER(kc) (((kc) >> 8) & 0xF)
+#define QK_LAYER_TAP_GET_TAP_KEYCODE(kc) ((kc) & 0xFF)
+#define MT(mod, kc) (QK_MOD_TAP | (((mod) & 0x1F) << 8) | ((kc) & 0xFF))
+#define LT(layer, kc) (QK_LAYER_TAP | (((layer) & 0xF) << 8) | ((kc) & 0xFF))
+#define mod_config(mod) (mod)
+
 #define MAX_RECORD_HISTORY 100
 #define MAX_DEFERRED_EXECS 100
 

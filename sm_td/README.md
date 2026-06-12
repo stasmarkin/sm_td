@@ -22,6 +22,9 @@ smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap
 }
 ```
 
+Optional: to use standard QMK `MT()` / `LT()` in your keymap without `SMTD_MT` / `SMTD_LT`,
+define `SMTD_ENABLE_QMK_TAPHOLD 1` in your `config.h`.
+
 
 
 Build and flash your firmware. Your keys will now support advanced tap, hold, and multi-tap behaviors with human-friendly timing.

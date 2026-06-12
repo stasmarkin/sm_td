@@ -732,6 +732,60 @@ void smtd_handle_action(smtd_state *state, smtd_action action) {
     }
 }
 
+#if SMTD_ENABLE_QMK_TAPHOLD && defined(IS_QK_MOD_TAP) && defined(IS_QK_LAYER_TAP)
+static uint8_t smtd_qk_mods_8bit(uint16_t keycode) {
+    uint8_t mods = mod_config(QK_MOD_TAP_GET_MODS(keycode));
+    if ((mods & 0x10) != 0) { // Unpack 5-bit mods to 8-bit representation.
+        mods <<= 4;
+    }
+    return mods;
+}
+
+static smtd_resolution smtd_handle_qk_tap_hold(uint16_t keycode, smtd_action action) {
+    const bool use_cl = SMTD_QMK_TAPHOLD_USE_CAPS_WORD;
+
+    if (IS_QK_MOD_TAP(keycode)) {
+        const uint16_t tap_key = QK_MOD_TAP_GET_TAP_KEYCODE(keycode);
+        const uint8_t mods = smtd_qk_mods_8bit(keycode);
+        switch (action) {
+            case SMTD_ACTION_TOUCH:
+                return SMTD_RESOLUTION_UNCERTAIN;
+            case SMTD_ACTION_TAP:
+                SMTD_TAP_16(use_cl, tap_key);
+                return SMTD_RESOLUTION_DETERMINED;
+            case SMTD_ACTION_HOLD:
+                register_mods(mods);
+                send_keyboard_report();
+                return SMTD_RESOLUTION_DETERMINED;
+            case SMTD_ACTION_RELEASE:
+                unregister_mods(mods);
+                send_keyboard_report();
+                return SMTD_RESOLUTION_DETERMINED;
+        }
+    }
+
+    if (IS_QK_LAYER_TAP(keycode)) {
+        const uint16_t tap_key = QK_LAYER_TAP_GET_TAP_KEYCODE(keycode);
+        const uint8_t layer = QK_LAYER_TAP_GET_LAYER(keycode);
+        switch (action) {
+            case SMTD_ACTION_TOUCH:
+                return SMTD_RESOLUTION_UNCERTAIN;
+            case SMTD_ACTION_TAP:
+                SMTD_TAP_16(use_cl, tap_key);
+                return SMTD_RESOLUTION_DETERMINED;
+            case SMTD_ACTION_HOLD:
+                LAYER_PUSH(layer);
+                return SMTD_RESOLUTION_DETERMINED;
+            case SMTD_ACTION_RELEASE:
+                LAYER_RESTORE();
+                return SMTD_RESOLUTION_DETERMINED;
+        }
+    }
+
+    return SMTD_RESOLUTION_UNHANDLED;
+}
+#endif
+
 void smtd_execute_action(smtd_state *state, smtd_action action) {
     if (state->desired_keycode == 0) {
         state->desired_keycode = smtd_current_keycode(&state->pressed_keyposition);
@@ -756,6 +810,12 @@ void smtd_execute_action(smtd_state *state, smtd_action action) {
     smtd_executing_state = state;
     smtd_bypass = true;
     smtd_resolution new_resolution = on_smtd_action(state->desired_keycode, action, state->tap_count);
+
+#if SMTD_ENABLE_QMK_TAPHOLD && defined(IS_QK_MOD_TAP) && defined(IS_QK_LAYER_TAP)
+    if (new_resolution == SMTD_RESOLUTION_UNHANDLED) {
+        new_resolution = smtd_handle_qk_tap_hold(state->desired_keycode, action);
+    }
+#endif
     smtd_bypass = false;
     smtd_executing_state = prev_executing_state;
 

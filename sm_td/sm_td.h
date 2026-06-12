@@ -93,6 +93,17 @@
 #define SMTD_GLOBAL_DEPRECATED_FIXED_TIMEOUTS 0
 #endif
 
+// Enable automatic handling for standard QMK MT() / LT() keycodes.
+// Set to 1 in your config to use MT()/LT() in keymaps without SMTD_MT/SMTD_LT.
+#ifndef SMTD_ENABLE_QMK_TAPHOLD
+#define SMTD_ENABLE_QMK_TAPHOLD 0
+#endif
+
+// Apply Caps Word shift to MT()/LT() taps when CAPS_WORD_ENABLE is on.
+#ifndef SMTD_QMK_TAPHOLD_USE_CAPS_WORD
+#define SMTD_QMK_TAPHOLD_USE_CAPS_WORD true
+#endif
+
 // SMTD_GLOBAL_MODS_PROPAGATION_ENABLED
 // When enabled, sm_td snapshots get_mods() on TOUCH/SEQUENCE and runs all actions
 // with that snapshot, then restores the mods that were active when the action started.

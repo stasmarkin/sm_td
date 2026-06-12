@@ -97,6 +97,10 @@ That’s it — proceed to Configuration.
        return SMTD_RESOLUTION_UNHANDLED;
    }
    ```
+   Optional: if you want to keep standard QMK `MT()` / `LT()` in your keymap (no `SMTD_MT` / `SMTD_LT`),
+   add `#define SMTD_ENABLE_QMK_TAPHOLD 1` to your `config.h`.
+   This routes QMK mod-tap and layer-tap keycodes through sm_td timing.
+   (Advanced features like tap-count thresholds still require `SMTD_MT` / `SMTD_LT`.)
    See the [Customization Guide](https://github.com/stasmarkin/sm_td/blob/main/docs/050_customization.md) and practical [Examples](https://github.com/stasmarkin/sm_td/blob/main/docs/060_customization_examples.md) for more patterns.
 
 2. (optional) Add global configuration parameters to your `config.h` file (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
