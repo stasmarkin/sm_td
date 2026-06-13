@@ -1,3 +1,9 @@
+## `v0.5.6` → `v0.6.0`
+- replace both `sm_td.h` and `sm_td.c` with newer versions (or just update the community module)
+- behavior change: `SMTD_TIMEOUT_RELEASE` is now a dynamic window derived from your typing rhythm (`min(p1, p2) / SMTD_GLOBAL_RELEASE_RATIO`, default ratio 5), clamped above by your existing `SMTD_TIMEOUT_RELEASE`. You will likely get fewer false holds during fast rolls out of the box
+- if you want the exact 0.5.x behavior back, add `#define SMTD_GLOBAL_RELEASE_RATIO 0` to your `config.h` — the release window then falls back to the fixed `SMTD_GLOBAL_RELEASE_TERM`
+- if you tuned `SMTD_GLOBAL_RELEASE_TERM` to fight false holds, consider raising `SMTD_GLOBAL_RELEASE_RATIO` instead now
+
 ## `v0.5.5` → `v0.5.6`
 - replace both `sm_td.h` and `sm_td.c` with newer versions (or just update the community module)
 - behavior change: sm_td now sends taps through the full QMK pipeline, so QMK features like Caps Word see them. If this causes problems for a specific key (e.g. a key that is part of a Combo), disable it per key via `SMTD_FEATURE_PIPELINE_TAPS` in `smtd_feature_enabled`, or globally with `#define SMTD_GLOBAL_PIPELINE_TAPS false`

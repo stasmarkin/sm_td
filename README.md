@@ -180,13 +180,15 @@ Your support helps me continue developing and maintaining this project. Thank yo
 - Fix: module installation uses process_record stage instead of pre_process_record
 - Fix: Better place for avoid_unused_variable_on_compile
 
-#### `v0.5.6` (we are here)
+#### `v0.5.6`
 - Feature: sm_td taps go through the full QMK pipeline, so Caps Word and other QMK features finally see them (fixes #23); new `SMTD_GLOBAL_PIPELINE_TAPS` / `SMTD_FEATURE_PIPELINE_TAPS` flags
 - Feature: `SMTD_ENABLE_QMK_TAPHOLD` — use standard QMK `MT()` / `LT()` keycodes with sm_td timing
 - Removed: `SMTD_GLOBAL_MODS_PROPAGATION_ENABLED` (was off by default and half-baked)
 
-#### `v0.6.0+` and further `v0.x`
-- dynamic timeouts
+#### `v0.6.0` (we are here)
+- Feature: dynamic release timeout derived from your typing rhythm (fixes #45); new `SMTD_GLOBAL_RELEASE_RATIO` flag (set to 0 for the old fixed-timeout behavior)
+
+#### `v0.7.0+` and further `v0.x`
 - better combo support
 - other feature requests (see [issues](https://github.com/stasmarkin/sm_td/issues))
 

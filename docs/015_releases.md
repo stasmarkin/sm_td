@@ -1,3 +1,7 @@
+#### `v0.6.0`
+- Feature: dynamic release timeout (fixes #45). The window that decides hold-vs-tap for an overlapping `↓A ↓B ↑A ↑B` sequence is now derived from your actual typing rhythm as `min(p1, p2) / SMTD_GLOBAL_RELEASE_RATIO` (default ratio 5) instead of a fixed timeout. Quick rolls shrink the window, slow deliberate typing widens it. The previous fixed `SMTD_TIMEOUT_RELEASE` (per-key too) stays the upper bound
+- Config: new `SMTD_GLOBAL_RELEASE_RATIO` (default 5); set to 0 to disable the dynamic window and keep the fixed `SMTD_GLOBAL_RELEASE_TERM` behavior of 0.5.x
+
 #### `v0.5.6`
 - Feature: sm_td taps now go through the full QMK `process_record()` pipeline, so Caps Word, Auto Shift, Key Overrides and other QMK features can see them (fixes #23). Controlled by `SMTD_GLOBAL_PIPELINE_TAPS` (default on) and per-key `SMTD_FEATURE_PIPELINE_TAPS`
 - Feature: `SMTD_ENABLE_QMK_TAPHOLD` — standard QMK `MT()` / `LT()` keycodes are handled with sm_td timing, no `SMTD_MT` / `SMTD_LT` macros required

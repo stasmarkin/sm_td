@@ -1,5 +1,5 @@
 ```
-This documentation is up to date for version 0.5.6.
+This documentation is up to date for version 0.6.0.
 ```
 
 This is the `SM Tap Dance` (`sm_td` or `smtd` for short) user library for QMK.

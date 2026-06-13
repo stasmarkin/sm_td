@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.5.6
- * Date: 2026-06-12
+ * Version: 0.6.0
+ * Date: 2026-06-13
  */
 
 #include "sm_td.h"
@@ -487,7 +487,7 @@ void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 break;
             }
 
-            if (timer_elapsed32(state->released_time) >= get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE)) {
+            if (timer_elapsed32(state->released_time) >= state->release_term) {
                 // Timeout has been reached, but timeout_touch_release has not been executed yet
                 SMTD_DEBUG("%s timeout_touch_release has not been executed yet",
                            smtd_state_to_str(state));
@@ -536,6 +536,7 @@ void reset_state(smtd_state *state) {
     state->tap_count = 0;
     state->pressed_time = 0;
     state->released_time = 0;
+    state->release_term = 0;
     state->timeout = INVALID_DEFERRED_TOKEN;
     state->resolution = SMTD_RESOLUTION_UNCERTAIN;
     state->idx = 0;
@@ -588,10 +589,10 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
 
         case SMTD_STAGE_TOUCH_RELEASE:
             state->released_time = timer_read32();
-            state->timeout = defer_exec(get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE),
-                                        timeout_touch_release, state);
+            state->release_term = smtd_compute_release_term(state);
+            state->timeout = defer_exec(state->release_term, timeout_touch_release, state);
             SMTD_DEBUG("%s timeout_touch_release in %lums", smtd_state_to_str(state),
-                       get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE));
+                       state->release_term);
             break;
 
         case SMTD_STAGE_HOLD_RELEASE:
@@ -940,6 +941,31 @@ uint32_t get_smtd_timeout_default(smtd_timeout timeout) {
             return SMTD_GLOBAL_RELEASE_TERM;
     }
     return 0;
+}
+
+uint32_t smtd_compute_release_term(smtd_state *state) {
+    uint32_t fixed_term = get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE);
+
+#if SMTD_GLOBAL_RELEASE_RATIO > 0
+    // SMTD_STAGE_TOUCH_RELEASE is only entered while a following key is still
+    // pressed, so the next state must exist; fall back to the fixed term just in case.
+    if (state->idx + 1 >= smtd_active_states_size) {
+        return fixed_term;
+    }
+
+    smtd_state *next = smtd_active_states[state->idx + 1];
+    uint32_t p1 = next->pressed_time - state->pressed_time;
+    uint32_t p2 = state->released_time - next->pressed_time;
+    uint32_t term = (p1 < p2 ? p1 : p2) / SMTD_GLOBAL_RELEASE_RATIO;
+
+    // defer_exec rejects a zero delay, and the fixed term must stay the upper
+    // bound so the dynamic window can only shrink relative to the old behavior
+    if (term < 1) term = 1;
+    if (term > fixed_term) term = fixed_term;
+    return term;
+#else
+    return fixed_term;
+#endif
 }
 
 uint16_t smtd_current_keycode(keypos_t *key) {

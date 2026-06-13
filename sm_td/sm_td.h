@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.5.6
- * Date: 2026-06-12
+ * Version: 0.6.0
+ * Date: 2026-06-13
  */
 #pragma once
 
@@ -68,6 +68,19 @@
 
 #ifndef SMTD_GLOBAL_RELEASE_TERM
 #define SMTD_GLOBAL_RELEASE_TERM TAPPING_TERM / 4
+#endif
+
+// Dynamic release term (issue #45). For the ambiguous sequence
+// `↓mod ↓key ↑mod ↑key` the decision window for ↑key is derived from the
+// typing rhythm instead of the fixed SMTD_TIMEOUT_RELEASE: hold is chosen
+// only when both releases come much faster than the presses did, i.e.
+//   release_term = min(p1, p2) / SMTD_GLOBAL_RELEASE_RATIO
+// where p1 is the pause between the presses and p2 is the overlap between
+// ↓key and ↑mod. The result is clamped to [1ms .. SMTD_TIMEOUT_RELEASE],
+// so the (possibly per-key) fixed timeout remains the upper bound.
+// Set to 0 to disable and use the fixed SMTD_TIMEOUT_RELEASE as before.
+#ifndef SMTD_GLOBAL_RELEASE_RATIO
+#define SMTD_GLOBAL_RELEASE_RATIO 5
 #endif
 
 #ifndef SMTD_GLOBAL_AGGREGATE_TAPS
@@ -156,6 +169,9 @@ typedef struct {
     /** The time when the key was released */
     uint32_t released_time;
 
+    /** The decision window for the touch-release stage, computed on entering it */
+    uint32_t release_term;
+
     /** The timeout of current stage */
     deferred_token timeout;
 
@@ -186,6 +202,7 @@ typedef struct {
         .tap_count = 0,                             \
         .pressed_time = 0,                          \
         .released_time = 0,                         \
+        .release_term = 0,                          \
         .timeout = INVALID_DEFERRED_TOKEN,          \
         .stage = SMTD_STAGE_NONE,                   \
         .resolution = SMTD_RESOLUTION_UNCERTAIN,    \
@@ -418,6 +435,8 @@ smtd_resolution smtd_worst_resolution_before(smtd_state *state);
 uint32_t get_smtd_timeout_or_default(smtd_state *state, smtd_timeout timeout);
 
 uint32_t get_smtd_timeout_default(smtd_timeout timeout);
+
+uint32_t smtd_compute_release_term(smtd_state *state);
 
 uint16_t smtd_current_keycode(keypos_t *key);
 

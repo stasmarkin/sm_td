@@ -38,6 +38,7 @@ def create_ckeyrecord(row: int, col: int, pressed: bool) -> CKeyRecord:
 class CDeferredExecInfo(ctypes.Structure):
     _fields_ = [
         ("delay_ms", ctypes.c_uint32),
+        ("deadline_ms", ctypes.c_uint32),
         ("callback", ctypes.c_void_p),  # Using void pointer for function pointer
         ("cb_arg", ctypes.c_void_p),
         ("active", ctypes.c_bool),
@@ -211,6 +212,7 @@ class SmtdBindings:
             result.append({
                 "idx": i + 1,
                 "delay_ms": execs_array[i].delay_ms,
+                "deadline_ms": execs_array[i].deadline_ms,
                 "active": execs_array[i].active
             })
         return result
@@ -223,6 +225,10 @@ class SmtdBindings:
             return
         self.lib.TEST_execute_deferred(ctypes.c_uint8(idx))
         assert self.get_deferred_execs()[idx - 1]["active"] == False
+
+    def wait(self, ms: int) -> None:
+        """Advance the virtual clock, firing deferred executions that come due"""
+        self.lib.TEST_advance_time(ctypes.c_uint32(ms))
 
     def get_mods(self) -> int:
         """Get the current modifier state"""
@@ -306,6 +312,9 @@ def load_smtd_lib(path: str) -> SmtdBindings:
 
     lib.TEST_execute_deferred.argtypes = [ctypes.c_uint8]  # deferred_token
     lib.TEST_execute_deferred.restype = None
+
+    lib.TEST_advance_time.argtypes = [ctypes.c_uint32]
+    lib.TEST_advance_time.restype = None
 
     lib.get_mods.argtypes = []  # No arguments
     lib.get_mods.restype = ctypes.c_uint8  # Returns uint8_t

@@ -72,6 +72,7 @@ typedef uint8_t deferred_token;
 
 typedef struct {
     uint32_t delay_ms;
+    uint32_t deadline_ms;
     deferred_exec_callback callback;
     void *cb_arg;
     bool active;
@@ -94,12 +95,16 @@ void post_register_code16(uint16_t keycode);
 void post_unregister_code16(uint16_t keycode);
 void post_process_record(keyrecord_t *record);
 
+/* Virtual clock: stands still by default (legacy tests drive timeouts directly
+ * via TEST_execute_deferred), advanced explicitly with TEST_advance_time */
+static uint32_t mock_time_ms = 0;
+
 uint32_t timer_read32(void) {
-    return 0;
+    return mock_time_ms;
 }
 
 uint32_t timer_elapsed32(uint32_t last) {
-    return 0;
+    return mock_time_ms - last;
 }
 
 void wait_ms(uint16_t ms) {
@@ -273,6 +278,7 @@ bool process_record(keyrecord_t *record) {
 deferred_token defer_exec(uint32_t delay_ms, deferred_exec_callback callback, void *cb_arg) {
     deferred_exec_count++;
     deferred_execs[deferred_exec_count-1].delay_ms = delay_ms;
+    deferred_execs[deferred_exec_count-1].deadline_ms = mock_time_ms + delay_ms;
     deferred_execs[deferred_exec_count-1].callback = callback;
     deferred_execs[deferred_exec_count-1].cb_arg = cb_arg;
     deferred_execs[deferred_exec_count-1].active = true;
@@ -319,7 +325,34 @@ void TEST_snprintf(char* buffer, size_t bsize, const char* format, ...) {
 /* This creates a unified compilation unit with all functions available */
 #include "../sm_td/sm_td.c"
 
+/* Advance the virtual clock, firing due deferred execs in deadline order.
+ * A callback may schedule new execs; they fire too if they come due before the target. */
+void TEST_advance_time(uint32_t ms) {
+    uint32_t target = mock_time_ms + ms;
+
+    while (true) {
+        int next = -1;
+        for (uint8_t i = 0; i < deferred_exec_count; i++) {
+            if (!deferred_execs[i].active) continue;
+            if (deferred_execs[i].deadline_ms > target) continue;
+            if (next == -1 || deferred_execs[i].deadline_ms < deferred_execs[next].deadline_ms) {
+                next = i;
+            }
+        }
+        if (next == -1) break;
+
+        mock_time_ms = deferred_execs[next].deadline_ms;
+        deferred_execs[next].active = false;
+        if (deferred_execs[next].callback != NULL) {
+            deferred_execs[next].callback(mock_time_ms, deferred_execs[next].cb_arg);
+        }
+    }
+
+    mock_time_ms = target;
+}
+
 void TEST_reset() {
+    mock_time_ms = 0;
     layer_state = 0;
     current_mods = 0;
     weak_mods = 0;
