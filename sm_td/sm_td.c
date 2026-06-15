@@ -617,6 +617,10 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
 
         case SMTD_STAGE_HOLD_RELEASE:
             state->released_time = timer_read32();
+            state->release_term = smtd_compute_release_term(state);
+            state->timeout = defer_exec(state->release_term, timeout_hold_release, state);
+            SMTD_DEBUG("%s timeout_hold_release in %lums", smtd_state_to_str(state),
+                       state->release_term);
             break;
     }
 
