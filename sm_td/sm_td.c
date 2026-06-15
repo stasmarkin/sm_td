@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.6.0
- * Date: 2026-06-13
+ * Version: 0.6.1
+ * Date: 2026-06-15
  */
 
 #include "sm_td.h"
@@ -545,6 +545,19 @@ void reset_state(smtd_state *state) {
     state->emulated_register = false;
 }
 
+void smtd_reset(void) {
+    for (uint8_t i = 0; i < SMTD_POOL_SIZE; i++) {
+        if (smtd_states_pool[i].timeout != INVALID_DEFERRED_TOKEN) {
+            cancel_deferred_exec(smtd_states_pool[i].timeout);
+        }
+        reset_state(&smtd_states_pool[i]);
+        smtd_active_states[i] = NULL;
+    }
+    smtd_active_states_size = 0;
+    smtd_executing_state = NULL;
+    smtd_bypass = false;
+}
+
 void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
     SMTD_DEBUG("%s stage -> %s",
                smtd_state_to_str(state),
@@ -559,13 +572,20 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
 
     switch (state->stage) {
         case SMTD_STAGE_NONE:
-            for (uint8_t j = state->idx; j < smtd_active_states_size - 1; j++) {
-                smtd_active_states[j] = smtd_active_states[j + 1];
-                smtd_active_states[j]->idx--;
-            }
+            // Only unlink if the state is still in the active stack. Guards against
+            // a double removal (e.g. a stale timeout firing for an already-removed
+            // state): without this, smtd_active_states_size-- underflows past 0 and
+            // smtd_active_states[size] = NULL writes out of bounds, corrupting
+            // adjacent memory. Also avoids the unsigned underflow in the loop bound.
+            if (state->idx < smtd_active_states_size && smtd_active_states[state->idx] == state) {
+                for (uint8_t j = state->idx; j + 1 < smtd_active_states_size; j++) {
+                    smtd_active_states[j] = smtd_active_states[j + 1];
+                    smtd_active_states[j]->idx--;
+                }
 
-            smtd_active_states_size--;
-            smtd_active_states[smtd_active_states_size] = NULL;
+                smtd_active_states_size--;
+                smtd_active_states[smtd_active_states_size] = NULL;
+            }
             reset_state(state);
             break;
 

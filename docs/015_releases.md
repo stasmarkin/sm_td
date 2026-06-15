@@ -1,3 +1,8 @@
+#### `v0.6.1`
+- Fix: guard against double-removal of a state from the active stack in `smtd_apply_stage` — prevents `smtd_active_states_size` underflow and out-of-bounds write when a stale timeout fires for an already-removed state
+- Fix: `SMTD_TK` / `SMTD_TTO` macros incorrectly expanded to `_ON_MKEY` variants with duplicated `key` argument; now correctly delegate to the base macros
+- New: `smtd_reset()` API for test harnesses to clear all sm_td runtime state between scenarios
+
 #### `v0.6.0`
 - Feature: dynamic release timeout (fixes #45). The window that decides hold-vs-tap for an overlapping `↓A ↓B ↑A ↑B` sequence is now derived from your actual typing rhythm as `min(p1, p2) / SMTD_GLOBAL_RELEASE_RATIO` (default ratio 5) instead of a fixed timeout. Quick rolls shrink the window, slow deliberate typing widens it. The previous fixed `SMTD_TIMEOUT_RELEASE` (per-key too) stays the upper bound
 - Config: new `SMTD_GLOBAL_RELEASE_RATIO` (default 5); set to 0 to disable the dynamic window and keep the fixed `SMTD_GLOBAL_RELEASE_TERM` behavior of 0.5.x

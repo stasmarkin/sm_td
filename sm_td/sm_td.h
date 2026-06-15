@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.6.0
- * Date: 2026-06-13
+ * Version: 0.6.1
+ * Date: 2026-06-15
  */
 #pragma once
 
@@ -221,6 +221,12 @@ typedef struct {
  * ************************************* */
 
 bool process_smtd(uint16_t keycode, keyrecord_t *record);
+
+/* Clears all sm_td runtime state: the state pool, the active-state list, any
+ * pending timeout deferred-execs, and the executing/bypass flags. Intended for
+ * test harnesses that reuse one process across scenarios (the QMK test fixture
+ * resets QMK state but not sm_td's). Harmless but normally unused in firmware. */
+void smtd_reset(void);
 
 smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count);
 
@@ -596,9 +602,9 @@ void smtd_unregister_code16(bool use_cl, uint16_t key);
 
 // multi-tap activated key
 #define SMTD_TK(...) OVERLOAD4(__VA_ARGS__, SMTD_TK4, SMTD_TK3, SMTD_TK2)(__VA_ARGS__)
-#define SMTD_TK2(key, tap_key) SMTD_TK3_ON_MKEY(key, key, tap_key)
-#define SMTD_TK3(key, tap_key, threshold) SMTD_TK3_ON_MKEY(key, key, tap_key, threshold)
-#define SMTD_TK4(key, tap_key, threshold, use_cl) SMTD_TK4_ON_MKEY(key, key, tap_key, threshold, use_cl)
+#define SMTD_TK2(key, tap_key) SMTD_TK2_ON_MKEY(key, tap_key)
+#define SMTD_TK3(key, tap_key, threshold) SMTD_TK3_ON_MKEY(key, tap_key, threshold)
+#define SMTD_TK4(key, tap_key, threshold, use_cl) SMTD_TK4_ON_MKEY(key, tap_key, threshold, use_cl)
 #define SMTD_TK_ON_MKEY(...) OVERLOAD4(__VA_ARGS__, SMTD_TK4_ON_MKEY, SMTD_TK3_ON_MKEY, SMTD_TK2_ON_MKEY)(__VA_ARGS__)
 #define SMTD_TK2_ON_MKEY(...) SMTD_TK3_ON_MKEY(__VA_ARGS__, 1)
 #define SMTD_TK3_ON_MKEY(...) SMTD_TK4_ON_MKEY(__VA_ARGS__, true)
@@ -614,9 +620,9 @@ void smtd_unregister_code16(bool use_cl, uint16_t key);
 
 // multi-tap activated layer move
 #define SMTD_TTO(...) OVERLOAD4(__VA_ARGS__, SMTD_TTO4, SMTD_TTO3, SMTD_TTO2)(__VA_ARGS__)
-#define SMTD_TTO2(key, layer) SMTD_TTO3_ON_MKEY(key, key, layer)
-#define SMTD_TTO3(key, layer, threshold) SMTD_TTO3_ON_MKEY(key, key, layer)
-#define SMTD_TTO4(key, layer, threshold, use_cl) SMTD_TTO4_ON_MKEY(key, key, layer, threshold, use_cl)
+#define SMTD_TTO2(key, layer) SMTD_TTO2_ON_MKEY(key, layer)
+#define SMTD_TTO3(key, layer, threshold) SMTD_TTO3_ON_MKEY(key, layer, threshold)
+#define SMTD_TTO4(key, layer, threshold, use_cl) SMTD_TTO4_ON_MKEY(key, layer, threshold, use_cl)
 #define SMTD_TTO_ON_MKEY(...) OVERLOAD4(__VA_ARGS__, SMTD_TTO4_ON_MKEY, SMTD_TTO3_ON_MKEY, SMTD_TTO2_ON_MKEY)(__VA_ARGS__)
 #define SMTD_TTO2_ON_MKEY(...) SMTD_TTO3_ON_MKEY(__VA_ARGS__, 1)
 #define SMTD_TTO3_ON_MKEY(...) SMTD_TTO4_ON_MKEY(__VA_ARGS__, true)

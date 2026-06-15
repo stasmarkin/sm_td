@@ -185,7 +185,12 @@ Your support helps me continue developing and maintaining this project. Thank yo
 - Feature: `SMTD_ENABLE_QMK_TAPHOLD` — use standard QMK `MT()` / `LT()` keycodes with sm_td timing
 - Removed: `SMTD_GLOBAL_MODS_PROPAGATION_ENABLED` (was off by default and half-baked)
 
-#### `v0.6.0` (we are here)
+#### `v0.6.1` (we are here)
+- Fix: guard against state double-removal crash in `smtd_apply_stage`
+- Fix: `SMTD_TK` / `SMTD_TTO` macro expansion
+- New: `smtd_reset()` for test harnesses
+
+#### `v0.6.0`
 - Feature: dynamic release timeout derived from your typing rhythm (fixes #45); new `SMTD_GLOBAL_RELEASE_RATIO` flag (set to 0 for the old fixed-timeout behavior)
 
 #### `v0.7.0+` and further `v0.x`
