@@ -762,10 +762,10 @@ static smtd_resolution smtd_handle_qk_tap_hold(uint16_t keycode, smtd_action act
                 SMTD_TAP_16(use_cl, tap_key);
                 return SMTD_RESOLUTION_DETERMINED;
             case SMTD_ACTION_HOLD:
-                LAYER_PUSH(layer);
+                layer_on(layer);
                 return SMTD_RESOLUTION_DETERMINED;
             case SMTD_ACTION_RELEASE:
-                LAYER_RESTORE();
+                layer_off(layer);
                 return SMTD_RESOLUTION_DETERMINED;
         }
     }

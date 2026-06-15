@@ -127,7 +127,17 @@ uint16_t keymap_key_to_keycode(uint8_t layer, keypos_t key) {
 
 void layer_move(uint8_t layer) {
     TEST_print("             --> Layer moved to %d\n", layer);
-    layer_state = layer;
+    layer_state = 1UL << layer;
+}
+
+void layer_on(uint8_t layer) {
+    TEST_print("             --> Layer on %d\n", layer);
+    layer_state |= 1UL << layer;
+}
+
+void layer_off(uint8_t layer) {
+    TEST_print("             --> Layer off %d\n", layer);
+    layer_state &= ~(1UL << layer);
 }
 
 void add_weak_mods(uint8_t mods) {
@@ -224,7 +234,7 @@ void unregister_code16(uint16_t keycode) {
         .keycode = keycode,
         .pressed = false,
         .mods = current_mods | weak_mods,
-        .layer_state = layer_state,
+        .layer_state = get_highest_layer(layer_state),
         .smtd_bypass = get_smtd_bypass(),
     };
     record_count++;
@@ -240,7 +250,7 @@ void register_code16(uint16_t keycode) {
         .keycode = keycode,
         .pressed = true,
         .mods = current_mods | weak_mods,
-        .layer_state = layer_state,
+        .layer_state = get_highest_layer(layer_state),
         .smtd_bypass = get_smtd_bypass(),
     };
     record_count++;
@@ -265,7 +275,7 @@ bool process_record(keyrecord_t *record) {
         .keycode = 65535,
         .pressed = record->event.pressed,
         .mods = current_mods | weak_mods,
-        .layer_state = layer_state,
+        .layer_state = get_highest_layer(layer_state),
         .smtd_bypass = get_smtd_bypass(),
     };
     record_count++;
@@ -359,8 +369,6 @@ void TEST_reset() {
     caps_word_active = false;
     record_count = 0;
     deferred_exec_count = 0;
-    smtd_return_layer = RETURN_LAYER_NOT_SET;
-    smtd_return_layer_cnt = 0;
     smtd_executing_state = NULL;
     for (uint8_t i = 0; i < MAX_RECORD_HISTORY; i++) {
         record_history[i] = (history_t){0};
@@ -384,8 +392,8 @@ void TEST_set_smtd_bypass(const bool bypass) {
     smtd_bypass = bypass;
 }
 
-bool TEST_get_layer_state() {
-    return layer_state;
+uint8_t TEST_get_layer_state() {
+    return get_highest_layer(layer_state);
 }
 
 void TEST_set_caps_word(bool on) {
