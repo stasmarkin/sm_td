@@ -1,12 +1,12 @@
 try:
-    from tests.sm_td_assertions import *
+    from tests.unit.sm_td_assertions import *
 except ImportError:
     from sm_td_assertions import *
 
-smtd_dyn = load_smtd_lib('tests/dynamic_release/layout.c')
-smtd_fixed = load_smtd_lib('tests/dynamic_release/layout_fixed.c')
-smtd_clamp = load_smtd_lib('tests/dynamic_release/layout_ratio1.c')
-smtd_qk = load_smtd_lib('tests/dynamic_release/layout_qk.c')
+smtd_dyn = load_smtd_lib('tests/unit/dynamic_release/layout.c')
+smtd_fixed = load_smtd_lib('tests/unit/dynamic_release/layout_fixed.c')
+smtd_clamp = load_smtd_lib('tests/unit/dynamic_release/layout_ratio1.c')
+smtd_qk = load_smtd_lib('tests/unit/dynamic_release/layout_qk.c')
 
 
 def build_keys(smtd, l0_values=None):

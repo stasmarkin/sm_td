@@ -254,7 +254,7 @@ class SmtdBindings:
 # Compile and load the shared library
 def load_smtd_lib(path: str) -> SmtdBindings:
     """Compile and load the sm_td shared library"""
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
     
     # Create unique library name based on the layout path to avoid conflicts
     path_hash = hashlib.md5(path.encode()).hexdigest()[:8]

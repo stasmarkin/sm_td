@@ -11,7 +11,7 @@ sys.path.insert(0, project_root)
 if __name__ == "__main__":
     # Discover and run all tests in the tests directory
     loader = unittest.TestLoader()
-    start_dir = os.path.dirname(__file__)
+    start_dir = os.path.join(os.path.dirname(__file__), 'unit')
     suite = loader.discover(start_dir, pattern='test*.py')
     
     runner = unittest.TextTestRunner(verbosity=2)

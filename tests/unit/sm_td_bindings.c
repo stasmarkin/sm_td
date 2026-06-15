@@ -319,11 +319,11 @@ void TEST_snprintf(char* buffer, size_t bsize, const char* format, ...) {
 #endif
 
 /* Now include sm_td.h to get types and declarations */
-#include "../sm_td/sm_td.h"
+#include "../../sm_td/sm_td.h"
 
 /* Include sm_td.c implementation directly to avoid separate compilation issues */
 /* This creates a unified compilation unit with all functions available */
-#include "../sm_td/sm_td.c"
+#include "../../sm_td/sm_td.c"
 
 /* Advance the virtual clock, firing due deferred execs in deadline order.
  * A callback may schedule new execs; they fire too if they come due before the target. */

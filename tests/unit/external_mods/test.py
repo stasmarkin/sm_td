@@ -2,11 +2,11 @@ import itertools
 import random
 
 try:
-    from tests.sm_td_assertions import *
+    from tests.unit.sm_td_assertions import *
 except ImportError:
     from sm_td_assertions import *
 
-smtd = load_smtd_lib('tests/external_mods/layout.c')
+smtd = load_smtd_lib('tests/unit/external_mods/layout.c')
 
 
 class TestSmTdWithExternalMods(SmTdAssertions):

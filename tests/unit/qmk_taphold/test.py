@@ -1,9 +1,9 @@
 try:
-    from tests.sm_td_assertions import *
+    from tests.unit.sm_td_assertions import *
 except ImportError:
     from sm_td_assertions import *
 
-smtd = load_smtd_lib('tests/qmk_taphold/layout.c')
+smtd = load_smtd_lib('tests/unit/qmk_taphold/layout.c')
 
 
 class TestSmTdQmkTapHold(SmTdAssertions):

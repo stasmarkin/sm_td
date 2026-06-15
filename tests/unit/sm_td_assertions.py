@@ -2,7 +2,7 @@ import unittest
 try:
     from sm_td_bindings import *
 except ImportError:
-    from tests.sm_td_bindings import *
+    from tests.unit.sm_td_bindings import *
 from dataclasses import dataclass
 
 
