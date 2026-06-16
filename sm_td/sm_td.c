@@ -378,7 +378,7 @@ bool is_following_key(smtd_state *state, uint16_t pressed_keycode, keyrecord_t *
 
 #if SMTD_CHORDAL_HOLD
 static bool smtd_chordal_same_hand(keypos_t a, keypos_t b);
-static bool smtd_chordal_has_cross_hand(keypos_t pos);
+static bool smtd_chordal_all_same_hand(keypos_t current_pos);
 #endif
 
 void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_keycode, keyrecord_t *record) {
@@ -403,41 +403,33 @@ void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
         // -----------------------------------------------------------------------------------------
         case SMTD_STAGE_TOUCH: {
             if (state->idx + 1 == smtd_active_states_size) {
-                // last state in stack
                 if (is_state_key && !record->event.pressed) {
+                    smtd_apply_stage(state, SMTD_STAGE_SEQUENCE);
                     if (!smtd_feature_enabled_or_default(state, SMTD_FEATURE_AGGREGATE_TAPS)) {
                         smtd_handle_action(state, SMTD_ACTION_TAP);
                     }
-
-                    smtd_apply_stage(state, SMTD_STAGE_SEQUENCE);
                     break;
                 }
-
+#if SMTD_CHORDAL_HOLD
+                if (!is_state_key && record->event.pressed) {
+                    if (smtd_chordal_same_hand(state->pressed_keyposition, record->event.key)) {
+                        cancel_deferred_exec(state->timeout);
+                        state->timeout = INVALID_DEFERRED_TOKEN;
+                    }
+                    break;
+                }
+#endif
                 break;
             }
 
             if (is_state_key && !record->event.pressed) {
-                // Macro key is released, moving to the next stage
                 smtd_apply_stage(state, SMTD_STAGE_TOUCH_RELEASE);
-                break;
-            }
-
-            if (!is_following_key(state, pressed_keycode, record)) {
-                // Some previously pressed key has been released
-                // We don't need to do anything here
                 break;
             }
 
 #if SMTD_CHORDAL_HOLD
             if (!is_state_key && record->event.pressed) {
-                // Following key pressed — check chordal hold.
-                // If same hand and no cross-hand keys exist, cancel the hold
-                // timeout to prevent accidental hold while typing within one hand.
-                // Skip when a non-default layer is active (user is deliberately
-                // building a layer combo, not typing within one hand).
-                if (layer_state == default_layer_state
-                    && smtd_chordal_same_hand(state->pressed_keyposition, record->event.key)
-                    && !smtd_chordal_has_cross_hand(state->pressed_keyposition)) {
+                if (smtd_chordal_same_hand(state->pressed_keyposition, record->event.key)) {
                     cancel_deferred_exec(state->timeout);
                     state->timeout = INVALID_DEFERRED_TOKEN;
                 }
@@ -445,21 +437,17 @@ void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
             }
 #endif
 
+            if (!is_following_key(state, pressed_keycode, record)) {
+                break;
+            }
+
             if (!is_state_key && !record->event.pressed) {
-                // Following key is released. Now we definitely know that macro key is held
-                // we need to execute hold the macro key and let following state handle the key release
 #if SMTD_CHORDAL_HOLD
-                // Chordal hold: if the released following key is on the same hand
-                // and no cross-hand keys remain, treat as TAP (typing within one hand).
-                // When there ARE cross-hand keys, allow normal HOLD (mod+key combo).
-                // Skip when a non-default layer is active (deliberate layer combo).
-                if (layer_state == default_layer_state
-                    && smtd_chordal_same_hand(state->pressed_keyposition, record->event.key)
-                    && !smtd_chordal_has_cross_hand(state->pressed_keyposition)) {
+                if (smtd_chordal_all_same_hand(state->pressed_keyposition)) {
+                    smtd_apply_stage(state, SMTD_STAGE_SEQUENCE);
                     if (!smtd_feature_enabled_or_default(state, SMTD_FEATURE_AGGREGATE_TAPS)) {
                         smtd_handle_action(state, SMTD_ACTION_TAP);
                     }
-                    smtd_apply_stage(state, SMTD_STAGE_SEQUENCE);
                     break;
                 }
 #endif
@@ -469,7 +457,7 @@ void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
             }
 
             break;
-        } // case SMTD_STAGE_TOUCH
+        }
 
         // -----------------------------------------------------------------------------------------
         case SMTD_STAGE_SEQUENCE: {
@@ -541,6 +529,15 @@ void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
 
             // Following key is released. Now we definitely know that macro key is held
             // we need to execute hold the macro key
+#if SMTD_CHORDAL_HOLD
+            if (smtd_chordal_all_same_hand(state->pressed_keyposition)) {
+                if (!smtd_feature_enabled_or_default(state, SMTD_FEATURE_AGGREGATE_TAPS)) {
+                    smtd_handle_action(state, SMTD_ACTION_TAP);
+                }
+                smtd_apply_stage(state, SMTD_STAGE_SEQUENCE);
+                break;
+            }
+#endif
             smtd_apply_stage(state, SMTD_STAGE_HOLD_RELEASE);
             smtd_handle_action(state, SMTD_ACTION_HOLD);
 
@@ -1069,17 +1066,19 @@ static bool smtd_chordal_same_hand(keypos_t a, keypos_t b) {
     return hand_a == hand_b;
 }
 
-static bool smtd_chordal_has_cross_hand(keypos_t pos) {
-    char hand = smtd_chordal_hand(pos);
-    if (hand == '*') return false;
+static bool smtd_chordal_all_same_hand(keypos_t current_pos) {
+    char current_hand = smtd_chordal_hand(current_pos);
+    if (current_hand == '*') return false;
     for (uint8_t i = 0; i < smtd_active_states_size; i++) {
         smtd_state *other = smtd_active_states[i];
-        if (other->stage == SMTD_STAGE_NONE || other->stage == SMTD_STAGE_SEQUENCE) continue;
-        if (other->pressed_keyposition.row == pos.row && other->pressed_keyposition.col == pos.col) continue;
+        if (other->stage == SMTD_STAGE_NONE) continue;
+        if (other->stage == SMTD_STAGE_SEQUENCE) continue;
+        if (other->pressed_keyposition.row == current_pos.row && other->pressed_keyposition.col == current_pos.col) continue;
         char other_hand = smtd_chordal_hand(other->pressed_keyposition);
-        if (other_hand != '*' && other_hand != hand) return true;
+        if (other_hand == '*') continue;
+        if (other_hand != current_hand) return false;
     }
-    return false;
+    return true;
 }
 
 #endif
