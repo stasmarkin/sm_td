@@ -78,6 +78,10 @@ Next step (original note) requires INTERACTIVE lldb single-stepping; deferred. T
 - PRs include: linked issue, rationale, before/after behavior, updated docs (if user-facing), and test commands/suites run locally.
 - Always run `python3 tests/run_tests.py` before submitting.
 
+## Release Process
+- Cutting a release is one `release vX.Y.Z` commit on `main`. Bump `Version:`/`Date:` in all three of `sm_td/sm_td.c`, `sm_td/sm_td.h`, `sm_td/introspection.h` (kept in lockstep); prepend a changelog entry to `docs/015_releases.md`; in `README.md` move the `(we are here)` marker to the new version and add its bullet list (0.6.x block is newest-first). Feature/fix work lands first on a `release-X.Y.Z` branch, then the release commit is added and the branch fast-forwards into `main`.
+- Publish: `git tag -a vX.Y.Z` on the release commit + `git push origin main vX.Y.Z`, then `gh release create vX.Y.Z --latest --notes-file <body> sm_td/sm_td.c sm_td/sm_td.h` (GitHub releases attach `sm_td.c` and `sm_td.h` as assets — see v0.6.1/v0.6.2 for the body format: "What's new" + "Upgrade from" sections, ending with a link to `docs/015_releases.md`).
+
 ## Configuration Tips
 - In QMK: set `DEFERRED_EXEC_ENABLE = yes` and define `MAX_DEFERRED_EXECUTORS` per docs.
 - Tune via `SMTD_GLOBAL_*` and `on_smtd_action(...)`; document per-key overrides in `docs/`.
