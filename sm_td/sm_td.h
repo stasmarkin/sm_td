@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.6.1
- * Date: 2026-06-15
+ * Version: 0.6.2
+ * Date: 2026-06-16
  */
 #pragma once
 
@@ -586,10 +586,10 @@ void smtd_unregister_code16(bool use_cl, uint16_t key);
         NOTHING,                                              \
         SMTD_TAP_16(use_cl, tap_key),                         \
         SMTD_LIMIT(threshold,                                 \
-            LAYER_PUSH(layer),                                \
+            layer_on(layer),                                  \
             SMTD_REGISTER_16(use_cl, tap_key)),               \
         SMTD_LIMIT(threshold,                                 \
-            LAYER_RESTORE(),                                  \
+            layer_off(layer),                                 \
             SMTD_UNREGISTER_16(use_cl, tap_key));             \
     )
 
@@ -649,34 +649,3 @@ void smtd_unregister_code16(bool use_cl, uint16_t key);
     )
 
 
-/* ************************************* *
- *             LAYER UTILS               *
- * ************************************* */
-
-#define RETURN_LAYER_NOT_SET 13
-
-static uint8_t smtd_return_layer = RETURN_LAYER_NOT_SET;
-static uint8_t smtd_return_layer_cnt = 0;
-
-#define LAYER_PUSH(layer)                                   \
-    smtd_return_layer_cnt++;                                \
-    if (smtd_return_layer == RETURN_LAYER_NOT_SET) {        \
-        smtd_return_layer = get_highest_layer(layer_state); \
-    }                                                       \
-    layer_move(layer)
-
-#define LAYER_RESTORE()                               \
-    if (smtd_return_layer_cnt > 0) {                  \
-        smtd_return_layer_cnt--;                      \
-        if (smtd_return_layer_cnt == 0) {             \
-            layer_move(smtd_return_layer);            \
-            smtd_return_layer = RETURN_LAYER_NOT_SET; \
-        }                                             \
-    }
-
-static inline void avoid_unused_variable_on_compile(void *ptr) {
-    // just touch them, so compiler won't throw "defined but not used" error
-    // that variables are used in macros that user may not use
-    if (smtd_return_layer == RETURN_LAYER_NOT_SET) smtd_return_layer = RETURN_LAYER_NOT_SET;
-    if (smtd_return_layer_cnt == 0) smtd_return_layer_cnt = 0;
-}

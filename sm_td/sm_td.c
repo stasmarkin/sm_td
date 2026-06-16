@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.6.1
- * Date: 2026-06-15
+ * Version: 0.6.2
+ * Date: 2026-06-16
  */
 
 #include "sm_td.h"
@@ -654,6 +654,10 @@ void smtd_apply_stage(smtd_state *state, smtd_stage next_stage) {
 
         case SMTD_STAGE_HOLD_RELEASE:
             state->released_time = timer_read32();
+            state->release_term = smtd_compute_release_term(state);
+            state->timeout = defer_exec(state->release_term, timeout_hold_release, state);
+            SMTD_DEBUG("%s timeout_hold_release in %lums", smtd_state_to_str(state),
+                       state->release_term);
             break;
     }
 
@@ -799,10 +803,10 @@ static smtd_resolution smtd_handle_qk_tap_hold(uint16_t keycode, smtd_action act
                 SMTD_TAP_16(use_cl, tap_key);
                 return SMTD_RESOLUTION_DETERMINED;
             case SMTD_ACTION_HOLD:
-                LAYER_PUSH(layer);
+                layer_on(layer);
                 return SMTD_RESOLUTION_DETERMINED;
             case SMTD_ACTION_RELEASE:
-                LAYER_RESTORE();
+                layer_off(layer);
                 return SMTD_RESOLUTION_DETERMINED;
         }
     }

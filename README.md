@@ -185,7 +185,11 @@ Your support helps me continue developing and maintaining this project. Thank yo
 - Feature: `SMTD_ENABLE_QMK_TAPHOLD` — use standard QMK `MT()` / `LT()` keycodes with sm_td timing
 - Removed: `SMTD_GLOBAL_MODS_PROPAGATION_ENABLED` (was off by default and half-baked)
 
-#### `v0.6.1` (we are here)
+#### `v0.6.2` (we are here)
+- Fix: `SMTD_LT` uses native `layer_on` / `layer_off`, so it no longer wipes foreign layer bits on release (fixes #57, unblocks tri-layer #44)
+- Fix: a held key released under a stacked key now finalizes instead of hanging its modifier (fixes #58)
+
+#### `v0.6.1`
 - Fix: guard against state double-removal crash in `smtd_apply_stage`
 - Fix: `SMTD_TK` / `SMTD_TTO` macro expansion
 - New: `smtd_reset()` for test harnesses
