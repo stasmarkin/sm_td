@@ -109,6 +109,18 @@
 #define SMTD_QMK_TAPHOLD_USE_CAPS_WORD true
 #endif
 
+/* ************************************* *
+ *       CHORDAL HOLD CONFIGURATION      *
+ * ************************************* */
+
+#ifndef SMTD_CHORDAL_HOLD
+#define SMTD_CHORDAL_HOLD 0
+#endif
+
+#if SMTD_CHORDAL_HOLD
+extern const char chordal_hold_layout[MATRIX_ROWS][MATRIX_COLS];
+#endif
+
 #include <stdint.h>
 
 

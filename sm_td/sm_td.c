@@ -376,6 +376,11 @@ bool is_following_key(smtd_state *state, uint16_t pressed_keycode, keyrecord_t *
     return false;
 }
 
+#if SMTD_CHORDAL_HOLD
+static bool smtd_chordal_same_hand(keypos_t a, keypos_t b);
+static bool smtd_chordal_has_cross_hand(keypos_t pos);
+#endif
+
 void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_keycode, keyrecord_t *record) {
     SMTD_DEBUG("--%s apply_event with %s, is_state_key=%d",
                smtd_state_to_str(state),
@@ -423,9 +428,41 @@ void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
                 break;
             }
 
+#if SMTD_CHORDAL_HOLD
+            if (!is_state_key && record->event.pressed) {
+                // Following key pressed — check chordal hold.
+                // If same hand and no cross-hand keys exist, cancel the hold
+                // timeout to prevent accidental hold while typing within one hand.
+                // Skip when a non-default layer is active (user is deliberately
+                // building a layer combo, not typing within one hand).
+                if (layer_state == default_layer_state
+                    && smtd_chordal_same_hand(state->pressed_keyposition, record->event.key)
+                    && !smtd_chordal_has_cross_hand(state->pressed_keyposition)) {
+                    cancel_deferred_exec(state->timeout);
+                    state->timeout = INVALID_DEFERRED_TOKEN;
+                }
+                break;
+            }
+#endif
+
             if (!is_state_key && !record->event.pressed) {
                 // Following key is released. Now we definitely know that macro key is held
                 // we need to execute hold the macro key and let following state handle the key release
+#if SMTD_CHORDAL_HOLD
+                // Chordal hold: if the released following key is on the same hand
+                // and no cross-hand keys remain, treat as TAP (typing within one hand).
+                // When there ARE cross-hand keys, allow normal HOLD (mod+key combo).
+                // Skip when a non-default layer is active (deliberate layer combo).
+                if (layer_state == default_layer_state
+                    && smtd_chordal_same_hand(state->pressed_keyposition, record->event.key)
+                    && !smtd_chordal_has_cross_hand(state->pressed_keyposition)) {
+                    if (!smtd_feature_enabled_or_default(state, SMTD_FEATURE_AGGREGATE_TAPS)) {
+                        smtd_handle_action(state, SMTD_ACTION_TAP);
+                    }
+                    smtd_apply_stage(state, SMTD_STAGE_SEQUENCE);
+                    break;
+                }
+#endif
                 smtd_apply_stage(state, SMTD_STAGE_HOLD);
                 smtd_handle_action(state, SMTD_ACTION_HOLD);
                 break;
@@ -1009,6 +1046,39 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
     }
     return false;
 }
+
+/* ************************************* *
+ *         CHORDAL HOLD                  *
+ * ************************************* */
+
+#if SMTD_CHORDAL_HOLD
+
+static char smtd_chordal_hand(keypos_t key) {
+    return (char)pgm_read_byte(&chordal_hold_layout[key.row][key.col]);
+}
+
+static bool smtd_chordal_same_hand(keypos_t a, keypos_t b) {
+    char hand_a = smtd_chordal_hand(a);
+    char hand_b = smtd_chordal_hand(b);
+    if (hand_a == '*' && hand_b == '*') return true;
+    if (hand_a == '*' || hand_b == '*') return false;
+    return hand_a == hand_b;
+}
+
+static bool smtd_chordal_has_cross_hand(keypos_t pos) {
+    char hand = smtd_chordal_hand(pos);
+    if (hand == '*') return false;
+    for (uint8_t i = 0; i < smtd_active_states_size; i++) {
+        smtd_state *other = smtd_active_states[i];
+        if (other->stage == SMTD_STAGE_NONE || other->stage == SMTD_STAGE_SEQUENCE) continue;
+        if (other->pressed_keyposition.row == pos.row && other->pressed_keyposition.col == pos.col) continue;
+        char other_hand = smtd_chordal_hand(other->pressed_keyposition);
+        if (other_hand != '*' && other_hand != hand) return true;
+    }
+    return false;
+}
+
+#endif
 
 /* ************************************* *
  *       TEST FRAMEWORK ACCESSORS        *
