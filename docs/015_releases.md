@@ -1,3 +1,7 @@
+#### `v0.6.2`
+- Fix: `SMTD_LT` now uses native QMK `layer_on` / `layer_off` instead of the old `LAYER_PUSH` / `LAYER_RESTORE` (`layer_move`) macros. Activating a layer is now additive, so it no longer wipes foreign layer bits on release (fixes #57: a `TG()` / `TO()` toggled layer held alongside an `SMTD_LT` stays on after release; unblocks #44: two `SMTD_LT` layers coexist, so a tri-layer `layer_state_set` hook can light up the third layer)
+- Fix: a held key released while another key is stacked on top now schedules `timeout_hold_release`, so the state finalizes and its modifier is released instead of hanging forever (fixes #58)
+
 #### `v0.6.1`
 - Fix: guard against double-removal of a state from the active stack in `smtd_apply_stage` — prevents `smtd_active_states_size` underflow and out-of-bounds write when a stale timeout fires for an already-removed state
 - Fix: `SMTD_TK` / `SMTD_TTO` macros incorrectly expanded to `_ON_MKEY` variants with duplicated `key` argument; now correctly delegate to the base macros
