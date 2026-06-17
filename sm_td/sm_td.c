@@ -1118,7 +1118,8 @@ static bool smtd_chordal_same_hand(keypos_t a, keypos_t b) {
 // True when every concurrently-held, undecided key shares current_pos's hand, so
 // the pending tap-hold is a same-hand roll (tap) rather than a cross-hand chord
 // (hold). A neutral ('*') current key is never "all same hand", so thumbs keep
-// the default hold-capable behavior. Other neutral keys are ignored in the scan.
+// the default hold-capable behavior. Neutral keys among other pressed keys force
+// HOLD (they signal an intentional chord, not a roll).
 static bool smtd_chordal_all_same_hand(keypos_t current_pos) {
     char current_hand = smtd_chordal_handedness(current_pos);
     if (current_hand == '*') return false;
@@ -1131,7 +1132,7 @@ static bool smtd_chordal_all_same_hand(keypos_t current_pos) {
             other->pressed_keyposition.col == current_pos.col) continue;
 
         char other_hand = smtd_chordal_handedness(other->pressed_keyposition);
-        if (other_hand == '*') continue;
+        if (other_hand == '*') return false;
         if (other_hand != current_hand) return false;
     }
 
