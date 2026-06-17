@@ -164,27 +164,27 @@ Your support helps me continue developing and maintaining this project. Thank yo
 
 ## Roadmap
 
-#### `v0.6.4` (we are here)
-- Fix: chordal hold holds (not taps) when a neutral (`'*'`) key follows a mod-tap, matching the hold-timeout path (#62)
+#### `v0.5.x`
+- Full-pipeline taps + Caps Word (#23) and `SMTD_ENABLE_QMK_TAPHOLD` for native `MT()` / `LT()` (0.5.6), QMK community module integration (0.5.1 / 0.5.5), split into `.h` + `.c` (0.5.4), 3+ finger roll interpretation and a collection of macros (0.5.0 / 0.5.3), AVR fix (#48, 0.5.2), and assorted bug fixes
 
-#### `v0.6.3`
-- Feature: chordal hold ("opposite-hands rule") via `SMTD_CHORDAL_HOLD` — same-hand rolls stay taps, cross-hand chords hold; handedness from a `chordal_hold_layout` array or an overridable `smtd_chordal_handedness()` (#60)
-- Fix: custom / derived keycode taps now feed the QMK leader buffer, so Leader sequences see them (fixes #29)
-
-#### `v0.6.2`
-- Fix: `SMTD_LT` uses native `layer_on` / `layer_off`, so it no longer wipes foreign layer bits on release (fixes #57, unblocks tri-layer #44)
-- Fix: a held key released under a stacked key now finalizes instead of hanging its modifier (fixes #58)
+#### `v0.6.0`
+- Feature: dynamic release timeout derived from your typing rhythm (fixes #45); new `SMTD_GLOBAL_RELEASE_RATIO` flag (set to 0 for the old fixed-timeout behavior)
 
 #### `v0.6.1`
 - Fix: guard against state double-removal crash in `smtd_apply_stage`
 - Fix: `SMTD_TK` / `SMTD_TTO` macro expansion
 - New: `smtd_reset()` for test harnesses
 
-#### `v0.6.0`
-- Feature: dynamic release timeout derived from your typing rhythm (fixes #45); new `SMTD_GLOBAL_RELEASE_RATIO` flag (set to 0 for the old fixed-timeout behavior)
+#### `v0.6.2`
+- Fix: `SMTD_LT` uses native `layer_on` / `layer_off`, so it no longer wipes foreign layer bits on release (fixes #57, unblocks tri-layer #44)
+- Fix: a held key released under a stacked key now finalizes instead of hanging its modifier (fixes #58)
 
-#### `v0.5.x`
-- Full-pipeline taps + Caps Word (#23) and `SMTD_ENABLE_QMK_TAPHOLD` for native `MT()` / `LT()` (0.5.6), QMK community module integration (0.5.1 / 0.5.5), split into `.h` + `.c` (0.5.4), 3+ finger roll interpretation and a collection of macros (0.5.0 / 0.5.3), AVR fix (#48, 0.5.2), and assorted bug fixes
+#### `v0.6.3`
+- Feature: chordal hold ("opposite-hands rule") via `SMTD_CHORDAL_HOLD` — same-hand rolls stay taps, cross-hand chords hold; handedness from a `chordal_hold_layout` array or an overridable `smtd_chordal_handedness()` (#60)
+- Fix: custom / derived keycode taps now feed the QMK leader buffer, so Leader sequences see them (fixes #29)
+
+#### `v0.6.4` (we are here)
+- Fix: chordal hold holds (not taps) when a neutral (`'*'`) key follows a mod-tap, matching the hold-timeout path (#62)
 
 #### `v0.7.0+` and further `v0.x`
 - better combo support
