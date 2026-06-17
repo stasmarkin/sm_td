@@ -892,12 +892,44 @@ static bool smtd_pipeline_emulation_allowed(bool use_cl, uint16_t key) {
     return smtd_current_keycode(&smtd_executing_state->pressed_keyposition) == key;
 }
 
+#ifdef LEADER_ENABLE
+// Directly sent taps bypass process_record, so QMK's leader feature (which runs
+// later in the quantum chain, after process_record_user) never sees them. When a
+// leader sequence is active, feed the tap into the leader buffer here instead of
+// emitting it to the host, mirroring process_leader. This makes leader sequences
+// work with custom/derived sm_td keycodes, which cannot take the pipeline path
+// that already feeds native keycodes through process_record. See issue #29.
+// Returns true when the key was consumed by the leader (and must not be sent).
+static bool smtd_leader_consume(uint16_t key) {
+    if (!leader_sequence_active() || leader_sequence_timed_out()) return false;
+
+#    ifndef LEADER_KEY_STRICT_KEY_PROCESSING
+    key = get_tap_keycode(key);
+#    endif
+
+    if (!leader_sequence_add(key)) {
+        // Buffer is full: end the sequence and let the key reach the host.
+        leader_end();
+        return false;
+    }
+
+#    ifdef LEADER_PER_KEY_TIMING
+    leader_reset_timer();
+#    endif
+    return true;
+}
+#endif
+
 void smtd_tap_code16(bool use_cl, uint16_t key) {
     if (smtd_pipeline_emulation_allowed(use_cl, key)) {
         smtd_emulate_key(&smtd_executing_state->pressed_keyposition, true);
         smtd_emulate_key(&smtd_executing_state->pressed_keyposition, false);
         return;
     }
+
+    #ifdef LEADER_ENABLE
+    if (smtd_leader_consume(key)) return;
+    #endif
 
     #ifdef CAPS_WORD_ENABLE
     if (!smtd_process_caps_word(use_cl, key)) return;
