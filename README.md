@@ -228,6 +228,7 @@ Your support helps me continue developing and maintaining this project. Thank yo
 - [mikenrafter](https://github.com/mikenrafter) for [cool macros](https://github.com/stasmarkin/sm_td/pull/18)
 - [alextverdyy](https://github.com/alextverdyy) for [qmk module support](https://github.com/stasmarkin/sm_td/pull/39)
 - [TickKleiner](https://github.com/TickKleiner) for [community module multiple definition error fix](https://github.com/stasmarkin/sm_td/pull/52) 
+- [gitbyflux](https://github.com/gitbyflux) for [chordal hold support](https://github.com/stasmarkin/sm_td/pull/60) and the [neutral-key fix](https://github.com/stasmarkin/sm_td/pull/62)
 
 ### Beta testing
 - [Azzam S.A](https://github.com/azzamsa)
