@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.6.2
- * Date: 2026-06-16
+ * Version: 0.6.3-SNAPSHOT-20260617
+ * Date: 2026-06-17
  */
 #pragma once
 
@@ -109,16 +109,11 @@
 #define SMTD_QMK_TAPHOLD_USE_CAPS_WORD true
 #endif
 
-/* ************************************* *
- *       CHORDAL HOLD CONFIGURATION      *
- * ************************************* */
-
+// QMK-style "chordal hold" (opposite-hands rule). When 1, a tap-hold settles as
+// HOLD only if a key on the opposite hand is involved; same-hand rolls stay taps.
+// Disabled by default so it compiles out entirely (zero code/RAM when off).
 #ifndef SMTD_CHORDAL_HOLD
 #define SMTD_CHORDAL_HOLD 0
-#endif
-
-#if SMTD_CHORDAL_HOLD
-extern const char chordal_hold_layout[MATRIX_ROWS][MATRIX_COLS];
 #endif
 
 #include <stdint.h>
@@ -245,6 +240,18 @@ smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap
 __attribute__((weak)) uint32_t get_smtd_timeout(uint16_t keycode, smtd_timeout timeout);
 
 __attribute__((weak)) bool smtd_feature_enabled(uint16_t keycode, smtd_feature feature);
+
+#if SMTD_CHORDAL_HOLD
+// Per-key handedness used by the chordal-hold rule. Returns 'L' (left), 'R'
+// (right) or '*' (neutral, e.g. thumbs). The default reads the user-supplied
+// chordal_hold_layout from PROGMEM (same 'L'/'R'/'*' convention as QMK); it is
+// weak so a keymap can override it to compute handedness without the array.
+__attribute__((weak)) char smtd_chordal_handedness(keypos_t key);
+
+// Layout marking each matrix position's hand. Required when the default
+// smtd_chordal_handedness() is used (i.e. not overridden by the keymap).
+extern const char chordal_hold_layout[MATRIX_ROWS][MATRIX_COLS];
+#endif
 
 extern const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS];
 

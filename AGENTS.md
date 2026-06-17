@@ -55,36 +55,12 @@ Notes:
 - Build/flash: `cd ../qmk_firmware_zsa && just build` / `just flash` (DFU). That keymap enables CAPS_WORD, COMBO, REPEAT_KEY, UNICODE - a good integration stress test.
 
 ## Chordal Hold (SMTD_CHORDAL_HOLD)
-- NEW FEATURE (2026-06-16): Chordal hold, like QMK's chordal hold. Deferred decision — no immediate settle on press, only cancels timeout. TAP/HOLD decided at the last moment before HOLD delivery by scanning all active unresolved states.
-- Configuration: define `SMTD_CHORDAL_HOLD 1` in your `config.h`, and define the layout matrix:
-  ```c
-  const char chordal_hold_layout[MATRIX_ROWS][MATRIX_COLS] PROGMEM =
-    LAYOUT_split_3x6_3_ex2(
-        'L', 'L', 'L', 'L', 'L', 'L','L',  'R','R', 'R', 'R', 'R', 'R', 'R',
-        'L', 'L', 'L', 'L', 'L', 'L','L',  'R','R', 'R', 'R', 'R', 'R', 'R',
-        'L', 'L', 'L', 'L', 'L', 'L',          'R', 'R', 'R', 'R', 'R', 'R',
-                       '*', '*', '*',          '*', '*', '*'
-    );
-  ```
-  where `'L'` = left hand, `'R'` = right hand, `'*'` = thumb (neutral).
-- Behavior:
-  1. **Same-hand key PRESSED** while a state is in TOUCH: cancel the hold timeout (prevents accidental HOLD from timeout expiry). The state stays in TOUCH pending further keys.
-  2. **ANY key RELEASED** (following key in STAGE_TOUCH or STAGE_TOUCH_RELEASE): before sending HOLD, scan all active states via `smtd_chordal_all_same_hand()`:
-     - If the current state's hand differs from any other active state → HOLD (cross-hand combo)
-     - If all active states share the same hand (or current is the only one) → TAP (typing within one hand)
-  3. **Opposite-hand key PRESSED**: timeout NOT cancelled → timeout fires → HOLD. Or the following-key release path decides HOLD (cross-hand check in step 2).
-- This means:
-  - Same-hand typing (e.g., `MT(J,LSFT)` + `K` on same hand) → TAP for both (no accidental mod)
-  - Cross-hand combo (e.g., `MT(J,LSFT)` on left + `V` on right) → HOLD (Shift+V)
-  - Same-hand mod-taps + cross-hand key (e.g., `MT(J,LSFT,255)` + `MT(K,LGUI,255)` on left + `V` on right) → HOLD for both mods, TAP for V
-  - Same-hand mod-taps only (no cross-hand key) → TAP for all (both resolve as taps when released)
-- Implementation in `sm_td.c`:
-  - `smtd_chordal_hand(keypos_t)` — reads hand from PROGMEM layout
-  - `smtd_chordal_same_hand(a, b)` — true if both keys are on same hand (thumbs match each other but not hands)
-  - `smtd_chordal_all_same_hand(pos)` — true if all active states (excluding self, NONE, SEQUENCE) have the same hand as pos; thumb pos returns false (neutral)
-  - Hooked into `SMTD_STAGE_TOUCH` (press + release) and `SMTD_STAGE_TOUCH_RELEASE` (release) in `smtd_apply_event` via `#if SMTD_CHORDAL_HOLD` guards
-- Default: `SMTD_CHORDAL_HOLD 0` — completely compiled out, zero code/bloat impact when disabled.
-- Not tested via Python mocks (no chordal_hold_layout in mock); needs QMK-native test suite or manual hardware test.
+- QMK-style "opposite-hands rule": a tap-hold settles as HOLD only when an opposite-hand key is involved; same-hand rolls stay taps. Enable with `#define SMTD_CHORDAL_HOLD 1` in `config.h`; default 0 compiles out entirely (zero code/RAM when off, all `#if`-guarded).
+- Handedness comes from `char smtd_chordal_handedness(keypos_t)` (declared in `sm_td.h`). Default (weak) reads a user-supplied `const char chordal_hold_layout[MATRIX_ROWS][MATRIX_COLS]` from PROGMEM using QMK's `'L'`/`'R'`/`'*'` (left/right/neutral-thumb) convention. Keymaps may override the weak function to compute handedness without the array.
+- Design is **deferred**, fitting sm_td's permissive-hold-on-release model (not decide-on-press like QMK): on a following PRESS nothing settles, a same-hand press only `cancel_deferred_exec`s the hold timeout; TAP/HOLD is decided when a key is RELEASED via `smtd_chordal_all_same_hand()` scanning live states. Because every pressed key (even plain ones) owns a `smtd_state`, the opposite-hand key is visible to that scan.
+- Hooked into `SMTD_STAGE_TOUCH` (press cancels same-hand timeout; release runs the hand scan) and `SMTD_STAGE_TOUCH_RELEASE` (release runs the hand scan), all under `#if SMTD_CHORDAL_HOLD`.
+- Thumbs (`'*'`) are neutral: `all_same_hand('*')` returns false, so thumb tap-holds keep the default hold-capable behavior regardless of the following key's hand.
+- Tested two ways: Python mocks `tests/unit/chordal_hold/` (mock defines `pgm_read_byte`; the array path) and QMK-native `tests/integration/suites/smtd_chordal_hold/` (real pipeline + real PROGMEM `chordal_hold_layout`, 4x10 matrix, handedness by row). Cover same-hand roll→tap, cross-hand→hold, timeout cancel/keep, two same-hand mod-taps ±cross-hand key, layer-tap, thumbs, and tap regressions. QMK-native caveat: sm_td's hold is triggered by the following key (not the idle timeout), and resolved emulation flushes when the tap-hold key itself is released — so those tests assert the full report sequence with one `VERIFY_AND_CLEAR` after that release.
 
 ## Known Issues & Backlog
 - Divergence from QMK (intentional, YAGNI): real QMK turns Caps Word off when a non-shift mod-tap is held; sm_td's MT hold (`register_mods`) stays invisible to Caps Word.

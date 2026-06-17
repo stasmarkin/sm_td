@@ -46,6 +46,7 @@ SM_TD respects your habits rather than forcing you to change them. It pays atten
 - Debugging tools
 - Caps Word: full integration with QMK Caps Word (shifts letters, ends on word-breaking keys, respects `caps_word_press_user`)
 - Standard QMK `MT()` / `LT()` keycodes support (via `SMTD_ENABLE_QMK_TAPHOLD`)
+- Chordal hold ("opposite-hands rule", opt-in via `SMTD_CHORDAL_HOLD`): a tap-hold settles as hold only with an opposite-hand key, so same-hand rolls stay taps
 - Plays well with other QMK features: sm_td taps go through the regular `process_record()` pipeline
 - Combos: partial support for QMK Combos
 
@@ -104,6 +105,11 @@ That’s it — proceed to Configuration.
    This routes QMK mod-tap and layer-tap keycodes through sm_td timing.
    (Advanced features like tap-count thresholds still require `SMTD_MT` / `SMTD_LT`.)
    See the [Customization Guide](https://github.com/stasmarkin/sm_td/blob/main/docs/050_customization.md) and practical [Examples](https://github.com/stasmarkin/sm_td/blob/main/docs/060_customization_examples.md) for more patterns.
+
+   Optional: enable the chordal-hold "opposite-hands rule" with `#define SMTD_CHORDAL_HOLD 1` in your `config.h`.
+   A tap-hold then settles as hold only when an opposite-hand key is involved; same-hand rolls stay taps.
+   Provide a `chordal_hold_layout[MATRIX_ROWS][MATRIX_COLS]` marking each key `'L'` / `'R'` / `'*'` (left / right / neutral thumb),
+   or override `char smtd_chordal_handedness(keypos_t key)` to compute handedness yourself.
 
 2. (optional) Add global configuration parameters to your `config.h` file (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
 3. (optional) Add per-key configuration (see [timeouts](https://github.com/stasmarkin/sm_td/blob/main/docs/070_customization_timeouts.md) and [feature flags](https://github.com/stasmarkin/sm_td/blob/main/docs/080_customization_features.md)).
@@ -185,7 +191,10 @@ Your support helps me continue developing and maintaining this project. Thank yo
 - Feature: `SMTD_ENABLE_QMK_TAPHOLD` — use standard QMK `MT()` / `LT()` keycodes with sm_td timing
 - Removed: `SMTD_GLOBAL_MODS_PROPAGATION_ENABLED` (was off by default and half-baked)
 
-#### `v0.6.2` (we are here)
+#### `v0.6.3-SNAPSHOT` (we are here)
+- Feature: chordal hold ("opposite-hands rule") via `SMTD_CHORDAL_HOLD` — same-hand rolls stay taps, cross-hand chords hold (#60)
+
+#### `v0.6.2`
 - Fix: `SMTD_LT` uses native `layer_on` / `layer_off`, so it no longer wipes foreign layer bits on release (fixes #57, unblocks tri-layer #44)
 - Fix: a held key released under a stacked key now finalizes instead of hanging its modifier (fixes #58)
 

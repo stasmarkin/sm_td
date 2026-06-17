@@ -34,6 +34,7 @@
 #define MT(mod, kc) (QK_MOD_TAP | (((mod) & 0x1F) << 8) | ((kc) & 0xFF))
 #define LT(layer, kc) (QK_LAYER_TAP | (((layer) & 0xF) << 8) | ((kc) & 0xFF))
 #define mod_config(mod) (mod)
+#define pgm_read_byte(addr) (*(const uint8_t *)(addr))
 
 #define MAX_RECORD_HISTORY 100
 #define MAX_DEFERRED_EXECS 100

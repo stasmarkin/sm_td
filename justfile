@@ -9,7 +9,7 @@ QMK_DEFAULT_VERSION := "0.33.5"
 QMK_VERSIONS        := "0.33.5"
 
 # All QMK native test suites
-QMK_ALL_SUITES := "smtd_qmk_taphold smtd_qmk_taphold_no_action_tapping smtd_full smtd_dynamic smtd_dynamic_fixed smtd_dynamic_clamp smtd_caps_word smtd_external_mods"
+QMK_ALL_SUITES := "smtd_qmk_taphold smtd_qmk_taphold_no_action_tapping smtd_full smtd_dynamic smtd_dynamic_fixed smtd_dynamic_clamp smtd_caps_word smtd_external_mods smtd_chordal_hold"
 
 # Show available recipes
 default:
