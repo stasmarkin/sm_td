@@ -376,6 +376,11 @@ bool is_following_key(smtd_state *state, uint16_t pressed_keycode, keyrecord_t *
     return false;
 }
 
+#if SMTD_CHORDAL_HOLD
+static bool smtd_chordal_same_hand(keypos_t a, keypos_t b);
+static bool smtd_chordal_all_same_hand(keypos_t current_pos);
+#endif
+
 void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_keycode, keyrecord_t *record) {
     SMTD_DEBUG("--%s apply_event with %s, is_state_key=%d",
                smtd_state_to_str(state),
@@ -398,41 +403,61 @@ void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
         // -----------------------------------------------------------------------------------------
         case SMTD_STAGE_TOUCH: {
             if (state->idx + 1 == smtd_active_states_size) {
-                // last state in stack
                 if (is_state_key && !record->event.pressed) {
+                    smtd_apply_stage(state, SMTD_STAGE_SEQUENCE);
                     if (!smtd_feature_enabled_or_default(state, SMTD_FEATURE_AGGREGATE_TAPS)) {
                         smtd_handle_action(state, SMTD_ACTION_TAP);
                     }
-
-                    smtd_apply_stage(state, SMTD_STAGE_SEQUENCE);
                     break;
                 }
-
+#if SMTD_CHORDAL_HOLD
+                if (!is_state_key && record->event.pressed) {
+                    if (smtd_chordal_same_hand(state->pressed_keyposition, record->event.key)) {
+                        cancel_deferred_exec(state->timeout);
+                        state->timeout = INVALID_DEFERRED_TOKEN;
+                    }
+                    break;
+                }
+#endif
                 break;
             }
 
             if (is_state_key && !record->event.pressed) {
-                // Macro key is released, moving to the next stage
                 smtd_apply_stage(state, SMTD_STAGE_TOUCH_RELEASE);
                 break;
             }
 
+#if SMTD_CHORDAL_HOLD
+            if (!is_state_key && record->event.pressed) {
+                if (smtd_chordal_same_hand(state->pressed_keyposition, record->event.key)) {
+                    cancel_deferred_exec(state->timeout);
+                    state->timeout = INVALID_DEFERRED_TOKEN;
+                }
+                break;
+            }
+#endif
+
             if (!is_following_key(state, pressed_keycode, record)) {
-                // Some previously pressed key has been released
-                // We don't need to do anything here
                 break;
             }
 
             if (!is_state_key && !record->event.pressed) {
-                // Following key is released. Now we definitely know that macro key is held
-                // we need to execute hold the macro key and let following state handle the key release
+#if SMTD_CHORDAL_HOLD
+                if (smtd_chordal_all_same_hand(state->pressed_keyposition)) {
+                    smtd_apply_stage(state, SMTD_STAGE_SEQUENCE);
+                    if (!smtd_feature_enabled_or_default(state, SMTD_FEATURE_AGGREGATE_TAPS)) {
+                        smtd_handle_action(state, SMTD_ACTION_TAP);
+                    }
+                    break;
+                }
+#endif
                 smtd_apply_stage(state, SMTD_STAGE_HOLD);
                 smtd_handle_action(state, SMTD_ACTION_HOLD);
                 break;
             }
 
             break;
-        } // case SMTD_STAGE_TOUCH
+        }
 
         // -----------------------------------------------------------------------------------------
         case SMTD_STAGE_SEQUENCE: {
@@ -504,6 +529,15 @@ void smtd_apply_event(bool is_state_key, smtd_state *state, uint16_t pressed_key
 
             // Following key is released. Now we definitely know that macro key is held
             // we need to execute hold the macro key
+#if SMTD_CHORDAL_HOLD
+            if (smtd_chordal_all_same_hand(state->pressed_keyposition)) {
+                if (!smtd_feature_enabled_or_default(state, SMTD_FEATURE_AGGREGATE_TAPS)) {
+                    smtd_handle_action(state, SMTD_ACTION_TAP);
+                }
+                smtd_apply_stage(state, SMTD_STAGE_SEQUENCE);
+                break;
+            }
+#endif
             smtd_apply_stage(state, SMTD_STAGE_HOLD_RELEASE);
             smtd_handle_action(state, SMTD_ACTION_HOLD);
 
@@ -1013,6 +1047,41 @@ bool smtd_feature_enabled_default(uint16_t keycode, smtd_feature feature) {
     }
     return false;
 }
+
+/* ************************************* *
+ *         CHORDAL HOLD                  *
+ * ************************************* */
+
+#if SMTD_CHORDAL_HOLD
+
+static char smtd_chordal_hand(keypos_t key) {
+    return (char)pgm_read_byte(&chordal_hold_layout[key.row][key.col]);
+}
+
+static bool smtd_chordal_same_hand(keypos_t a, keypos_t b) {
+    char hand_a = smtd_chordal_hand(a);
+    char hand_b = smtd_chordal_hand(b);
+    if (hand_a == '*' && hand_b == '*') return true;
+    if (hand_a == '*' || hand_b == '*') return false;
+    return hand_a == hand_b;
+}
+
+static bool smtd_chordal_all_same_hand(keypos_t current_pos) {
+    char current_hand = smtd_chordal_hand(current_pos);
+    if (current_hand == '*') return false;
+    for (uint8_t i = 0; i < smtd_active_states_size; i++) {
+        smtd_state *other = smtd_active_states[i];
+        if (other->stage == SMTD_STAGE_NONE) continue;
+        if (other->stage == SMTD_STAGE_SEQUENCE) continue;
+        if (other->pressed_keyposition.row == current_pos.row && other->pressed_keyposition.col == current_pos.col) continue;
+        char other_hand = smtd_chordal_hand(other->pressed_keyposition);
+        if (other_hand == '*') continue;
+        if (other_hand != current_hand) return false;
+    }
+    return true;
+}
+
+#endif
 
 /* ************************************* *
  *       TEST FRAMEWORK ACCESSORS        *
