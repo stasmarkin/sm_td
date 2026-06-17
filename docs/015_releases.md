@@ -1,3 +1,7 @@
+#### `v0.6.3`
+- Feature: chordal hold support via `SMTD_CHORDAL_HOLD` (#60). Implements QMK's "opposite-hands rule": a tap-hold settles as HOLD only when an opposite-hand key is involved, so same-hand rolls stay taps while cross-hand chords hold. Disabled by default — `#define SMTD_CHORDAL_HOLD 1` to enable; it compiles out entirely (zero code/RAM) when off. Handedness comes from a user-supplied `const char chordal_hold_layout[MATRIX_ROWS][MATRIX_COLS]` (QMK's `'L'` / `'R'` / `'*'` convention) or from an overridable weak `smtd_chordal_handedness()` function
+- Fix: custom / derived keycode taps now feed the QMK leader buffer — `smtd_tap_code16` calls `smtd_leader_consume` (guarded by `LEADER_ENABLE`) before the direct send, so Leader sequences see taps that take the direct-send path, not just native-keycode taps (fixes #29)
+
 #### `v0.6.2`
 - Fix: `SMTD_LT` now uses native QMK `layer_on` / `layer_off` instead of the old `LAYER_PUSH` / `LAYER_RESTORE` (`layer_move`) macros. Activating a layer is now additive, so it no longer wipes foreign layer bits on release (fixes #57: a `TG()` / `TO()` toggled layer held alongside an `SMTD_LT` stays on after release; unblocks #44: two `SMTD_LT` layers coexist, so a tri-layer `layer_state_set` hook can light up the third layer)
 - Fix: a held key released while another key is stacked on top now schedules `timeout_hold_release`, so the state finalizes and its modifier is released instead of hanging forever (fixes #58)

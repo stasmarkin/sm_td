@@ -191,8 +191,9 @@ Your support helps me continue developing and maintaining this project. Thank yo
 - Feature: `SMTD_ENABLE_QMK_TAPHOLD` — use standard QMK `MT()` / `LT()` keycodes with sm_td timing
 - Removed: `SMTD_GLOBAL_MODS_PROPAGATION_ENABLED` (was off by default and half-baked)
 
-#### `v0.6.3-SNAPSHOT` (we are here)
-- Feature: chordal hold ("opposite-hands rule") via `SMTD_CHORDAL_HOLD` — same-hand rolls stay taps, cross-hand chords hold (#60)
+#### `v0.6.3` (we are here)
+- Feature: chordal hold ("opposite-hands rule") via `SMTD_CHORDAL_HOLD` — same-hand rolls stay taps, cross-hand chords hold; handedness from a `chordal_hold_layout` array or an overridable `smtd_chordal_handedness()` (#60)
+- Fix: custom / derived keycode taps now feed the QMK leader buffer, so Leader sequences see them (fixes #29)
 
 #### `v0.6.2`
 - Fix: `SMTD_LT` uses native `layer_on` / `layer_off`, so it no longer wipes foreign layer bits on release (fixes #57, unblocks tri-layer #44)
