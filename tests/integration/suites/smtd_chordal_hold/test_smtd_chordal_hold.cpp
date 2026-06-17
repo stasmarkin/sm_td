@@ -186,3 +186,27 @@ TEST_F(SmTdChordalHold, thumb_modtap_holds) {
     idle_for(TAPPING_TERM + 50);
     VERIFY_AND_CLEAR(driver);
 }
+
+/* Mod-tap + following neutral ('*') key resolves as HOLD: a neutral key signals
+ * an intentional chord, not a same-hand roll. */
+TEST_F(SmTdChordalHold, mt_plus_neutral_following_holds) {
+    TestDriver driver;
+    InSequence s;
+    KeymapKey mt      = KeymapKey(0, 0, 0, MT(MOD_LSFT, KC_A), KC_A);  /* left    */
+    KeymapKey neutral = KeymapKey(0, 1, 2, KC_SPC);                    /* neutral */
+    set_keymap({mt, neutral});
+
+    EXPECT_REPORT(driver, (KC_LSFT));
+    EXPECT_REPORT(driver, (KC_LSFT, KC_SPC));
+    EXPECT_REPORT(driver, (KC_LSFT));
+    EXPECT_EMPTY_REPORT(driver);
+    mt.press();
+    run_one_scan_loop();
+    neutral.press();
+    run_one_scan_loop();
+    neutral.release();
+    run_one_scan_loop();
+    mt.release();
+    idle_for(TAPPING_TERM + 50);
+    VERIFY_AND_CLEAR(driver);
+}

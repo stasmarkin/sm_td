@@ -185,6 +185,34 @@ class TestSmTdChordalHold(SmTdAssertions):
         )
         self.assertEqual(smtd.get_mods(), 0)
 
+    # ---- Neutral following key: a '*' key signals an intentional chord -> HOLD ----
+
+    def test_mt_plus_neutral_following_holds(self):
+        """Mod-tap + following neutral ('*') key resolves as HOLD (mod applied)"""
+        MT_LSFT.press()
+        T_PLAIN.press()
+        T_PLAIN.release()
+        MT_LSFT.release()
+
+        self.assertHistory(
+            EmulatePress(T_PLAIN, mods=MOD_LSFT),
+            EmulateRelease(T_PLAIN, mods=MOD_LSFT),
+        )
+        self.assertEqual(smtd.get_mods(), 0)
+
+    def test_mt_plus_neutral_timeout_holds(self):
+        """Neutral following press leaves the hold timeout armed (consistency check)"""
+        MT_LSFT.press()
+        T_PLAIN.press()
+
+        # timeout still pending -> firing it must hold the mod
+        MT_LSFT.prolong()
+        self.assertEqual(smtd.get_mods(), MOD_LSFT, "neutral-key timeout must still fire a HOLD")
+
+        T_PLAIN.release()
+        MT_LSFT.release()
+        self.assertEqual(smtd.get_mods(), 0)
+
 
 # Layers
 
