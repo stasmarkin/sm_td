@@ -1,3 +1,6 @@
+#### `v0.6.4`
+- Fix: chordal hold now treats a neutral (`'*'`) following key as an intentional chord and resolves the tap-hold as HOLD, instead of ignoring it and rolling to a tap (#62). This also makes the quick-release decision consistent with the hold-timeout path, which already held when a neutral key followed
+
 #### `v0.6.3`
 - Feature: chordal hold support via `SMTD_CHORDAL_HOLD` (#60). Implements QMK's "opposite-hands rule": a tap-hold settles as HOLD only when an opposite-hand key is involved, so same-hand rolls stay taps while cross-hand chords hold. Disabled by default — `#define SMTD_CHORDAL_HOLD 1` to enable; it compiles out entirely (zero code/RAM) when off. Handedness comes from a user-supplied `const char chordal_hold_layout[MATRIX_ROWS][MATRIX_COLS]` (QMK's `'L'` / `'R'` / `'*'` convention) or from an overridable weak `smtd_chordal_handedness()` function
 - Fix: custom / derived keycode taps now feed the QMK leader buffer — `smtd_tap_code16` calls `smtd_leader_consume` (guarded by `LEADER_ENABLE`) before the direct send, so Leader sequences see taps that take the direct-send path, not just native-keycode taps (fixes #29)
