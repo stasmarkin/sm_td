@@ -164,33 +164,6 @@ Your support helps me continue developing and maintaining this project. Thank yo
 
 ## Roadmap
 
-#### `v0.5.0`
-- 3+ finger roll interpretation
-- A collection of useful macros
-- Fix: remove 'SMTD_KEYCODES_BEGIN' undeclared error
-- Bug fixes
-
-#### `v0.5.1`
-- QMK community module integration
-
-#### `v0.5.2`
-- Fix: smtd_current_keycode is now compatible with AVR (fixes issue #48)
-
-#### `v0.5.3`
-- Feature: add SMTD_MBTE5_ON_MKEY macro
-
-#### `v0.5.4`
-- Feature: split sm_td into .h and .c file
-
-#### `v0.5.5`
-- Fix: module installation uses process_record stage instead of pre_process_record
-- Fix: Better place for avoid_unused_variable_on_compile
-
-#### `v0.5.6`
-- Feature: sm_td taps go through the full QMK pipeline, so Caps Word and other QMK features finally see them (fixes #23); new `SMTD_GLOBAL_PIPELINE_TAPS` / `SMTD_FEATURE_PIPELINE_TAPS` flags
-- Feature: `SMTD_ENABLE_QMK_TAPHOLD` — use standard QMK `MT()` / `LT()` keycodes with sm_td timing
-- Removed: `SMTD_GLOBAL_MODS_PROPAGATION_ENABLED` (was off by default and half-baked)
-
 #### `v0.6.4` (we are here)
 - Fix: chordal hold holds (not taps) when a neutral (`'*'`) key follows a mod-tap, matching the hold-timeout path (#62)
 
@@ -209,6 +182,9 @@ Your support helps me continue developing and maintaining this project. Thank yo
 
 #### `v0.6.0`
 - Feature: dynamic release timeout derived from your typing rhythm (fixes #45); new `SMTD_GLOBAL_RELEASE_RATIO` flag (set to 0 for the old fixed-timeout behavior)
+
+#### `v0.5.x`
+- Full-pipeline taps + Caps Word (#23) and `SMTD_ENABLE_QMK_TAPHOLD` for native `MT()` / `LT()` (0.5.6), QMK community module integration (0.5.1 / 0.5.5), split into `.h` + `.c` (0.5.4), 3+ finger roll interpretation and a collection of macros (0.5.0 / 0.5.3), AVR fix (#48, 0.5.2), and assorted bug fixes
 
 #### `v0.7.0+` and further `v0.x`
 - better combo support
