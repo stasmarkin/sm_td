@@ -4,7 +4,7 @@
  *   KC_D -> SMTD_LT(layer 1) KC_F -> SMTD_TD(ESC)    KC_G -> SMTD_TK(TAB, 3)
  *   KC_H -> SMTD_TTO(layer 2, 3)
  * Plain keys (KC_B, layer-1 KC_M) are passed through.
- * Release term is fixed (ratio 0) so tap/hold/roll depend only on the press pattern. */
+ * Release term is fixed (percent 0) so tap/hold/roll depend only on the press pattern. */
 
 #include "keyboard_report_util.hpp"
 #include "test_common.hpp"
@@ -229,7 +229,7 @@ TEST_F(SmTdFull, td_hold_alone_sends_tap_key) {
     VERIFY_AND_CLEAR(driver);
 }
 
-/* ---- roll: two MT keys with a FIXED release term (ratio 0) -> hold-tap ----
+/* ---- roll: two MT keys with a FIXED release term (percent 0) -> hold-tap ----
  * With dynamic release disabled, a fast overlapping roll resolves the first key as
  * a hold: KC_A becomes LCtrl and KC_J is typed under it. The tap-tap resolution of
  * rolls is a dynamic-release feature, covered in the smtd_dynamic suite. */

@@ -1,4 +1,4 @@
-/* Fixed release term (ratio 0): the touch-release window is a constant 50ms,
+/* Fixed release term (percent 0): the touch-release window is a constant 50ms,
  * independent of the roll rhythm. */
 
 #include "keyboard_report_util.hpp"

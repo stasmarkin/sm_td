@@ -1,4 +1,4 @@
-/* Dynamic release-term (ratio 5) against the real pipeline. The release rhythm
+/* Dynamic release-term (percent 20) against the real pipeline. The release rhythm
  * decides tap-tap vs hold-tap: a roll whose release gap mirrors the press gap is
  * tap-tap; a near-simultaneous release is hold-tap. idle_for(ms) is the clock. */
 

@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.6.4
- * Date: 2026-06-17
+ * Version: 0.6.5-SNAPSHOT
+ * Date: 2026-06-18
  */
 #pragma once
 
@@ -74,13 +74,28 @@
 // `↓mod ↓key ↑mod ↑key` the decision window for ↑key is derived from the
 // typing rhythm instead of the fixed SMTD_TIMEOUT_RELEASE: hold is chosen
 // only when both releases come much faster than the presses did, i.e.
-//   release_term = min(p1, p2) / SMTD_GLOBAL_RELEASE_RATIO
+//   release_term = min(p1, p2) * SMTD_GLOBAL_RELEASE_PERCENT / 100
 // where p1 is the pause between the presses and p2 is the overlap between
 // ↓key and ↑mod. The result is clamped to [1ms .. SMTD_TIMEOUT_RELEASE],
 // so the (possibly per-key) fixed timeout remains the upper bound.
-// Set to 0 to disable and use the fixed SMTD_TIMEOUT_RELEASE as before.
-#ifndef SMTD_GLOBAL_RELEASE_RATIO
-#define SMTD_GLOBAL_RELEASE_RATIO 5
+//
+// SMTD_GLOBAL_RELEASE_PERCENT is the configuration knob: it defaults to 30 and
+// can be set anywhere in [0 .. 100+] for single-percent granularity. Set it to 0
+// to disable the dynamic window and fall back to the fixed SMTD_TIMEOUT_RELEASE.
+//
+// SMTD_GLOBAL_RELEASE_RATIO is a deprecated, undocumented back-compat alias for
+// configs that predate PERCENT: when it (and only it) is set, PERCENT is derived
+// as 100 / ratio (ratio 0 -> PERCENT 0 -> disabled). New configs should use PERCENT.
+#if defined(SMTD_GLOBAL_RELEASE_RATIO) && !defined(SMTD_GLOBAL_RELEASE_PERCENT)
+#if SMTD_GLOBAL_RELEASE_RATIO > 0
+#define SMTD_GLOBAL_RELEASE_PERCENT (100 / SMTD_GLOBAL_RELEASE_RATIO)
+#else
+#define SMTD_GLOBAL_RELEASE_PERCENT 0
+#endif
+#endif
+
+#ifndef SMTD_GLOBAL_RELEASE_PERCENT
+#define SMTD_GLOBAL_RELEASE_PERCENT 30
 #endif
 
 #ifndef SMTD_GLOBAL_AGGREGATE_TAPS

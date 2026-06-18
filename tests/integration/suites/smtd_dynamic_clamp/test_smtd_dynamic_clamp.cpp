@@ -1,4 +1,4 @@
-/* Upper-clamp release term (ratio 1): the window is min(p1, p2) but is never
+/* Upper-clamp release term (percent 100): the window is min(p1, p2) but is never
  * allowed above SMTD_GLOBAL_RELEASE_TERM (50ms). */
 
 #include "keyboard_report_util.hpp"

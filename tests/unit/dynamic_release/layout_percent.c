@@ -1,12 +1,14 @@
 /* Layout configuration for sm_td tests: dynamic release term (issue #45),
- * SMTD_GLOBAL_RELEASE_RATIO = 1 (upper clamp by RELEASE_TERM) */
+ * fractional release window via SMTD_GLOBAL_RELEASE_PERCENT = 40 (a value the
+ * coarse integer divisor form could not express, e.g. it sits between 33 and 50) */
 #define SMTD_UNIT_TEST
 
 #define MATRIX_ROWS 5
 #define MATRIX_COLS 9
 
 #define TAPPING_TERM 200
-#define SMTD_GLOBAL_RELEASE_RATIO 1
+/* under test: RELEASE_TERM = 50, RELEASE_PERCENT = 40 -> window = min(p1,p2)*40/100 */
+#define SMTD_GLOBAL_RELEASE_PERCENT 40
 
 #include "../sm_td_bindings.c"
 
@@ -32,9 +34,6 @@ smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap
 }
 
 uint32_t get_smtd_timeout(uint16_t keycode, smtd_timeout timeout) {
-    /* K5 has a per-key release term lower than the dynamic window it would
-     * get from min(p1, p2) / ratio: the per-key value must stay the upper bound */
-    if (keycode == L0_KC5 && timeout == SMTD_TIMEOUT_RELEASE) return 5;
     return get_smtd_timeout_default(timeout);
 }
 

@@ -18,8 +18,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.6.4
- * Date: 2026-06-17
+ * Version: 0.6.5-SNAPSHOT
+ * Date: 2026-06-18
  */
 
 #include "sm_td.h"
@@ -1050,7 +1050,7 @@ uint32_t get_smtd_timeout_default(smtd_timeout timeout) {
 uint32_t smtd_compute_release_term(smtd_state *state) {
     uint32_t fixed_term = get_smtd_timeout_or_default(state, SMTD_TIMEOUT_RELEASE);
 
-#if SMTD_GLOBAL_RELEASE_RATIO > 0
+#if SMTD_GLOBAL_RELEASE_PERCENT > 0
     // SMTD_STAGE_TOUCH_RELEASE is only entered while a following key is still
     // pressed, so the next state must exist; fall back to the fixed term just in case.
     if (state->idx + 1 >= smtd_active_states_size) {
@@ -1060,7 +1060,10 @@ uint32_t smtd_compute_release_term(smtd_state *state) {
     smtd_state *next = smtd_active_states[state->idx + 1];
     uint32_t p1 = next->pressed_time - state->pressed_time;
     uint32_t p2 = state->released_time - next->pressed_time;
-    uint32_t term = (p1 < p2 ? p1 : p2) / SMTD_GLOBAL_RELEASE_RATIO;
+    uint32_t min_pause = (p1 < p2 ? p1 : p2);
+    // multiply before dividing to keep precision for fractional ratios; min_pause
+    // is a sub-second overlap here, so min_pause * percent never overflows uint32_t
+    uint32_t term = min_pause * SMTD_GLOBAL_RELEASE_PERCENT / 100;
 
     // defer_exec rejects a zero delay, and the fixed term must stay the upper
     // bound so the dynamic window can only shrink relative to the old behavior

@@ -80,8 +80,8 @@ after a re-fetch.
   after 3 taps). Covers tap / hold+following-key / tap-then-hold / multi-tap /
   eager-mod / layer push+restore / external (non-sm_td) modifier / roll /
   multi-tap-to-key / multi-tap-to-layer. Release term is fixed
-  (`SMTD_GLOBAL_RELEASE_RATIO 0`) so resolution depends only on the press pattern.
-- `smtd_dynamic` — dynamic release term (`SMTD_GLOBAL_RELEASE_RATIO 5`). The decisive
+  (`SMTD_GLOBAL_RELEASE_PERCENT 0`) so resolution depends only on the press pattern.
+- `smtd_dynamic` — dynamic release term (`SMTD_GLOBAL_RELEASE_PERCENT 20`). The decisive
   timing tests: the same MT/LT roll resolves **tap-tap** when the release gap mirrors
   the press gap, and **hold-tap** when releases are near-simultaneous.
 - `smtd_caps_word` — `CAPS_WORD_ENABLE = yes` with a standard `caps_word_press_user`.
@@ -92,8 +92,8 @@ after a re-fetch.
 - `smtd_external_mods` — an external plain `KC_LSFT` composed with an sm_td
   `SMTD_MT(LCtrl)`: mods stack on a following key, and all six release orders of
   {ext-Shift, sm_td-Ctrl, key} return to a clean mod state (`get_mods()==0`).
-- `smtd_dynamic_fixed` / `smtd_dynamic_clamp` — release-term edges: ratio 0 (fixed
-  50ms window: within=hold-tap, after=tap-tap) and ratio 1 (upper-clamped at 50ms).
+- `smtd_dynamic_fixed` / `smtd_dynamic_clamp` — release-term edges: percent 0 (fixed
+  50ms window: within=hold-tap, after=tap-tap) and percent 100 (upper-clamped at 50ms).
 - `smtd_via` — sm_td against a REAL VIA/Vial dynamic keymap (`DYNAMIC_KEYMAP_ENABLE`).
   Reaches the genuine QMK chain `keymap_key_to_keycode` → `keycode_at_keymap_location`
   → `dynamic_keymap_get_keycode` → emulated EEPROM (see "Checkout patches" above), and

@@ -1,3 +1,7 @@
+#### `v0.6.5`
+- Feature: `SMTD_GLOBAL_RELEASE_PERCENT` controls the dynamic release window as `min(p1, p2) * SMTD_GLOBAL_RELEASE_PERCENT / 100`. As a percentage it gives fine-grained control of the window width — e.g. `40` is a width that fell between the coarse steps available before. Set it to `0` to disable the dynamic window and fall back to the fixed `SMTD_GLOBAL_RELEASE_TERM`
+- Behavior change: the dynamic release window default is now `SMTD_GLOBAL_RELEASE_PERCENT 30`, a slightly wider window than before (fewer hold→tap-tap misfires, especially on the pinky). To restore the previous behavior, set `#define SMTD_GLOBAL_RELEASE_PERCENT 20`
+
 #### `v0.6.4`
 - Fix: chordal hold now treats a neutral (`'*'`) following key as an intentional chord and resolves the tap-hold as HOLD, instead of ignoring it and rolling to a tap (#62). This also makes the quick-release decision consistent with the hold-timeout path, which already held when a neutral key followed
 
@@ -15,8 +19,8 @@
 - New: `smtd_reset()` API for test harnesses to clear all sm_td runtime state between scenarios
 
 #### `v0.6.0`
-- Feature: dynamic release timeout (fixes #45). The window that decides hold-vs-tap for an overlapping `↓A ↓B ↑A ↑B` sequence is now derived from your actual typing rhythm as `min(p1, p2) / SMTD_GLOBAL_RELEASE_RATIO` (default ratio 5) instead of a fixed timeout. Quick rolls shrink the window, slow deliberate typing widens it. The previous fixed `SMTD_TIMEOUT_RELEASE` (per-key too) stays the upper bound
-- Config: new `SMTD_GLOBAL_RELEASE_RATIO` (default 5); set to 0 to disable the dynamic window and keep the fixed `SMTD_GLOBAL_RELEASE_TERM` behavior of 0.5.x
+- Feature: dynamic release timeout (fixes #45). The window that decides hold-vs-tap for an overlapping `↓A ↓B ↑A ↑B` sequence is now derived from your actual typing rhythm as a fraction of `min(p1, p2)` instead of a fixed timeout. Quick rolls shrink the window, slow deliberate typing widens it. The previous fixed `SMTD_TIMEOUT_RELEASE` (per-key too) stays the upper bound
+- Config: a new global flag tunes the fraction; set it to 0 to disable the dynamic window and keep the fixed `SMTD_GLOBAL_RELEASE_TERM` behavior of 0.5.x
 
 #### `v0.5.6`
 - Feature: sm_td taps now go through the full QMK `process_record()` pipeline, so Caps Word, Auto Shift, Key Overrides and other QMK features can see them (fixes #23). Controlled by `SMTD_GLOBAL_PIPELINE_TAPS` (default on) and per-key `SMTD_FEATURE_PIPELINE_TAPS`

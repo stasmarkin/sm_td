@@ -19,8 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- * Version: 0.6.4
- * Date: 2026-06-17
+ * Version: 0.6.5-SNAPSHOT
+ * Date: 2026-06-18
  */
 
 #pragma once

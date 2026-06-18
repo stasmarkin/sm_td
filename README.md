@@ -168,7 +168,7 @@ Your support helps me continue developing and maintaining this project. Thank yo
 - Full-pipeline taps + Caps Word (#23) and `SMTD_ENABLE_QMK_TAPHOLD` for native `MT()` / `LT()` (0.5.6), QMK community module integration (0.5.1 / 0.5.5), split into `.h` + `.c` (0.5.4), 3+ finger roll interpretation and a collection of macros (0.5.0 / 0.5.3), AVR fix (#48, 0.5.2), and assorted bug fixes
 
 #### `v0.6.0`
-- Feature: dynamic release timeout derived from your typing rhythm (fixes #45); new `SMTD_GLOBAL_RELEASE_RATIO` flag (set to 0 for the old fixed-timeout behavior)
+- Feature: dynamic release timeout derived from your typing rhythm (fixes #45); a new global flag tunes the window (set to 0 for the old fixed-timeout behavior)
 
 #### `v0.6.1`
 - Fix: guard against state double-removal crash in `smtd_apply_stage`
@@ -183,7 +183,10 @@ Your support helps me continue developing and maintaining this project. Thank yo
 - Feature: chordal hold ("opposite-hands rule") via `SMTD_CHORDAL_HOLD` — same-hand rolls stay taps, cross-hand chords hold; handedness from a `chordal_hold_layout` array or an overridable `smtd_chordal_handedness()` (#60)
 - Fix: custom / derived keycode taps now feed the QMK leader buffer, so Leader sequences see them (fixes #29)
 
-#### `v0.6.4` (we are here)
+#### `v0.6.5` (we are here)
+- Feature: `SMTD_GLOBAL_RELEASE_PERCENT` controls the dynamic release window (`min(p1, p2) * percent / 100`) with fine, single-percent granularity. Behavior change: the default is now `SMTD_GLOBAL_RELEASE_PERCENT 30` (a slightly wider window — fewer hold→tap-tap misfires); set `SMTD_GLOBAL_RELEASE_PERCENT 20` to restore the previous behavior
+
+#### `v0.6.4`
 - Fix: chordal hold holds (not taps) when a neutral (`'*'`) key follows a mod-tap, matching the hold-timeout path (#62)
 
 #### `v0.7.0+` and further `v0.x`

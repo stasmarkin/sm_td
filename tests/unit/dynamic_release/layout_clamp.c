@@ -1,14 +1,12 @@
-/* Layout configuration for sm_td tests: dynamic release term (issue #45)
- * applied to raw QMK MT()/LT() keycodes via SMTD_ENABLE_QMK_TAPHOLD */
+/* Layout configuration for sm_td tests: dynamic release term (issue #45),
+ * SMTD_GLOBAL_RELEASE_PERCENT = 100 (upper clamp by RELEASE_TERM) */
 #define SMTD_UNIT_TEST
-#define SMTD_ENABLE_QMK_TAPHOLD 1
 
 #define MATRIX_ROWS 5
 #define MATRIX_COLS 9
 
 #define TAPPING_TERM 200
-/* under test: RELEASE_TERM = 50, RELEASE_PERCENT = 20 -> window = min(p1,p2)*20/100 */
-#define SMTD_GLOBAL_RELEASE_PERCENT 20
+#define SMTD_GLOBAL_RELEASE_PERCENT 100
 
 #include "../sm_td_bindings.c"
 
@@ -19,24 +17,24 @@ enum KEYCODES {
     L1_KC0 = 200, L1_KC1, L1_KC2, L1_KC3, L1_KC4, L1_KC5, L1_KC6, L1_KC7, L1_KC8,//
 };
 
-/* 5-bit mod mask as in QMK */
-#define MOD_LCTL 0x01
-
-/* Tap keycodes must fit in 8 bits for MT()/LT() packing */
-#define TAP_KC_MT 104
-#define TAP_KC_LT 105
-
 uint16_t const keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
-    [L0] = { L0_KC0, MT(MOD_LCTL, TAP_KC_MT), LT(L1, TAP_KC_LT), L0_KC3, L0_KC4, L0_KC5, L0_KC6, L0_KC7, L0_KC8, },
+    [L0] = { L0_KC0, L0_KC1, L0_KC2, L0_KC3, L0_KC4, L0_KC5, L0_KC6, L0_KC7, L0_KC8, },
     [L1] = { L1_KC0, L1_KC1, L1_KC2, L1_KC3, L1_KC4, L1_KC5, L1_KC6, L1_KC7, L1_KC8, },
 };
 
-/* Everything is unhandled: raw MT()/LT() keycodes must be picked up by smtd_handle_qk_tap_hold */
 smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
+    switch (keycode) {
+        SMTD_MT(L0_KC1, KC_LSFT)
+        SMTD_LT(L0_KC3, L1)
+        SMTD_MT(L0_KC5, KC_LSFT)
+    }
     return SMTD_RESOLUTION_UNHANDLED;
 }
 
 uint32_t get_smtd_timeout(uint16_t keycode, smtd_timeout timeout) {
+    /* K5 has a per-key release term lower than the dynamic window it would
+     * get from min(p1, p2) * percent / 100: the per-key value must stay the upper bound */
+    if (keycode == L0_KC5 && timeout == SMTD_TIMEOUT_RELEASE) return 5;
     return get_smtd_timeout_default(timeout);
 }
 

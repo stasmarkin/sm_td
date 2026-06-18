@@ -5,8 +5,9 @@ except ImportError:
 
 smtd_dyn = load_smtd_lib('tests/unit/dynamic_release/layout.c')
 smtd_fixed = load_smtd_lib('tests/unit/dynamic_release/layout_fixed.c')
-smtd_clamp = load_smtd_lib('tests/unit/dynamic_release/layout_ratio1.c')
+smtd_clamp = load_smtd_lib('tests/unit/dynamic_release/layout_clamp.c')
 smtd_qk = load_smtd_lib('tests/unit/dynamic_release/layout_qk.c')
+smtd_pct = load_smtd_lib('tests/unit/dynamic_release/layout_percent.c')
 
 
 def build_keys(smtd, l0_values=None):
@@ -39,8 +40,8 @@ MOD_LSFT = 0x02  # MOD_BIT(KC_LSFT)
 
 
 class TestDynamicReleaseTerm(SmTdAssertions):
-    """SMTD_GLOBAL_RELEASE_RATIO = 5 (default): the ↑MOD..↑B decision window
-    is min(p1, p2) / 5 where p1 = ↓MOD..↓B and p2 = ↓B..↑MOD"""
+    """SMTD_GLOBAL_RELEASE_PERCENT = 20: the ↑MOD..↑B decision window
+    is min(p1, p2) * 20/100 where p1 = ↓MOD..↓B and p2 = ↓B..↑MOD"""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -57,7 +58,7 @@ class TestDynamicReleaseTerm(SmTdAssertions):
         B_DYN.press()
         smtd_dyn.wait(50)
         MOD_DYN.release()
-        smtd_dyn.wait(50)  # window is min(50, 50) / 5 = 10ms, expires mid-wait
+        smtd_dyn.wait(50)  # window is min(50, 50) * 20/100 = 10ms, expires mid-wait
         B_DYN.release()
 
         self.assertHistory(
@@ -74,7 +75,7 @@ class TestDynamicReleaseTerm(SmTdAssertions):
         B_DYN.press()
         smtd_dyn.wait(60)
         MOD_DYN.release()
-        smtd_dyn.wait(5)  # window is min(60, 60) / 5 = 12ms, ↑B beats it
+        smtd_dyn.wait(5)  # window is min(60, 60) * 20/100 = 12ms, ↑B beats it
         B_DYN.release()
 
         self.assertHistory(
@@ -91,7 +92,7 @@ class TestDynamicReleaseTerm(SmTdAssertions):
         B_DYN.press()
         smtd_dyn.wait(140)
         MOD_DYN.release()
-        smtd_dyn.wait(45)  # window is min(50, 140) / 5 = 10ms, expires mid-wait
+        smtd_dyn.wait(45)  # window is min(50, 140) * 20/100 = 10ms, expires mid-wait
         B_DYN.release()
 
         self.assertHistory(
@@ -108,7 +109,7 @@ class TestDynamicReleaseTerm(SmTdAssertions):
         B_DYN.press()
         smtd_dyn.wait(150)
         MOD_DYN.release()
-        smtd_dyn.wait(3)  # window is min(20, 150) / 5 = 4ms, ↑B beats it
+        smtd_dyn.wait(3)  # window is min(20, 150) * 20/100 = 4ms, ↑B beats it
         B_DYN.release()
 
         self.assertHistory(
@@ -149,7 +150,7 @@ class TestDynamicReleaseTerm(SmTdAssertions):
         B_DYN.press()
         smtd_dyn.wait(50)
         LT_DYN.release()
-        smtd_dyn.wait(50)  # window is min(50, 50) / 5 = 10ms, expires mid-wait
+        smtd_dyn.wait(50)  # window is min(50, 50) * 20/100 = 10ms, expires mid-wait
         B_DYN.release()
 
         self.assertHistory(
@@ -167,7 +168,7 @@ class TestDynamicReleaseTerm(SmTdAssertions):
         B_DYN.press()
         smtd_dyn.wait(60)
         LT_DYN.release()
-        smtd_dyn.wait(5)  # window is min(60, 60) / 5 = 12ms, ↑B beats it
+        smtd_dyn.wait(5)  # window is min(60, 60) * 20/100 = 12ms, ↑B beats it
         B_DYN.release()
 
         self.assertHistory(
@@ -178,7 +179,7 @@ class TestDynamicReleaseTerm(SmTdAssertions):
 
     def test_per_key_release_term_caps_dynamic_window(self):
         """K5 has a per-key SMTD_TIMEOUT_RELEASE of 5ms: it must cap the dynamic
-        window (min(60, 60) / 5 = 12ms would otherwise make this a hold)"""
+        window (min(60, 60) * 20/100 = 12ms would otherwise make this a hold)"""
         MODPK_DYN.press()
         smtd_dyn.wait(60)
         B_DYN.press()
@@ -218,9 +219,9 @@ class TestDynamicReleaseTerm(SmTdAssertions):
         smtd_dyn.wait(40)
         C_DYN.press()
         smtd_dyn.wait(40)
-        MOD_DYN.release()  # window from B: min(40, 80) / 5 = 8ms
+        MOD_DYN.release()  # window from B: min(40, 80) * 20/100 = 8ms
         smtd_dyn.wait(40)
-        B_DYN.release()    # window from C: min(40, 80) / 5 = 8ms
+        B_DYN.release()    # window from C: min(40, 80) * 20/100 = 8ms
         smtd_dyn.wait(40)
         C_DYN.release()
 
@@ -259,7 +260,7 @@ class TestDynamicReleaseTerm(SmTdAssertions):
     def test_multi_tap_p1_measured_from_last_touch(self):
         """In a tap sequence p1 must come from the latest press of the macro key
         (30ms), not from the first one (90ms): the 8ms release gap then falls
-        outside the min(30, 60) / 5 = 6ms window and resolves as a roll"""
+        outside the min(30, 60) * 20/100 = 6ms window and resolves as a roll"""
         MOD_DYN.press()
         smtd_dyn.wait(20)
         MOD_DYN.release()  # first tap
@@ -302,7 +303,7 @@ class TestDynamicReleaseTerm(SmTdAssertions):
 
 
 class TestFixedReleaseTermFallback(SmTdAssertions):
-    """SMTD_GLOBAL_RELEASE_RATIO = 0: the fixed SMTD_TIMEOUT_RELEASE (50ms) is used"""
+    """SMTD_GLOBAL_RELEASE_PERCENT = 0: the fixed SMTD_TIMEOUT_RELEASE (50ms) is used"""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -313,7 +314,7 @@ class TestFixedReleaseTermFallback(SmTdAssertions):
         reset(smtd_fixed, KEYCODES_FIXED, KEYS_FIXED)
 
     def test_release_within_fixed_window_is_hold_tap(self):
-        """Same timings resolve as tap-tap with the default ratio (see the dynamic
+        """Same timings resolve as tap-tap with the dynamic window (see the dynamic
         suite test_steady_roll_is_tap_tap with p3=50), but as hold here"""
         MOD_FIXED.press()
         smtd_fixed.wait(50)
@@ -347,7 +348,7 @@ class TestFixedReleaseTermFallback(SmTdAssertions):
 
 
 class TestReleaseTermUpperClamp(SmTdAssertions):
-    """SMTD_GLOBAL_RELEASE_RATIO = 1: min(p1, p2) may exceed the fixed
+    """SMTD_GLOBAL_RELEASE_PERCENT = 100: min(p1, p2) may exceed the fixed
     SMTD_TIMEOUT_RELEASE (50ms), which must stay the upper bound"""
 
     def __init__(self, *args, **kwargs):
@@ -359,7 +360,7 @@ class TestReleaseTermUpperClamp(SmTdAssertions):
         reset(smtd_clamp, KEYCODES_CLAMP, KEYS_CLAMP)
 
     def test_window_never_exceeds_fixed_term(self):
-        """min(80, 80) / 1 = 80ms, but the window is clamped to 50ms"""
+        """min(80, 80) * 100/100 = 80ms, but the window is clamped to 50ms"""
         MOD_CLAMP.press()
         smtd_clamp.wait(80)
         B_CLAMP.press()
@@ -392,7 +393,7 @@ class TestReleaseTermUpperClamp(SmTdAssertions):
 
 
 class TestQmkTapHoldDynamicRelease(SmTdAssertions):
-    """SMTD_ENABLE_QMK_TAPHOLD: the dynamic window (default ratio 5) applies to
+    """SMTD_ENABLE_QMK_TAPHOLD: the dynamic window (SMTD_GLOBAL_RELEASE_PERCENT 20) applies to
     raw QMK MT()/LT() keycodes resolved by smtd_handle_qk_tap_hold"""
 
     def __init__(self, *args, **kwargs):
@@ -410,7 +411,7 @@ class TestQmkTapHoldDynamicRelease(SmTdAssertions):
         B_QK.press()
         smtd_qk.wait(50)
         MT_QK.release()
-        smtd_qk.wait(50)  # window is min(50, 50) / 5 = 10ms, expires mid-wait
+        smtd_qk.wait(50)  # window is min(50, 50) * 20/100 = 10ms, expires mid-wait
         B_QK.release()
 
         self.assertHistory(
@@ -428,7 +429,7 @@ class TestQmkTapHoldDynamicRelease(SmTdAssertions):
         B_QK.press()
         smtd_qk.wait(60)
         MT_QK.release()
-        smtd_qk.wait(5)  # window is min(60, 60) / 5 = 12ms, ↑B beats it
+        smtd_qk.wait(5)  # window is min(60, 60) * 20/100 = 12ms, ↑B beats it
         B_QK.release()
 
         self.assertHistory(
@@ -444,7 +445,7 @@ class TestQmkTapHoldDynamicRelease(SmTdAssertions):
         B_QK.press()
         smtd_qk.wait(50)
         LT_QK.release()
-        smtd_qk.wait(50)  # window is min(50, 50) / 5 = 10ms, expires mid-wait
+        smtd_qk.wait(50)  # window is min(50, 50) * 20/100 = 10ms, expires mid-wait
         B_QK.release()
 
         self.assertHistory(
@@ -462,7 +463,7 @@ class TestQmkTapHoldDynamicRelease(SmTdAssertions):
         B_QK.press()
         smtd_qk.wait(60)
         LT_QK.release()
-        smtd_qk.wait(5)  # window is min(60, 60) / 5 = 12ms, ↑B beats it
+        smtd_qk.wait(5)  # window is min(60, 60) * 20/100 = 12ms, ↑B beats it
         B_QK.release()
 
         self.assertHistory(
@@ -470,6 +471,89 @@ class TestQmkTapHoldDynamicRelease(SmTdAssertions):
             released(B_QK, layer=1),
         )
         self.assertEqual(smtd_qk.get_layer_state(), 0, "layer must be restored")
+
+
+class TestFractionalReleasePercent(SmTdAssertions):
+    """SMTD_GLOBAL_RELEASE_PERCENT = 40: the ↑MOD..↑B window is min(p1, p2) * 40 / 100.
+    With p1 = p2 = 50 the window is 20ms — a fractional width the coarse integer divisor
+    form cannot produce (its neighboring steps give 25ms and 16ms), so these tests pin
+    the window strictly between those two neighbors."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.smtd = smtd_pct
+
+    def setUp(self):
+        super().setUp()
+        reset(smtd_pct, KEYCODES_PCT, KEYS_PCT)
+
+    def test_within_window_is_hold_tap(self):
+        """release gap 15ms < 20ms window -> hold"""
+        MOD_PCT.press()
+        smtd_pct.wait(50)
+        B_PCT.press()
+        smtd_pct.wait(50)
+        MOD_PCT.release()
+        smtd_pct.wait(15)  # window is min(50, 50) * 40 / 100 = 20ms, ↑B beats it
+        B_PCT.release()
+
+        self.assertHistory(
+            pressed(B_PCT, mods=MOD_LSFT),
+            released(B_PCT, mods=MOD_LSFT),
+        )
+        self.assertEqual(smtd_pct.get_mods(), 0)
+
+    def test_after_window_is_tap_tap(self):
+        """release gap 30ms > 20ms window -> roll"""
+        MOD_PCT.press()
+        smtd_pct.wait(50)
+        B_PCT.press()
+        smtd_pct.wait(50)
+        MOD_PCT.release()
+        smtd_pct.wait(30)  # window is 20ms, expires mid-wait
+        B_PCT.release()
+
+        self.assertHistory(
+            pressed(MOD_PCT),
+            released(MOD_PCT),
+            pressed(B_PCT),
+            released(B_PCT),
+        )
+
+    def test_window_wider_than_16ms_step(self):
+        """gap 18ms: hold here (20ms window) but would be a roll at a 16ms window
+        — proves the window is finer than a coarse integer-divisor step"""
+        MOD_PCT.press()
+        smtd_pct.wait(50)
+        B_PCT.press()
+        smtd_pct.wait(50)
+        MOD_PCT.release()
+        smtd_pct.wait(18)  # 16ms step < 18 < 20ms (percent 40)
+        B_PCT.release()
+
+        self.assertHistory(
+            pressed(B_PCT, mods=MOD_LSFT),
+            released(B_PCT, mods=MOD_LSFT),
+        )
+        self.assertEqual(smtd_pct.get_mods(), 0)
+
+    def test_window_narrower_than_25ms_step(self):
+        """gap 22ms: roll here (20ms window) but would be a hold at a 25ms window
+        — pins the window strictly below the next coarser step"""
+        MOD_PCT.press()
+        smtd_pct.wait(50)
+        B_PCT.press()
+        smtd_pct.wait(50)
+        MOD_PCT.release()
+        smtd_pct.wait(22)  # 20ms (percent 40) < 22 < 25ms step
+        B_PCT.release()
+
+        self.assertHistory(
+            pressed(MOD_PCT),
+            released(MOD_PCT),
+            pressed(B_PCT),
+            released(B_PCT),
+        )
 
 
 KEYCODES_DYN, KEYS_DYN = build_keys(smtd_dyn)
@@ -486,6 +570,10 @@ B_FIXED = KEYS_FIXED[2]
 KEYCODES_CLAMP, KEYS_CLAMP = build_keys(smtd_clamp)
 MOD_CLAMP = KEYS_CLAMP[1]
 B_CLAMP = KEYS_CLAMP[2]
+
+KEYCODES_PCT, KEYS_PCT = build_keys(smtd_pct)
+MOD_PCT = KEYS_PCT[1]
+B_PCT = KEYS_PCT[2]
 
 # Raw QMK tap-hold keycodes (must match layout_qk.c packing)
 MOD_LCTL = 0x01       # 5-bit mask in the MT() keycode
